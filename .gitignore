@@ -47,10 +47,6 @@ Temporary Items
 .apdisk
 
 
-# GLM inl
-*.inl
-
-
 # Visual Studio 2013 stuff
 _Binaries
 _Intermediate
