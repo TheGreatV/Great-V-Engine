@@ -74,7 +74,6 @@ void func()
 		sizeof(Float32)*(3 + 3 * 3 + 2), 0)
 	}));
 
-
 	while(!GetAsyncKeyState(VK_ESCAPE))
 	{
 		window->Loop();

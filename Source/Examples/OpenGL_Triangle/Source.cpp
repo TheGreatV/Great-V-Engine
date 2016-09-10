@@ -1,5 +1,3 @@
-#include <Logic/Logic.hpp>
-#include <Infrastructure/Infrastructure.hpp>
 #include <APIs/OpenGL/OpenGL.hpp>
 
 namespace GVE = GreatVEngine;

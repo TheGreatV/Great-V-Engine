@@ -35,13 +35,13 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\Properties\Great V Project.props" />
     <Import Project="..\..\..\Properties\Great V External User.props" />
-    <Import Project="..\..\..\Properties\Great V Static Library User.props" />
+    <Import Project="..\..\..\Properties\Great V Library User - Header.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\Properties\Great V Project.props" />
     <Import Project="..\..\..\Properties\Great V External User.props" />
-    <Import Project="..\..\..\Properties\Great V Static Library User.props" />
+    <Import Project="..\..\..\Properties\Great V Library User - Header.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />

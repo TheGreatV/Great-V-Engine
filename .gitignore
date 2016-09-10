@@ -48,7 +48,7 @@ Temporary Items
 
 
 # Visual Studio 2013 stuff
-_Binaries
+_Build
 _Intermediate
 *.suo
 *.sdf
