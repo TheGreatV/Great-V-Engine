@@ -21,7 +21,7 @@ void func()
 
 	VkInstance vk_instance;
 	{
-		std::vector<const char*> layerNames = {
+		Vector<const char*> layerNames = {
 			"VK_LAYER_LUNARG_api_dump",
 			"VK_LAYER_LUNARG_core_validation",
 			"VK_LAYER_LUNARG_image",
@@ -38,7 +38,7 @@ void func()
 			"VK_LAYER_LUNARG_standard_validation",
 		};
 
-		std::vector<const char*> extensionNames = {
+		Vector<const char*> extensionNames = {
 			VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
 			VK_KHR_SURFACE_EXTENSION_NAME,
 			VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
@@ -122,7 +122,7 @@ void func()
 		{
 			throw std::exception("failed to get physical devices count");
 		}
-		std::vector<VkPhysicalDevice> vk_physicalDevices(vk_physicalDevicesCount);
+		Vector<VkPhysicalDevice> vk_physicalDevices(vk_physicalDevicesCount);
 		if(vkEnumeratePhysicalDevices(vk_instance, &vk_physicalDevicesCount, vk_physicalDevices.data()) != VkResult::VK_SUCCESS)
 		{
 			throw std::exception("failed to get physical devices");
@@ -133,7 +133,7 @@ void func()
 		}
 		vk_physicalDevice = vk_physicalDevices[0];
 	}
-	std::vector<VkQueueFamilyProperties> vk_physicalDeviceQueueFamilyProperties;
+	Vector<VkQueueFamilyProperties> vk_physicalDeviceQueueFamilyProperties;
 	{
 		uint32_t vk_physicalDeviceQueueFamilyPropertiesCount;
 		vkGetPhysicalDeviceQueueFamilyProperties(vk_physicalDevice, &vk_physicalDeviceQueueFamilyPropertiesCount, nullptr);
@@ -148,7 +148,7 @@ void func()
 
 	VkDevice vk_device;
 	{
-		std::vector<const char*> layerNames = {
+		Vector<const char*> layerNames = {
 			"VK_LAYER_NV_optimus",
 			"VK_LAYER_LUNARG_api_dump",
 			"VK_LAYER_LUNARG_screenshot",
@@ -156,12 +156,12 @@ void func()
 			"VK_LAYER_VALVE_steam_overlay",
 			"VK_LAYER_LUNARG_standard_validation",
 		};
-		std::vector<const char*> extensionNames = {
+		Vector<const char*> extensionNames = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		};
 
-		std::vector<VkDeviceQueueCreateInfo> vk_deviceQueueCreateInfos(1);
-		std::vector<std::vector<float>> vk_deviceQueuesPriorities(vk_deviceQueueCreateInfos.size(), std::vector<float>(1, 0.0f));
+		Vector<VkDeviceQueueCreateInfo> vk_deviceQueueCreateInfos(1);
+		Vector<Vector<float>> vk_deviceQueuesPriorities(vk_deviceQueueCreateInfos.size(), Vector<float>(1, 0.0f));
 		{
 			for(size_t i = 0; i < vk_deviceQueueCreateInfos.size(); ++i)
 			{
@@ -277,7 +277,7 @@ void func()
 			throw std::exception("surface not supported");
 		}
 	}
-	std::vector<VkSurfaceFormatKHR> vk_surfaceFormats;
+	Vector<VkSurfaceFormatKHR> vk_surfaceFormats;
 	{
 		uint32_t vk_surfaceFormatsCount;
 		if(vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physicalDevice, vk_surfaceKHR, &vk_surfaceFormatsCount, nullptr) != VkResult::VK_SUCCESS)
@@ -330,7 +330,7 @@ void func()
 			throw std::exception("failed to create swapchain");
 		}
 	}
-	std::vector<VkImage> vk_swapchainImages;
+	Vector<VkImage> vk_swapchainImages;
 	{
 		uint32_t vk_swapchainImagesCount;
 		if(vkGetSwapchainImagesKHR(vk_device, vk_swapchainKHR, &vk_swapchainImagesCount, nullptr) != VkResult::VK_SUCCESS)
@@ -398,8 +398,8 @@ void func()
 		}
 	}
 
-	std::vector<VkImageView> vk_imageViews(vk_swapchainImages.size());
-	std::vector<VkFramebuffer> vk_framebuffers(vk_swapchainImages.size());
+	Vector<VkImageView> vk_imageViews(vk_swapchainImages.size());
+	Vector<VkFramebuffer> vk_framebuffers(vk_swapchainImages.size());
 	{
 		for(uint32_t i = 0; i < vk_swapchainImages.size(); ++i)
 		{
@@ -460,7 +460,7 @@ void func()
 
 	VkBuffer vk_buffer;
 	{
-		std::vector<float> source = {
+		Vector<float> source = {
 			-0.5f, +0.5f,
 			+0.5f, +0.5f,
 			+0.0f, -0.5f
@@ -548,7 +548,7 @@ void func()
 
 		rewind(file);
 
-		std::vector<uint32_t> result(size);
+		Vector<uint32_t> result(size);
 		fread((void*)result.data(), 1, size, file);
 
 		fclose(file);
@@ -640,7 +640,7 @@ void func()
 	};
 	VkPipeline vk_pipeline;
 	{
-		std::vector<VkPipelineShaderStageCreateInfo> vk_pipelineShaderStageCreateInfos(2);
+		Vector<VkPipelineShaderStageCreateInfo> vk_pipelineShaderStageCreateInfos(2);
 		{
 			vk_pipelineShaderStageCreateInfos[0].sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			vk_pipelineShaderStageCreateInfos[0].pNext = nullptr;
@@ -799,7 +799,7 @@ void func()
 			}
 		}
 
-		std::vector<VkDynamicState> vk_dynamicStates = {
+		Vector<VkDynamicState> vk_dynamicStates = {
 			VK_DYNAMIC_STATE_VIEWPORT,
 			VK_DYNAMIC_STATE_SCISSOR
 		};
@@ -865,7 +865,7 @@ void func()
 			throw std::exception("failed to reset command pool");
 		}
 	}
-	std::vector<VkCommandBuffer> vk_commandBuffers(vk_swapchainImages.size());
+	Vector<VkCommandBuffer> vk_commandBuffers(vk_swapchainImages.size());
 	{
 		VkCommandBufferAllocateInfo vk_CommandBufferAllocateInfo;
 		{
@@ -962,8 +962,8 @@ void func()
 						&vk_scissor
 						);
 
-					std::vector<VkBuffer> vk_vertexBuffers = {vk_buffer};
-					std::vector<VkDeviceSize> vk_vertexOffsets = {0};
+					Vector<VkBuffer> vk_vertexBuffers = {vk_buffer};
+					Vector<VkDeviceSize> vk_vertexOffsets = {0};
 					vkCmdBindVertexBuffers(
 						vk_commandBuffer,
 						0,
@@ -1100,6 +1100,10 @@ void main()
 		func();
 	}
 	catch(GVE::Vulkan::Exception e)
+	{
+		cout << e.GetCode() << ": " << e.GetText() << endl;
+	}
+	catch(GVE::WinAPI::Exception e)
 	{
 		cout << e.GetCode() << ": " << e.GetText() << endl;
 	}

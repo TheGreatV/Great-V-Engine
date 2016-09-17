@@ -2,15 +2,13 @@
 #pragma once
 
 
-#include "ErrorHandling.hpp"
-#include "Functions.hpp"
-#include "Wrapper.hpp"
+#include "Header.hpp"
 #pragma endregion
 
 
 namespace GreatVEngine
 {
-	namespace Vulkan
+	namespace LibSnd
 	{
 	}
 }

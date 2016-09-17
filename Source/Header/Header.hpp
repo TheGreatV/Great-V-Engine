@@ -54,6 +54,11 @@ namespace GreatVEngine
 	{
 		return Link<T>(t);
 	}
+	template<class T>
+	inline Reference<T> Share(Link<T> t)
+	{
+		return std::make_shared(t);
+	}
 }
 
 

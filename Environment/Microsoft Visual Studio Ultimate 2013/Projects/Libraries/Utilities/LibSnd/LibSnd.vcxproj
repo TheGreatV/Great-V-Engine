@@ -11,8 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{89B8FB41-3530-4E29-8179-99E03898CB55}</ProjectGuid>
-    <RootNamespace>Vulkan</RootNamespace>
+    <ProjectGuid>{FF6B2FD8-37FA-473E-A99E-D8D63FB8E90C}</ProjectGuid>
+    <RootNamespace>LibSnd</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -70,18 +70,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\ErrorHandling.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\Functions.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\Header.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\Vulkan.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\Wrapper.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\Source\Utilities\LibSnd\Header.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\Source\Utilities\LibSnd\LibSnd.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\ErrorHandling.hpp" />
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\Functions.hpp" />
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\Header.hpp" />
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\Vulkan.hpp" />
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\Wrapper.hpp" />
+    <ClInclude Include="..\..\..\..\..\..\Source\Utilities\LibSnd\Header.hpp" />
+    <ClInclude Include="..\..\..\..\..\..\Source\Utilities\LibSnd\LibSnd.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

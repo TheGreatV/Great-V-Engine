@@ -5,12 +5,16 @@
   <PropertyGroup />
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\External\GLM\Include\;$(SolutionDir)..\..\External\Half\Include\;$(SolutionDir)..\..\External\OpenGL\Include\;$(SolutionDir)..\..\External\Vulkan\include\;$(SolutionDir)..\..\External\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\External\GLM\Include\;$(SolutionDir)..\..\External\Half\Include\;$(SolutionDir)..\..\External\OpenGL\Include\;$(SolutionDir)..\..\External\Vulkan\include\;$(SolutionDir)..\..\External\LibSnd\include\;$(SolutionDir)..\..\External\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\External\OpenGL\lib\;$(SolutionDir)..\..\External\Vulkan\lib\$(PlatformTarget)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenGL32.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\External\OpenGL\lib\;$(SolutionDir)..\..\External\Vulkan\lib\$(PlatformTarget)\;$(SolutionDir)..\..\External\LibSnd\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>OpenGL32.lib;vulkan-1.lib;libsndfile-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /R /Y "$(SolutionDir)..\..\External\LibSnd\dll\libsndfile-1.dll" "$(OutDir)"
+</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

@@ -15,36 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\ErrorHandling.cpp">
+    <ClCompile Include="..\..\..\..\..\..\Source\Utilities\LibSnd\Header.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\Header.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\Vulkan.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\Functions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\Vulkan\Wrapper.cpp">
+    <ClCompile Include="..\..\..\..\..\..\Source\Utilities\LibSnd\LibSnd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\ErrorHandling.hpp">
+    <ClInclude Include="..\..\..\..\..\..\Source\Utilities\LibSnd\Header.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\Header.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\Vulkan.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\Functions.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\Vulkan\Wrapper.hpp">
+    <ClInclude Include="..\..\..\..\..\..\Source\Utilities\LibSnd\LibSnd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

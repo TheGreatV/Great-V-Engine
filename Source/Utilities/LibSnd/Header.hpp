@@ -5,24 +5,22 @@
 #include <Header/Header.hpp>
 
 
-#if GVE_PLATFORM == GVE_PLATFORM_WIN
-#include <Windows.h>
+// #if GVE_PLATFORM == GVE_PLATFORM_WIN
+// #include <Windows.h>
+// #endif
 
-#define VK_USE_PLATFORM_WIN32_KHR 1
-#endif
 
-#include <vulkan/vulkan.h>
+#include <sndfile.h>
 #pragma endregion
 
 
 #pragma region Macro
-#define GVE_VULKAN_VERSION VK_MAKE_VERSION(1, 0, 21)
 #pragma endregion
 
 
 namespace GreatVEngine
 {
-	namespace Vulkan
+	namespace LibSnd
 	{
 	}
 }
