@@ -76,6 +76,36 @@ void GreatVEngine::Vulkan::Commands::BindVertexBuffers::Parse(CommandBuffer* com
 		vk_buffers.data(), offsets.data());
 }
 #pragma endregion
+#pragma region BindIndexBuffer
+void GreatVEngine::Vulkan::Commands::BindIndexBuffer::Parse(CommandBuffer* commandBuffer_)
+{
+	vkCmdBindIndexBuffer(
+		commandBuffer_->GetHandle(),
+		buffer->GetHandle(), offset,
+		type);
+}
+#pragma endregion
+#pragma region BindGraphicDescriptorSet
+void GreatVEngine::Vulkan::Commands::BindGraphicDescriptorSet::Parse(CommandBuffer* commandBuffer_)
+{
+	Vector<DescriptorSet::Handle> vk_descriptorSets(descriptorSets.size());
+
+	for(Size i = 0; i < descriptorSets.size(); ++i)
+	{
+		vk_descriptorSets[i] = descriptorSets[i]->GetHandle();
+	}
+
+	vkCmdBindDescriptorSets(
+		commandBuffer_->GetHandle(),
+		VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout->GetHandle(),
+		0,
+		vk_descriptorSets.size(),
+		vk_descriptorSets.data(),
+		0,
+		nullptr);
+}
+#pragma endregion
 #pragma region RenderPass
 void GreatVEngine::Vulkan::Commands::RenderPass::Parse(CommandBuffer* commandBuffer_)
 {
@@ -108,8 +138,17 @@ void GreatVEngine::Vulkan::Commands::Draw::Parse(CommandBuffer* commandBuffer_)
 {
 	vkCmdDraw(
 		commandBuffer_->GetHandle(),
-		vertivesCount, instancesCount,
-		vertivesBegin, instancesBegin);
+		verticesCount, instancesCount,
+		verticesBegin, instancesBegin);
+}
+#pragma endregion
+#pragma region DrawIndices
+void GreatVEngine::Vulkan::Commands::DrawIndexed::Parse(CommandBuffer* commandBuffer_)
+{
+	vkCmdDrawIndexed(
+		commandBuffer_->GetHandle(),
+		indicesCount, instancesCount,
+		indicesBegin, 0, instancesBegin);
 }
 #pragma endregion
 #pragma endregion

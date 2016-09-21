@@ -29,6 +29,11 @@ namespace GreatVEngine
 		class Queue;
 		class CommandPool;
 		class CommandBuffer;
+		class DescriptorSetLayout;
+		class DescriptorPool;
+		class DescriptorSet;
+		class PipelineLayout;
+		class PipelineCache;
 		class GraphicPipeline;
 		class Fence;
 		class Semaphore;
@@ -528,7 +533,7 @@ namespace GreatVEngine
 				{
 					deviceMemory = deviceMemory_;
 				}
-				inline DeviceMemory* GetSetDeviceMemory() const
+				inline DeviceMemory* GetDeviceMemory() const
 				{
 					return deviceMemory;
 				}
@@ -622,9 +627,9 @@ namespace GreatVEngine
 
 				BindBufferMemory(device->GetHandle(), handle, deviceMemory ? deviceMemory->GetHandle() : VK_NULL_HANDLE, 0);
 			}
-			inline DeviceMemory* GetSetDeviceMemory() const
+			inline DeviceMemory* GetDeviceMemory() const
 			{
-				return DeviceMemory::User::GetSetDeviceMemory();
+				return DeviceMemory::User::GetDeviceMemory();
 			}
 		public:
 			inline Handle GetHandle() const
@@ -633,8 +638,8 @@ namespace GreatVEngine
 			}
 		};
 		class BasicImage:
-			public Device::Dependent
-			// public DeviceMemoryUser
+			public Device::Dependent,
+			protected DeviceMemory::User
 		{
 		public:
 			class Dependent
@@ -668,14 +673,26 @@ namespace GreatVEngine
 			const Type type;
 			const Format format;
 			const Usage usage;
+			const Tiling tiling;
+			const Layout layout;
 		protected:
-			inline BasicImage(Device* device_, Handle handle_, Size size_, Type type_, Format format_, Usage usage_):
+			inline BasicImage(
+				Device* device_,
+				Handle handle_,
+				const Size& size_,
+				const Type& type_,
+				const Format& format_,
+				const Usage& usage_,
+				const Tiling& tiling_ = Tiling::VK_IMAGE_TILING_OPTIMAL,
+				const Layout& layout_ = Layout::VK_IMAGE_LAYOUT_UNDEFINED):
 				Device::Dependent(device_),
 				handle(handle_),
 				size(size_),
 				type(type_),
 				format(format_),
-				usage(usage_)
+				usage(usage_),
+				tiling(tiling_),
+				layout(layout_)
 			{
 			}
 			inline ~BasicImage() = default;
@@ -700,16 +717,84 @@ namespace GreatVEngine
 			{
 				return usage;
 			}
+			inline Tiling GetTiling() const
+			{
+				return tiling;
+			}
+			inline Layout GetLayout() const
+			{
+				return layout;
+			}
 		};
 		class Image:
 			public BasicImage
 		{
-		protected:
-			inline Image(Device* device_, Handle handle_, Size size_, Type type_, Format format_, Usage usage_):
-				BasicImage(device_, handle_, size_, type_, format_, usage_)
+		public:
+			// inline Image(Device* device_, Handle handle_, Size size_, Type type_, Format format_, Usage usage_):
+			// 	BasicImage(device_, handle_, size_, type_, format_, usage_)
+			// {
+			// }
+			inline Image(
+				Device* device_,
+				const Size& size_,
+				const Type& type_,
+				const Format& format_,
+				const Usage& usage_,
+				const Tiling& tiling_,
+				const Layout& layout_):
+				BasicImage(
+					device_,
+					[&](){
+						VkImageFormatProperties vk_imageFormatProperties;
+						ErrorTest(vkGetPhysicalDeviceImageFormatProperties(
+							device_->GetPhysicalDevice()->GetHandle(),
+							format_, type_, tiling_, usage_, 0, &vk_imageFormatProperties));
+
+						VkImageCreateInfo vk_imageCreateInfo;
+						{
+							vk_imageCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+							vk_imageCreateInfo.pNext = nullptr;
+							vk_imageCreateInfo.flags = 0;
+							vk_imageCreateInfo.imageType = type_;
+							vk_imageCreateInfo.format = format_;
+							vk_imageCreateInfo.extent = size_;
+							vk_imageCreateInfo.mipLevels = 1;
+							vk_imageCreateInfo.arrayLayers = 1;
+							vk_imageCreateInfo.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+							vk_imageCreateInfo.tiling = tiling_;
+							vk_imageCreateInfo.usage = usage_;
+							vk_imageCreateInfo.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+							vk_imageCreateInfo.queueFamilyIndexCount = 0;
+							vk_imageCreateInfo.pQueueFamilyIndices = nullptr;
+							vk_imageCreateInfo.initialLayout = layout_;
+						}
+
+						return CreateImage(device_->GetHandle(), &vk_imageCreateInfo, nullptr);
+					}(),
+					size_,
+					type_,
+					format_,
+					usage_,
+					tiling_,
+					layout_)
 			{
 			}
-			inline ~Image() = default;
+			inline ~Image()
+			{
+				DestroyImage(device->GetHandle(), handle, nullptr);
+			}
+		public:
+			inline void SetDeviceMemory(DeviceMemory* deviceMemory_)
+			{
+				DeviceMemory::User::SetDeviceMemory(deviceMemory_);
+
+				// BindBufferMemory(device->GetHandle(), handle, deviceMemory ? deviceMemory->GetHandle() : VK_NULL_HANDLE, 0);
+				BindImageMemory(device->GetHandle(), handle, deviceMemory ? deviceMemory->GetHandle() : VK_NULL_HANDLE, 0);
+			}
+			inline DeviceMemory* GetDeviceMemory() const
+			{
+				return DeviceMemory::User::GetDeviceMemory();
+			}
 		};
 		class SurfaceKHR:
 			public PhysicalDevice::Dependent
@@ -928,11 +1013,13 @@ namespace GreatVEngine
 		public:
 			using Handle = VkImageView;
 			using Type = VkImageViewType;
+			using Aspect = VkImageAspectFlags;
+			using AspectBits = VkImageAspectFlagBits;
 		protected:
 			const Handle handle;
 			const Type type;
 		public:
-			inline ImageView(Device* device_, BasicImage* basicImage_, const Type& type_):
+			inline ImageView(Device* device_, BasicImage* basicImage_, const Type& type_, const Aspect& aspect_ = AspectBits::VK_IMAGE_ASPECT_COLOR_BIT):
 				Device::Dependent(device_),
 				BasicImage::Dependent(basicImage_),
 				handle([&]()
@@ -953,7 +1040,7 @@ namespace GreatVEngine
 						};
 						vk_imageViewCreateInfo.subresourceRange;
 						{
-							vk_imageViewCreateInfo.subresourceRange.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+							vk_imageViewCreateInfo.subresourceRange.aspectMask = aspect_; // VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 							vk_imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
 							vk_imageViewCreateInfo.subresourceRange.levelCount = 1;
 							vk_imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
@@ -978,6 +1065,54 @@ namespace GreatVEngine
 			inline Type GetType() const
 			{
 				return type;
+			}
+		};
+		class Sampler:
+			public Device::Dependent
+		{
+		public:
+			using Handle = VkSampler;
+		protected:
+			const Handle handle;
+		public:
+			inline Sampler(Device* device_):
+				Dependent(device_),
+				handle([&]()
+				{
+					VkSamplerCreateInfo vk_samplerCreateInfo;
+					{
+						vk_samplerCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+						vk_samplerCreateInfo.pNext = nullptr;
+						vk_samplerCreateInfo.flags = 0;
+						vk_samplerCreateInfo.magFilter = VkFilter::VK_FILTER_NEAREST; // vk_magFilter_;
+						vk_samplerCreateInfo.minFilter = VkFilter::VK_FILTER_NEAREST; // vk_minFilter_;
+						vk_samplerCreateInfo.mipmapMode = VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_NEAREST; // vk_mipmapMode_;
+						vk_samplerCreateInfo.addressModeU = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT; // vk_addressModeU_;
+						vk_samplerCreateInfo.addressModeV = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT; // vk_addressModeV_;
+						vk_samplerCreateInfo.addressModeW = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT; // vk_addressModeW_;
+						vk_samplerCreateInfo.mipLodBias = 0.0f;
+						vk_samplerCreateInfo.anisotropyEnable = VK_FALSE;
+						vk_samplerCreateInfo.maxAnisotropy = 0.0f;
+						vk_samplerCreateInfo.compareEnable = VK_FALSE;
+						vk_samplerCreateInfo.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+						vk_samplerCreateInfo.minLod = 0.0f;
+						vk_samplerCreateInfo.maxLod = 0.0f;
+						vk_samplerCreateInfo.borderColor = VkBorderColor::VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+						vk_samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+					}
+
+					return CreateSampler(device->GetHandle(), &vk_samplerCreateInfo, nullptr);
+				}())
+			{
+			}
+			inline ~Sampler()
+			{
+				DestroySampler(device->GetHandle(), handle, nullptr);
+			}
+		public:
+			inline Handle GetHandle() const
+			{
+				return handle;
 			}
 		};
 		class RenderPass:
@@ -1213,6 +1348,38 @@ namespace GreatVEngine
 			public:
 				virtual void Parse(CommandBuffer* commandBuffer_) override;
 			};
+			class BindIndexBuffer:
+				public Command
+			{
+			public:
+				using Type = VkIndexType;
+			protected:
+				const Buffer* buffer;
+				const VkDeviceSize offset;
+				const Type type;
+			public:
+				inline BindIndexBuffer(const Buffer* buffer_, const VkDeviceSize& offset_, const Type& type_):
+					buffer(buffer_), offset(offset_), type(type_)
+				{
+				}
+			public:
+				virtual void Parse(CommandBuffer* commandBuffer_) override;
+			};
+			class BindGraphicDescriptorSet:
+				public Command
+			{
+			protected:
+				const PipelineLayout* pipelineLayout;
+				const Vector<DescriptorSet*> descriptorSets;
+			public:
+				inline BindGraphicDescriptorSet(const PipelineLayout* pipelineLayout_, const Vector<DescriptorSet*> descriptorSets_):
+					pipelineLayout(pipelineLayout_),
+					descriptorSets(descriptorSets_)
+				{
+				}
+			public:
+				virtual void Parse(CommandBuffer* commandBuffer_) override;
+			};
 			class RenderPass:
 				public Command
 			{
@@ -1249,11 +1416,25 @@ namespace GreatVEngine
 				public Command
 			{
 			protected:
-				const Size vertivesBegin, vertivesCount;
+				const Size verticesBegin, verticesCount;
 				const Size instancesBegin, instancesCount;
 			public:
-				inline Draw(const Size& vertivesBegin_, const Size& vertivesCount_, const Size& instancesBegin_, const Size& instancesCount_):
-					vertivesBegin(vertivesBegin_), vertivesCount(vertivesCount_), instancesBegin(instancesBegin_), instancesCount(instancesCount_)
+				inline Draw(const Size& verticesBegin_, const Size& verticesCount_, const Size& instancesBegin_, const Size& instancesCount_):
+					verticesBegin(verticesBegin_), verticesCount(verticesCount_), instancesBegin(instancesBegin_), instancesCount(instancesCount_)
+				{
+				}
+			public:
+				virtual void Parse(CommandBuffer* commandBuffer_) override;
+			};
+			class DrawIndexed:
+				public Command
+			{
+			protected:
+				const Size indicesBegin, indicesCount;
+				const Size instancesBegin, instancesCount;
+			public:
+				inline DrawIndexed(const Size& indicesBegin_, const Size& indicesCount_, const Size& instancesBegin_, const Size& instancesCount_):
+					indicesBegin(indicesBegin_), indicesCount(indicesCount_), instancesBegin(instancesBegin_), instancesCount(instancesCount_)
 				{
 				}
 			public:
@@ -1395,6 +1576,161 @@ namespace GreatVEngine
 				return level;
 			}
 		};
+		class DescriptorSetLayout:
+			public Device::Dependent
+		{
+		public:
+			struct Binding:
+				public VkDescriptorSetLayoutBinding
+			{
+			public:
+				using Type = VkDescriptorType;
+				using Flags = VkShaderStageFlags;
+				using FlagBits = VkShaderStageFlagBits;
+			public:
+				inline Binding(const Size& binding_, const Type& type_, const Size& count_, const Flags& flags_)
+				{
+					binding = binding_;
+					descriptorType = type_;
+					descriptorCount = count_;
+					stageFlags = flags_;
+					pImmutableSamplers = nullptr;
+				}
+			};
+		public:
+			using Handle = VkDescriptorSetLayout;
+		protected:
+			const Handle handle;
+		public:
+			inline DescriptorSetLayout(Device* device_, const Vector<Binding>& bindings_):
+				Dependent(device_),
+				handle([&]()
+				{
+					VkDescriptorSetLayoutCreateInfo vk_descriptorSetLayoutCreateInfo;
+					{
+						vk_descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+						vk_descriptorSetLayoutCreateInfo.pNext = nullptr;
+						vk_descriptorSetLayoutCreateInfo.flags = 0;
+						vk_descriptorSetLayoutCreateInfo.bindingCount = bindings_.size();
+						vk_descriptorSetLayoutCreateInfo.pBindings = bindings_.data();
+					}
+
+					return CreateDescriptorSetLayout(device->GetHandle(), &vk_descriptorSetLayoutCreateInfo, nullptr);
+				}())
+			{
+			}
+			inline ~DescriptorSetLayout()
+			{
+				DestroyDescriptorSetLayout(device->GetHandle(), handle, nullptr);
+			}
+		public:
+			inline Handle GetHandle() const
+			{
+				return handle;
+			}
+		};
+		class DescriptorPool:
+			public Device::Dependent
+		{
+		public:
+			class Dependent
+			{
+			protected:
+				DescriptorPool*const descriptorPool;
+			public:
+				inline Dependent(DescriptorPool* descriptorPool_):
+					descriptorPool(descriptorPool_)
+				{
+				}
+				inline Dependent(const Dependent&) = default;
+			public:
+				inline DescriptorPool* GetDescriptorPool() const
+				{
+					return descriptorPool;
+				}
+			};
+			struct Param:
+				public VkDescriptorPoolSize
+			{
+			public:
+				using Type = VkDescriptorType;
+			public:
+				inline Param(const Type& type_, const Size& count_)
+				{
+					type = type_;
+					descriptorCount = count_;
+				}
+			};
+		public:
+			using Handle = VkDescriptorPool;
+		protected:
+			const Handle handle;
+		public:
+			inline DescriptorPool(Device* device_, const Size& maxSets_, const Vector<Param>& params_):
+				Device::Dependent(device_),
+				handle([&]()
+				{
+					VkDescriptorPoolCreateInfo vk_descriptorPoolCreateInfo;
+					{
+						vk_descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+						vk_descriptorPoolCreateInfo.pNext = nullptr;
+						vk_descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+						vk_descriptorPoolCreateInfo.maxSets = maxSets_;
+						vk_descriptorPoolCreateInfo.poolSizeCount = params_.size();
+						vk_descriptorPoolCreateInfo.pPoolSizes = params_.data();
+					}
+
+					return CreateDescriptorPool(device->GetHandle(), &vk_descriptorPoolCreateInfo, nullptr);
+				}())
+			{
+			}
+			inline ~DescriptorPool()
+			{
+				DestroyDescriptorPool(device->GetHandle(), handle, nullptr);
+			}
+		public:
+			inline Handle GetHandle() const
+			{
+				return handle;
+			}
+		};
+		class DescriptorSet:
+			public DescriptorPool::Dependent
+		{
+		public:
+			using Handle = VkDescriptorSet;
+		protected:
+			const Handle handle;
+		public:
+			inline DescriptorSet(DescriptorPool* descriptorPool_, DescriptorSetLayout* descriptorSetLayout_):
+				Dependent(descriptorPool_),
+				handle([&]()
+				{
+					auto descriptorSetLayout = descriptorSetLayout_->GetHandle();
+					
+					VkDescriptorSetAllocateInfo vk_descriptorSetAllocateInfo;
+					{
+						vk_descriptorSetAllocateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+						vk_descriptorSetAllocateInfo.pNext = nullptr;
+						vk_descriptorSetAllocateInfo.descriptorPool = descriptorPool->GetHandle();
+						vk_descriptorSetAllocateInfo.descriptorSetCount = 1;
+						vk_descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
+					}
+
+					return AllocateDescriptorSets(descriptorPool->GetDevice()->GetHandle(), &vk_descriptorSetAllocateInfo)[0];
+				}())
+			{
+			}
+			inline ~DescriptorSet()
+			{
+				FreeDescriptorSets(descriptorPool->GetDevice()->GetHandle(), descriptorPool->GetHandle(), {handle});
+			}
+		public:
+			inline Handle GetHandle() const
+			{
+				return handle;
+			}
+		};
 		class Shader:
 			Device::Dependent
 		{
@@ -1439,17 +1775,25 @@ namespace GreatVEngine
 		protected:
 			const Handle handle;
 		public:
-			inline PipelineLayout(Device* device_):
+			inline PipelineLayout(Device* device_, Vector<DescriptorSetLayout*> descriptorSetLayouts_):
 				Dependent(device_),
 				handle([&]()
 				{
+					Vector<DescriptorSetLayout::Handle> vk_descriptorSetLayouts(descriptorSetLayouts_.size());
+					{
+						for(Size i = 0; i < descriptorSetLayouts_.size(); ++i)
+						{
+							vk_descriptorSetLayouts[i] = descriptorSetLayouts_[i]->GetHandle();
+						}
+					}
+					
 					VkPipelineLayoutCreateInfo vk_pipelineLayoutCreateInfo;
 					{
 						vk_pipelineLayoutCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 						vk_pipelineLayoutCreateInfo.pNext = nullptr;
 						vk_pipelineLayoutCreateInfo.flags = 0;
-						vk_pipelineLayoutCreateInfo.setLayoutCount = 0;
-						vk_pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+						vk_pipelineLayoutCreateInfo.setLayoutCount = vk_descriptorSetLayouts.size();
+						vk_pipelineLayoutCreateInfo.pSetLayouts = vk_descriptorSetLayouts.data();
 						vk_pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 						vk_pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 					}
@@ -1617,8 +1961,40 @@ namespace GreatVEngine
 					return vk_pipelineShaderStageCreateInfos;
 				}
 			};
+			struct Binding:
+				public VkVertexInputBindingDescription
+			{
+			public:
+				using Rate = VkVertexInputRate;
+			public:
+				inline Binding(const Size& binding_, const Size& stride_, const Rate& rate_)
+				{
+					binding = binding_;
+					stride = stride_;
+					inputRate = rate_;
+				}
+			};
+			struct Attribute:
+				public VkVertexInputAttributeDescription
+			{
+			public:
+				using Format = VkFormat;
+			public:
+				inline Attribute(const Size& location_, const Size& binding_, const Format& format_, const Size& offset_)
+				{
+					location = location_;
+					binding = binding_;
+					format = format_; // VkFormat::VK_FORMAT_R32G32_SFLOAT;
+					offset = offset_;
+				}
+			};
 		public:
 			using Handle = VkPipeline;
+			using Topology = VkPrimitiveTopology;
+			using Fill = VkPolygonMode;
+			using Cull = VkCullModeFlags;
+			using Culls = VkCullModeFlagBits;
+			using Face = VkFrontFace;
 		protected:
 			const Handle handle;
 		public:
@@ -1626,34 +2002,36 @@ namespace GreatVEngine
 				Device* device_,
 				PipelineCache* pipelineCache_, PipelineLayout* pipelineLayout_, RenderPass* renderPass_,
 				const Shaders& shaders_,
-				Vector<VkViewport> viewports, Vector<VkRect2D> scissors):
+				const Vector<Binding>& bindings_, const Vector<Attribute> attributes_,
+				Vector<VkViewport> viewports, Vector<VkRect2D> scissors,
+				const Topology& topology_, const Fill& fill_, const Cull& cull_, const Face& face_):
 				Dependent(device_),
 				handle([&]()
 				{
 					auto vk_pipelineShaderStageCreateInfos = shaders_.Get();
 
-					VkVertexInputBindingDescription vk_vertexInputBindingDescription;
-					{
-						vk_vertexInputBindingDescription.binding = 0;
-						vk_vertexInputBindingDescription.stride = sizeof(float)*2;
-						vk_vertexInputBindingDescription.inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
-					}
-					VkVertexInputAttributeDescription vk_vertexInputAttributeDescription;
-					{
-						vk_vertexInputAttributeDescription.location = 0;
-						vk_vertexInputAttributeDescription.binding = 0;
-						vk_vertexInputAttributeDescription.format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
-						vk_vertexInputAttributeDescription.offset = 0;
-					}
+					// VkVertexInputBindingDescription vk_vertexInputBindingDescription;
+					// {
+					// 	vk_vertexInputBindingDescription.binding = 0;
+					// 	vk_vertexInputBindingDescription.stride = sizeof(float)*2;
+					// 	vk_vertexInputBindingDescription.inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
+					// }
+					// VkVertexInputAttributeDescription vk_vertexInputAttributeDescription;
+					// {
+					// 	vk_vertexInputAttributeDescription.location = 0;
+					// 	vk_vertexInputAttributeDescription.binding = 0;
+					// 	vk_vertexInputAttributeDescription.format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
+					// 	vk_vertexInputAttributeDescription.offset = 0;
+					// }
 					VkPipelineVertexInputStateCreateInfo vk_pipelineVertexInputStateCreateInfo;
 					{
 						vk_pipelineVertexInputStateCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 						vk_pipelineVertexInputStateCreateInfo.pNext = nullptr;
 						vk_pipelineVertexInputStateCreateInfo.flags = 0;
-						vk_pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
-						vk_pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = &vk_vertexInputBindingDescription;
-						vk_pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = 1;
-						vk_pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = &vk_vertexInputAttributeDescription;
+						vk_pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = bindings_.size(); // 1;
+						vk_pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = bindings_.data(); // &vk_vertexInputBindingDescription;
+						vk_pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = attributes_.size(); // 1;
+						vk_pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = attributes_.data(); // &vk_vertexInputAttributeDescription;
 					}
 
 					VkPipelineInputAssemblyStateCreateInfo vk_pipelineInputAssemblyStateCreateInfo;
@@ -1661,7 +2039,7 @@ namespace GreatVEngine
 						vk_pipelineInputAssemblyStateCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 						vk_pipelineInputAssemblyStateCreateInfo.pNext = nullptr;
 						vk_pipelineInputAssemblyStateCreateInfo.flags = 0;
-						vk_pipelineInputAssemblyStateCreateInfo.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+						vk_pipelineInputAssemblyStateCreateInfo.topology = topology_; // VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 						vk_pipelineInputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
 					}
 
@@ -1683,9 +2061,9 @@ namespace GreatVEngine
 						vk_pipelineRasterizationStateCreateInfo.flags = 0;
 						vk_pipelineRasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
 						vk_pipelineRasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
-						vk_pipelineRasterizationStateCreateInfo.polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
-						vk_pipelineRasterizationStateCreateInfo.cullMode = VkCullModeFlagBits::VK_CULL_MODE_NONE;
-						vk_pipelineRasterizationStateCreateInfo.frontFace = VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
+						vk_pipelineRasterizationStateCreateInfo.polygonMode = fill_; //VkPolygonMode::VK_POLYGON_MODE_FILL;
+						vk_pipelineRasterizationStateCreateInfo.cullMode = cull_; //VkCullModeFlagBits::VK_CULL_MODE_NONE;
+						vk_pipelineRasterizationStateCreateInfo.frontFace = face_; //VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
 						vk_pipelineRasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
 						vk_pipelineRasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
 						vk_pipelineRasterizationStateCreateInfo.depthBiasClamp = 0.0f;
@@ -1742,9 +2120,9 @@ namespace GreatVEngine
 
 					VkPipelineColorBlendAttachmentState vk_pipelineColorBlendAttachmentState;
 					{
-						vk_pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
-						vk_pipelineColorBlendAttachmentState.srcColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE;
-						vk_pipelineColorBlendAttachmentState.dstColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE;
+						vk_pipelineColorBlendAttachmentState.blendEnable = VK_TRUE;
+						vk_pipelineColorBlendAttachmentState.srcColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA;
+						vk_pipelineColorBlendAttachmentState.dstColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 						vk_pipelineColorBlendAttachmentState.colorBlendOp = VkBlendOp::VK_BLEND_OP_ADD;
 						vk_pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE;
 						vk_pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE;

@@ -99,6 +99,15 @@ namespace GreatVEngine
 				} break;
 			}
 		}
+		inline Size GetVertexSize(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
+		{
+			switch(vertexPackMode_)
+			{
+				case VertexPackMode::Pos32F_TBN32F_Tex32F: return 4 * (3 + 3 * 3 + 2);
+				case VertexPackMode::Pos32F_TN16F_Tex32F: return  4 * (3 + 2) + 2 * (3 * 2);
+				default: throw Exception("nknown vertex packing mode");
+			}
+		}
 		inline Reference<Bytes> PackIndices(const IndexPackMode& indexPackMode_ = IndexPackMode::Default) const
 		{
 			switch(indexPackMode_)
@@ -124,6 +133,16 @@ namespace GreatVEngine
 				{
 					throw Exception("Not implemented");
 				} break;
+			}
+		}
+		inline Size GetIndexSize(const IndexPackMode& indexPackMode_ = IndexPackMode::Default) const
+		{
+			switch(indexPackMode_)
+			{
+				case IndexPackMode::UInt32: return 4;
+				case IndexPackMode::UInt16: return 2;
+				case IndexPackMode::UInt8: return 1;
+				default: throw Exception("nknown index packing mode");
 			}
 		}
 	};

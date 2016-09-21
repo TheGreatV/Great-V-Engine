@@ -1,6 +1,7 @@
 #include <Logic/Logic.hpp>
 #include <Infrastructure/Infrastructure.hpp>
 #include <APIs/OpenGL/OpenGL.hpp>
+#include <Utilities/OpenIL/Functions.hpp>
 
 namespace GVE = GreatVEngine;
 
@@ -34,14 +35,36 @@ void func()
 
 	auto geometry = Geometry::CreateBox(Vec3(10.0f), Vec3(1.0f), UVec3(50));
 
+	auto image = OpenIL::Image::Load2D("../../../../../Media/Images/image.png");
+
+	auto texture = MakeReference(new OpenGL::Texture(
+		graphicContext.get(),
+		image->GetWidth(), image->GetHeight(), image->GetDepth(),
+		OpenGL::Texture::Type::D2, OpenGL::Texture::InternalFormat::RGBA8,
+		OpenIL::GetOpenGLFormat(image->GetFormat()), OpenIL::GetOpenGLComponentType(image->GetComponentType()),
+		OpenGL::Texture::Wrap::Repeat, OpenGL::Texture::Filter::Linear, image->GetData()));
+	{
+		texture->Set(0);
+	}
 
 	auto shader1 = MakeReference(new OpenGL::Shader(
 		OpenGL::Shader::Type::Vertex,
-		"#version 330\n uniform mat4 modelViewProjectionMatrix; in vec3 vPos; void main(){ gl_Position = modelViewProjectionMatrix * vec4(vPos,1); }"));
+		"#version 330\n\
+		uniform mat4 modelViewProjectionMatrix;\
+		in vec3 vPos;\
+		in vec2 vTex;\
+		out vec2 pTex;\
+		void main(){\
+		pTex = vTex;\
+		gl_Position = modelViewProjectionMatrix * vec4(vPos,1); }"));
 
 	auto shader2 = MakeReference(new OpenGL::Shader(
 		OpenGL::Shader::Type::Fragment,
-		"#version 330\n out vec4 oColor; void main(){ oColor = vec4(0,1,0,1); }"));
+		"#version 330\n\
+		uniform sampler2D textureColor;\
+		in vec2 pTex;\
+		out vec4 oColor;\
+		void main(){ oColor = texture(textureColor, pTex); }"));
 
 	auto program = MakeReference(new OpenGL::Program(
 		graphicContext.get(), {
@@ -69,9 +92,13 @@ void func()
 		vertices.get(),
 		indices.get(), {
 		OpenGL::Buffers::Attribute::Data(
-		program->GetAttribute("vPos"),
-		OpenGL::Buffers::Attribute::Data::Type::Float32, 3, false,
-		sizeof(Float32)*(3 + 3 * 3 + 2), 0)
+			program->GetAttribute("vPos"),
+			OpenGL::Buffers::Attribute::Data::Type::Float32, 3, false,
+			sizeof(Float32)*(3 + 3 * 3 + 2), 0),
+		OpenGL::Buffers::Attribute::Data(
+			program->GetAttribute("vTex"),
+			OpenGL::Buffers::Attribute::Data::Type::Float32, 2, false,
+			sizeof(Float32)*(3 + 3 * 3 + 2), sizeof(Float32)*(3 + 3*3))
 	}));
 
 	while(!GetAsyncKeyState(VK_ESCAPE))
@@ -81,12 +108,13 @@ void func()
 		model.SetAngle(Vec3(0.0f, model.GetAngle().y + 1.0f, 0.0f));
 		program->SetMat4("modelViewProjectionMatrix", camera.GetVPMat() * model.GetMMat());
 
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_CULL_FACE);
+		glDisable(GL_DEPTH_TEST); OpenGL::DebugTest();
+		glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_CULL_FACE); glCullFace(GL_BACK); OpenGL::DebugTest(); //glDisable(GL_CULL_FACE);
 
 		glClearColor(1.0f, 0.0f, 0.0f, 1.0f); OpenGL::DebugTest();
 		glClear(GL_COLOR_BUFFER_BIT); OpenGL::DebugTest();
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		glViewport(0, 0, 800, 600); OpenGL::DebugTest();
 
@@ -117,6 +145,10 @@ int WINAPI				WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	catch(GVE::OpenGL::Exception e)
 	{
 		MessageBoxA(NULL, e.GetText().c_str(), "OpenGL Exception", MB_OK);
+	}
+	catch(GVE::OpenIL::Exception e)
+	{
+		MessageBoxA(NULL, e.GetText().c_str(), "OpenIL Exception", MB_OK);
 	}
 	catch(GVE::Exception e)
 	{

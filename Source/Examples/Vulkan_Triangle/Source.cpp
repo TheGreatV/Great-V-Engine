@@ -187,7 +187,7 @@ void func()
 		}
 	}
 
-	auto pipelineLayout = new Vulkan::PipelineLayout(vkDevice);
+	auto pipelineLayout = new Vulkan::PipelineLayout(vkDevice, {});
 	auto pipelineCache = new Vulkan::PipelineCache(vkDevice);
 	auto pipeline = new Vulkan::GraphicPipeline(
 		vkDevice, pipelineCache, pipelineLayout, renderPass,
@@ -197,8 +197,14 @@ void func()
 			nullptr, 
 			nullptr, 
 			shaderFragment),
+		{Vulkan::GraphicPipeline::Binding(0, sizeof(Float32)*2, Vulkan::GraphicPipeline::Binding::Rate::VK_VERTEX_INPUT_RATE_VERTEX)},
+		{Vulkan::GraphicPipeline::Attribute(0, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32_SFLOAT, 0)},
 		{VkViewport{0, 0, (Float32)surface->GetCapabilities().currentExtent.width, (Float32)surface->GetCapabilities().currentExtent.height, 0.0f, 1.0f}},
-		{VkRect2D{{0, 0}, surface->GetCapabilities().currentExtent}});
+		{VkRect2D{{0, 0}, surface->GetCapabilities().currentExtent}},
+		Vulkan::GraphicPipeline::Topology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		Vulkan::GraphicPipeline::Fill::VK_POLYGON_MODE_LINE,
+		Vulkan::GraphicPipeline::Culls::VK_CULL_MODE_NONE,
+		Vulkan::GraphicPipeline::Face::VK_FRONT_FACE_COUNTER_CLOCKWISE);
 
 	auto queue = new Vulkan::Queue(vkDevice, 0, 0);
 	auto commandPool = new Vulkan::CommandPool(vkDevice, 0);
@@ -258,7 +264,7 @@ void func()
 	for(auto &framebuffer : framebuffers) delete framebuffer;
 	for(auto &swapchainImageView : swapchainImageViews) delete swapchainImageView;
 	delete shaderVertex; delete shaderFragment;
-	delete vertexBuffer->GetSetDeviceMemory(); delete vertexBuffer;
+	delete vertexBuffer->GetDeviceMemory(); delete vertexBuffer;
 	delete renderPass;
 	delete swapchain;
 	delete surface;

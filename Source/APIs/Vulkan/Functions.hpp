@@ -83,6 +83,9 @@ namespace GreatVEngine
 		inline VkImageView										CreateImageView(VkDevice vk_device, VkImageViewCreateInfo* vk_imageViewCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
 		inline void												DestroyImageView(VkDevice vk_device, VkImageView vk_imageView, VkAllocationCallbacks* vk_allocationCallbacks);
 
+		inline VkSampler										CreateSampler(VkDevice vk_device, VkSamplerCreateInfo* vk_samplerCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
+		inline void												DestroySampler(VkDevice vk_device, VkSampler vk_sampler, VkAllocationCallbacks* vk_allocationCallbacks);
+
 		inline VkFramebuffer									CreateFramebuffer(VkDevice vk_device, VkFramebufferCreateInfo* vk_framebufferCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
 		inline void												DestroyFramebuffer(VkDevice vk_device, VkFramebuffer vk_framebuffer, VkAllocationCallbacks* vk_allocationCallbacks);
 
@@ -104,6 +107,13 @@ namespace GreatVEngine
 		inline void												DestroyPipelineLayout(VkDevice vk_device, VkPipelineLayout vk_pipelineLayout, VkAllocationCallbacks* vk_allocationCallbacks);
 		inline GreatVEngine::Vector<VkPipeline>					CreateGraphicsPipelines(VkDevice vk_device, VkPipelineCache vk_pipelineCache, std::vector<VkGraphicsPipelineCreateInfo>& vk_graphicsPipelineCreateInfos, VkAllocationCallbacks* vk_allocationCallbacks);
 		inline void												DestroyPipeline(VkDevice vk_device, VkPipeline vk_pipeline, VkAllocationCallbacks* vk_allocationCallbacks);
+
+		inline VkDescriptorSetLayout							CreateDescriptorSetLayout(VkDevice vk_device, VkDescriptorSetLayoutCreateInfo* vk_descriptorSetLayoutCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
+		inline void												DestroyDescriptorSetLayout(VkDevice vk_device, VkDescriptorSetLayout vk_descriptorSetLayout, VkAllocationCallbacks* vk_allocationCallbacks);
+		inline VkDescriptorPool									CreateDescriptorPool(VkDevice vk_device, VkDescriptorPoolCreateInfo* vk_descriptorPoolCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
+		inline void												DestroyDescriptorPool(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, VkAllocationCallbacks* vk_allocationCallbacks);
+		inline Vector<VkDescriptorSet>							AllocateDescriptorSets(VkDevice vk_device, VkDescriptorSetAllocateInfo* vk_descriptorSetAllocateInfo);
+		inline void												FreeDescriptorSets(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, const std::vector<VkDescriptorSet>& vk_descriptorSets);
 
 
 		inline uint32_t											GetCorrectMemoryType(const VkPhysicalDeviceMemoryProperties& vk_physicalDeviceMemoryProperties, uint32_t vk_memoryTypeBits, VkFlags flags);
@@ -461,6 +471,19 @@ inline void														GreatVEngine::Vulkan::DestroyImageView(VkDevice vk_devi
 	vkDestroyImageView(vk_device, vk_imageView, vk_allocationCallbacks);
 }
 
+inline VkSampler												GreatVEngine::Vulkan::CreateSampler(VkDevice vk_device, VkSamplerCreateInfo* vk_samplerCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	VkSampler vk_sampler;
+
+	ErrorTest(vkCreateSampler(vk_device, vk_samplerCreateInfo, vk_allocationCallbacks, &vk_sampler));
+
+	return vk_sampler;
+}
+inline void														GreatVEngine::Vulkan::DestroySampler(VkDevice vk_device, VkSampler vk_sampler, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	vkDestroySampler(vk_device, vk_sampler, vk_allocationCallbacks);
+}
+
 inline VkFramebuffer											GreatVEngine::Vulkan::CreateFramebuffer(VkDevice vk_device, VkFramebufferCreateInfo* vk_framebufferCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)
 {
 	VkFramebuffer vk_framebuffer;
@@ -576,6 +599,45 @@ inline GreatVEngine::Vector<VkPipeline>							GreatVEngine::Vulkan::CreateGraphi
 inline void														GreatVEngine::Vulkan::DestroyPipeline(VkDevice vk_device, VkPipeline vk_pipeline, VkAllocationCallbacks* vk_allocationCallbacks)
 {
 	vkDestroyPipeline(vk_device, vk_pipeline, vk_allocationCallbacks);
+}
+
+inline VkDescriptorSetLayout									GreatVEngine::Vulkan::CreateDescriptorSetLayout(VkDevice vk_device, VkDescriptorSetLayoutCreateInfo* vk_descriptorSetLayoutCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	VkDescriptorSetLayout vk_descriptorSetLayout;
+
+	ErrorTest(vkCreateDescriptorSetLayout(vk_device, vk_descriptorSetLayoutCreateInfo, vk_allocationCallbacks, &vk_descriptorSetLayout));
+
+	return vk_descriptorSetLayout;
+}
+inline void														GreatVEngine::Vulkan::DestroyDescriptorSetLayout(VkDevice vk_device, VkDescriptorSetLayout vk_descriptorSetLayout, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	vkDestroyDescriptorSetLayout(vk_device, vk_descriptorSetLayout, vk_allocationCallbacks);
+}
+
+inline VkDescriptorPool											GreatVEngine::Vulkan::CreateDescriptorPool(VkDevice vk_device, VkDescriptorPoolCreateInfo* vk_descriptorPoolCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	VkDescriptorPool vk_descriptorPool;
+
+	ErrorTest(vkCreateDescriptorPool(vk_device, vk_descriptorPoolCreateInfo, vk_allocationCallbacks, &vk_descriptorPool));
+
+	return vk_descriptorPool;
+}
+inline void														GreatVEngine::Vulkan::DestroyDescriptorPool(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	vkDestroyDescriptorPool(vk_device, vk_descriptorPool, vk_allocationCallbacks);
+}
+
+inline GreatVEngine::Vector<VkDescriptorSet>					GreatVEngine::Vulkan::AllocateDescriptorSets(VkDevice vk_device, VkDescriptorSetAllocateInfo* vk_descriptorSetAllocateInfo)
+{
+	Vector<VkDescriptorSet> vk_descriptorSets(vk_descriptorSetAllocateInfo->descriptorSetCount);
+
+	ErrorTest(vkAllocateDescriptorSets(vk_device, vk_descriptorSetAllocateInfo, vk_descriptorSets.data()));
+
+	return std::move(vk_descriptorSets);
+}
+inline void														GreatVEngine::Vulkan::FreeDescriptorSets(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, const std::vector<VkDescriptorSet>& vk_descriptorSets)
+{
+	vkFreeDescriptorSets(vk_device, vk_descriptorPool, vk_descriptorSets.size(), vk_descriptorSets.data());
 }
 
 

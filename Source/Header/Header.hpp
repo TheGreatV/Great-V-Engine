@@ -5,6 +5,8 @@
 
 #include <cstdint>
 #include <string>
+#include <locale>
+#include <codecvt>
 #include <memory>
 #include <array>
 #include <vector>
@@ -41,6 +43,14 @@ namespace GreatVEngine
 	template<class T> using Initializer = std::initializer_list<T>;
 
 	using String = std::string;
+	using WString = std::wstring;
+
+	inline WString ToWString(const String& source_)
+	{
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+
+		return converter.from_bytes(source_);
+	}
 
 	using Filename = String;
 

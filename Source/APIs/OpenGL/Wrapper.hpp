@@ -16,6 +16,8 @@ namespace GreatVEngine
 	{
 		class Shader;
 		class Program;
+		
+		class Texture;
 
 		class Buffer;
 		namespace Buffers
@@ -28,8 +30,17 @@ namespace GreatVEngine
 		class Context:
 			public Graphics::Context
 		{
+		protected:
+			Buffers::Array* currentBufferArray = nullptr;
+			Buffers::Index* currentBufferIndex = nullptr;
+			Buffers::Attribute* currentBufferAttribute = nullptr;
+			Vector<Texture*> currentTexture;
+			Program* currentProgram = nullptr;
 		public:
-			inline Context() = default;
+			inline Context(const Size& texturesCount_):
+				currentTexture(texturesCount_, nullptr)
+			{
+			}
 			inline Context(const Context&) = delete;
 			virtual ~Context() override = 0;
 		public:
@@ -37,11 +48,6 @@ namespace GreatVEngine
 		public:
 			virtual void Set() override = 0;
 			virtual void Reset() override = 0;
-		protected:
-			Buffers::Array* currentBufferArray = nullptr;
-			Buffers::Index* currentBufferIndex = nullptr;
-			Buffers::Attribute* currentBufferAttribute = nullptr;
-			Program* currentProgram = nullptr;
 		public:
 			inline void SetBufferArray(Buffers::Array* buffer_);
 			inline void ResetBufferArray(Buffers::Array* buffer_);
@@ -69,6 +75,17 @@ namespace GreatVEngine
 			inline Program* GetProgram() const
 			{
 				return currentProgram;
+			}
+		public:
+			inline Size GetTexturesCount() const
+			{
+				return currentTexture.size();
+			}
+			inline void SetTexture(const Size& slot_, Texture* texture_);
+			inline void ResetTexture(const Size& slot_, Texture* texture_);
+			inline Texture* GetTexture(const Size& slot_) const
+			{
+				return currentTexture[slot_];
 			}
 		};
 		class ContextDependent
@@ -247,6 +264,248 @@ namespace GreatVEngine
 				{
 					SetMat4(uniform, mat_);
 				}
+			}
+		};
+
+		class Texture:
+			public ContextDependent
+		{
+		public:
+			using Handle = GLuint;
+			using Data = void*;
+		public:
+			enum class Type: GLenum
+			{
+				D1								= GL_TEXTURE_1D,
+				D1Array							= GL_TEXTURE_1D_ARRAY,
+				D2								= GL_TEXTURE_2D,
+				D2Array							= GL_TEXTURE_2D_ARRAY,
+				D3								= GL_TEXTURE_3D,
+				Cube							= GL_TEXTURE_CUBE_MAP,
+				CubeArray						= GL_TEXTURE_CUBE_MAP_ARRAY
+			};
+			enum class InternalFormat: GLint
+			{
+				R8								= GL_R8,
+				R16								= GL_R16,
+				R16F							= GL_R16F,
+				R32F							= GL_R32F,
+				RG8								= GL_RG8,
+				RG16							= GL_RG16,
+				RG16F							= GL_RG16F,
+				RG32F							= GL_RG32F,
+				RGB8							= GL_RGB8,
+				RGB16							= GL_RGB16,
+				RGB16F							= GL_RGB16F,
+				RGB32F							= GL_RGB32F,
+				RGBA8							= GL_RGBA8,
+				RGBA16							= GL_RGBA16,
+				RGBA16F							= GL_RGBA16F,
+				RGBA32F							= GL_RGBA32F,
+
+				Depth16							= GL_DEPTH_COMPONENT16,
+				Depth24							= GL_DEPTH_COMPONENT24,
+				Depth32							= GL_DEPTH_COMPONENT32,
+				Depth32F						= GL_DEPTH_COMPONENT32F,
+
+				Depth24Stencil8					= GL_DEPTH24_STENCIL8,
+				Depth32FStencil8				= GL_DEPTH32F_STENCIL8
+			};
+			enum class Format: GLenum
+			{
+				R								= GL_RED,
+				G								= GL_GREEN,
+				B								= GL_BLUE,
+				A								= GL_ALPHA,
+				L								= GL_LUMINANCE,
+				RG								= GL_RG,
+				RGB								= GL_RGB,
+				BGR								= GL_BGR,
+				RGBA							= GL_RGBA,
+				BGRA							= GL_BGRA,
+				Depth							= GL_DEPTH_COMPONENT,
+				DepthStencil					= GL_DEPTH_STENCIL
+			};
+			enum class ComponentType: GLenum
+			{
+				SInt8							= GL_BYTE,
+				UInt8							= GL_UNSIGNED_BYTE,
+				SInt16							= GL_SHORT,
+				UInt16							= GL_UNSIGNED_SHORT,
+				SInt32							= GL_INT,
+				UInt32							= GL_UNSIGNED_INT,
+				SFloat16						= GL_HALF_FLOAT,
+				SFloat32						= GL_FLOAT,
+				UInt24_8						= GL_UNSIGNED_INT_24_8,
+
+				Byte							= SInt8,
+				UByte							= UInt8,
+				Short							= SInt16,
+				UShort							= UInt16,
+				Int								= SInt32,
+				UInt							= UInt32,
+				Half							= SFloat16,
+				Float							= SFloat32,
+			};
+			enum class Wrap: GLint
+			{
+				Clamp							= GL_CLAMP_TO_EDGE,
+				Repeat							= GL_REPEAT,
+				Border							= GL_CLAMP_TO_BORDER,
+				Mirror							= GL_MIRRORED_REPEAT
+			};
+			struct Filter
+			{
+			public:
+				enum class Minification: GLint
+				{
+					Off						= GL_NEAREST,
+					Linear					= GL_LINEAR,
+					MipmapNearestNearest	= GL_NEAREST_MIPMAP_NEAREST,
+					MipmapLinearNearest		= GL_LINEAR_MIPMAP_NEAREST,
+					MipmapNearestLinear		= GL_NEAREST_MIPMAP_LINEAR,
+					MipmapLinearLinear		= GL_LINEAR_MIPMAP_LINEAR,
+					Mipmap					= MipmapLinearLinear
+				};
+				enum class Magnification: GLint
+				{
+					Off						= GL_NEAREST,
+					Linear					= GL_LINEAR
+				};
+			public:
+				typedef Minification		Min;
+				typedef Magnification		Mag;
+			public:
+				Minification				min = Minification::Mipmap;
+				Magnification				mag = Magnification::Linear;
+			public:
+				inline Filter() = default;
+				inline Filter(const Filter&) = default;
+				inline Filter(const Minification& min_,const Magnification& mag_):
+					min(min_),mag(mag_)
+				{
+				}
+			public:
+				static const Filter			Off;
+				static const Filter			Linear;
+				static const Filter			Mipmap;
+			};
+		protected:
+			const Size width, height, depth;
+			const Type type;
+			const InternalFormat internalFormat;
+			const ComponentType componentType;
+			Wrap wrap;
+			Filter filter;
+			const Handle handle;
+		public:
+			inline Texture(
+				Context* context_,
+				const Size& width_, const Size& height_, const Size& depth_,
+				const Type& type_, const InternalFormat& internalFormat_, const Format& format_, const ComponentType& componentType_,
+				const Wrap& wrap_, const Filter& filter_, Data data_):
+				ContextDependent(context_),
+				width(width_), height(height_), depth(depth_),
+				type(type_), internalFormat(internalFormat_), componentType(componentType_),
+				wrap(wrap_), filter(filter_),
+				handle([&]()
+				{
+					Handle handle;
+
+					glGenTextures(1, &handle); DebugTest();
+					context->SetTexture(0, this);
+					//glBindTexture((GLenum)type, handle); DebugTest();
+
+					glTexParameteri((GLenum)type, GL_TEXTURE_MIN_FILTER, (GLint)filter.min); DebugTest();
+					glTexParameteri((GLenum)type, GL_TEXTURE_MAG_FILTER, (GLint)filter.mag); DebugTest();
+
+					glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_S, (GLint)wrap); DebugTest();
+					glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_T, (GLint)wrap); DebugTest();
+					glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_R, (GLint)wrap); DebugTest();
+
+					// glTexParameterfv((GLenum)type, GL_TEXTURE_BORDER_COLOR, );
+
+					switch(type)
+					{
+						case Type::D1:
+						{
+							glTexImage1D((GLenum)type, 0, (GLint)internalFormat, width, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
+						} break;
+						case Type::D2:
+						{
+							glTexImage2D((GLenum)type, 0, (GLint)internalFormat, width, height, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
+						} break;
+						case Type::D3:
+						{
+							glTexImage3D((GLenum)type, 0, (GLint)internalFormat, width, height, depth, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
+						} break;
+						case Type::Cube:
+						{
+							glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[0] : NULL); DebugTest();
+							glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[1] : NULL); DebugTest();
+							glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[2] : NULL); DebugTest();
+							glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[3] : NULL); DebugTest();
+							glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[4] : NULL); DebugTest();
+							glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[5] : NULL); DebugTest();
+						} break;
+						default: throw Exception("Unsupported texture type");
+					}
+
+					if(filter.min != Filter::Min::Off && filter.min != Filter::Min::Linear)
+					{
+						glGenerateMipmap((GLenum)type); DebugTest();
+					}
+
+					return handle;
+				}())
+			{
+			}
+			inline ~Texture();
+		public:
+			inline void Set(const Size& slot_)
+			{
+				context->SetTexture(slot_, this);
+			}
+			inline void Reset(const Size& slot_)
+			{
+				context->ResetTexture(slot_, this);
+			}
+		public:
+			inline Handle GetHandle() const
+			{
+				return handle;
+			}
+			inline Type GetType() const
+			{
+				return type;
+			}
+			inline Size GetWidth() const
+			{
+				return width;
+			}
+			inline Size GetHeight() const
+			{
+				return height;
+			}
+			inline Size GetDepth() const
+			{
+				return depth;
+			}
+			inline InternalFormat GetInternalFormat() const
+			{
+				return internalFormat;
+			}
+			inline ComponentType GetComponents() const
+			{
+				return componentType;
+			}
+			inline Wrap GetWrap() const
+			{
+				return wrap;
+			}
+			inline Filter GetFilter() const
+			{
+				return filter;
 			}
 		};
 
@@ -458,7 +717,7 @@ namespace GreatVEngine
 				public:
 					const Location location;
 					const Type type;
-					const Size components;
+					const Size componentType;
 					const bool isNormalized;
 					const Size stride;
 					const Size offset;
@@ -466,14 +725,14 @@ namespace GreatVEngine
 					inline Data(
 						const Location location_,
 						const Type type_,
-						const Size components_,
+						const Size componentType_,
 						const bool isNormalized_,
 						const Size stride_,
 						const Size offset_
 					):
 						location(location_),
 						type(type_),
-						components(components_),
+						componentType(componentType_),
 						isNormalized(isNormalized_),
 						stride(stride_),
 						offset(offset_)
@@ -515,7 +774,7 @@ namespace GreatVEngine
 						{
 							glVertexAttribPointer(
 								data.location,
-								data.components,
+								data.componentType,
 								(GLenum)data.type,
 								data.isNormalized,
 								data.stride,
@@ -619,6 +878,43 @@ inline void GreatVEngine::OpenGL::Context::ResetProgram(Program* program_)
 	{
 		currentProgram = nullptr;
 		glUseProgram(NULL); DebugTest();
+	}
+}
+inline void GreatVEngine::OpenGL::Context::SetTexture(const Size& slot_, Texture* texture_)
+{
+	if(currentTexture[slot_] != texture_)
+	{
+		glActiveTexture(GL_TEXTURE0 + slot_); DebugTest();
+
+		if(texture_)
+		{
+			glBindTexture((GLenum)texture_->GetType(), texture_->GetHandle()); DebugTest();
+		}
+		else
+		{
+			glBindTexture((GLenum)currentTexture[slot_]->GetType(), 0); DebugTest();
+		}
+
+		currentTexture[slot_] = texture_;
+	}
+}
+inline void GreatVEngine::OpenGL::Context::ResetTexture(const Size& slot_, Texture* texture_)
+{
+	if(currentTexture[slot_] == texture_ && texture_)
+	{
+		glActiveTexture(GL_TEXTURE0 + slot_); DebugTest();
+		glBindTexture((GLenum)currentTexture[slot_]->GetType(), 0); DebugTest();
+
+		currentTexture[slot_] = nullptr;
+	}
+}
+#pragma endregion
+#pragma region Texture
+inline GreatVEngine::OpenGL::Texture::~Texture()
+{
+	for(Size i = 0; i < context->GetTexturesCount(); ++i)
+	{
+		context->ResetTexture(i, this);
 	}
 }
 #pragma endregion

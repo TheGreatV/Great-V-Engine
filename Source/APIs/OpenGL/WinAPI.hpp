@@ -59,6 +59,8 @@ namespace GreatVEngine
 				class Initer
 				{
 				public:
+					Size texturesCount;
+				public:
 					Initer();
 				};
 			private:

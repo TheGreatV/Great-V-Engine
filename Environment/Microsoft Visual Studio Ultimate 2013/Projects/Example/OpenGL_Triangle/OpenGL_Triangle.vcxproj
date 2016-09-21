@@ -20,14 +20,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -35,7 +35,9 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\Properties\Great V Project.props" />
-    <Import Project="..\..\..\Properties\Great V External User.props" />
+    <Import Project="..\..\..\Properties\Great V External User - Half.props" />
+    <Import Project="..\..\..\Properties\Great V External User - GLM.props" />
+    <Import Project="..\..\..\Properties\Great V External User - OpenGL.props" />
     <Import Project="..\..\..\Properties\Great V Static Library User.props" />
     <Import Project="..\..\..\Properties\Great V API User - OpenGL.props" />
     <Import Project="..\..\..\Properties\Great V API User - WinAPI.props" />
@@ -43,7 +45,9 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\Properties\Great V Project.props" />
-    <Import Project="..\..\..\Properties\Great V External User.props" />
+    <Import Project="..\..\..\Properties\Great V External User - Half.props" />
+    <Import Project="..\..\..\Properties\Great V External User - GLM.props" />
+    <Import Project="..\..\..\Properties\Great V External User - OpenGL.props" />
     <Import Project="..\..\..\Properties\Great V Static Library User.props" />
     <Import Project="..\..\..\Properties\Great V API User - OpenGL.props" />
     <Import Project="..\..\..\Properties\Great V API User - WinAPI.props" />

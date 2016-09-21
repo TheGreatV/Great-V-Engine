@@ -8,7 +8,7 @@
 
 #pragma region Context
 GreatVEngine::OpenGL::WinAPI::Context::Context(Reference<DeviceContext> deviceContext_):
-	OpenGL::Context(),
+	OpenGL::Context(32),
 	deviceContext(deviceContext_),
 	handle(wglCreateContext(deviceContext->GetHandle()))
 {
@@ -52,6 +52,12 @@ GreatVEngine::OpenGL::WinAPI::ExtendedContext::Initer::Initer()
 	auto context = MakeReference(new WinAPI::Context(deviceContext));
 	context->Set();
 
+	texturesCount;
+	{
+		GLint value;
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &value);
+		texturesCount = (Size)value;
+	}
 
 	GVE_OPENGL_GET_PROC(wglCreateContextAttribsARB);
 
@@ -184,7 +190,7 @@ const GLint GreatVEngine::OpenGL::WinAPI::ExtendedContext::attribs[] = {
 };
 
 GreatVEngine::OpenGL::WinAPI::ExtendedContext::ExtendedContext(Reference<DeviceContext> deviceContext_):
-	OpenGL::Context(),
+	OpenGL::Context(initer.texturesCount),
 	deviceContext(deviceContext_),
 	handle(wglCreateContextAttribsARB(deviceContext->GetHandle(), nullptr, attribs))
 {
