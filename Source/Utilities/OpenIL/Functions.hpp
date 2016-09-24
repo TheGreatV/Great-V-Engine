@@ -9,7 +9,8 @@
 #include "ErrorHandling.hpp"
 
 
-#include <APIs/OpenGL/Wrapper.hpp>
+// #include <APIs/OpenGL/Wrapper.hpp>
+// #include <APIs/Vulkan/Wrapper.hpp>
 #pragma endregion
 
 
@@ -55,7 +56,8 @@ namespace GreatVEngine
 			using Handle = ILuint;
 			using Filename = std::string;
 			using Size = std::size_t;
-			using Data = void*;
+			using RawData = std::uint8_t*;
+			using Data = Vector<std::uint8_t>;
 		public:
 			enum class ComponentType: GLenum
 			{
@@ -81,8 +83,10 @@ namespace GreatVEngine
 			};
 			enum class Format: GLenum
 			{
-				RGB				= GL_RGB,
-				RGBA			= GL_RGBA,
+				RGB				= IL_RGB, // GL_RGB,
+				BGR				= IL_BGR, // GL_BGR,
+				RGBA			= IL_RGBA, //GL_RGBA,
+				BGRA			= IL_BGRA, //GL_BGRA,
 			};
 			enum class Origin
 			{
@@ -92,16 +96,16 @@ namespace GreatVEngine
 		public:
 			inline static Reference<Image> Load2D(const Filename& filename) throw(...);
 		protected:
-			Size width;
-			Size height;
-			Size depth;
-			Format format;
-			ComponentType componentType;
-			Size bytesPerPixel;
-			Size bitsPerPixel;
-			Size mipmapsCount;
-			Origin originMode;
-			Data data;
+			const Size width;
+			const Size height;
+			const Size depth;
+			const Format format;
+			const ComponentType componentType;
+			const Size bytesPerPixel;
+			const Size bitsPerPixel;
+			const Size mipmapsCount;
+			const Origin originMode;
+			const Data data;
 		public:
 			inline Image(
 				const Size&				width_,
@@ -115,11 +119,11 @@ namespace GreatVEngine
 				const Origin&			originMode_,
 				const Data&				data_
 			);
-		public:
-			inline ~Image();
+			inline ~Image() = default;
 		public:
 			inline void Flip()
 			{
+				auto p = data.data();
 				auto d = bytesPerPixel * width;
 				auto t = malloc(d);
 
@@ -127,8 +131,8 @@ namespace GreatVEngine
 				{
 					for(Size y = 0; y < height / 2; ++y)
 					{
-						auto m1 = (std::uint8_t*)data + ((y + z*height)*width) * bytesPerPixel;
-						auto m2 = (std::uint8_t*)data + (((height - 1 - y) + z*height)*width) * bytesPerPixel;
+						auto m1 = (std::uint8_t*)p + ((y + z*height)*width) * bytesPerPixel;
+						auto m2 = (std::uint8_t*)p + (((height - 1 - y) + z*height)*width) * bytesPerPixel;
 						memcpy(t, m1, d);
 						memcpy(m1, m2, d);
 						memcpy(m2, t, d);
@@ -176,36 +180,87 @@ namespace GreatVEngine
 			{
 				return originMode;
 			}
-			inline Data GetData() const
+			inline const Data& GetData() const
 			{
 				return data;
 			}
+			inline RawData GetRawData() const
+			{
+				return (RawData)data.data();
+			}
 		};
 
-		inline OpenGL::Texture::Format GetOpenGLFormat(const Image::Format& format_)
+		inline Format GetFormat(const Image::Format& format_, const Image::ComponentType& componentType_)
 		{
 			switch(format_)
 			{
-				case GreatVEngine::OpenIL::Image::Format::RGB: return OpenGL::Texture::Format::RGB;
-				case GreatVEngine::OpenIL::Image::Format::RGBA: return OpenGL::Texture::Format::RGBA;
-				default: throw Exception("Unknown format");
+				case GreatVEngine::OpenIL::Image::Format::RGB:
+				{
+					switch(componentType_)
+					{
+						case GreatVEngine::OpenIL::Image::ComponentType::UInt8: return Format::R8G8B8_UInt;
+						case GreatVEngine::OpenIL::Image::ComponentType::SFloat32: return Format::R32G32B32_SFloat;
+						default: throw Exception("Unsupported component type");
+					}
+				} break;
+				case GreatVEngine::OpenIL::Image::Format::BGR:
+				{
+					switch(componentType_)
+					{
+						case GreatVEngine::OpenIL::Image::ComponentType::UInt8: return Format::B8G8R8_UInt;
+						default: throw Exception("Unsupported component type");
+					}
+				} break;
+				case GreatVEngine::OpenIL::Image::Format::RGBA:
+				{
+					switch(componentType_)
+					{
+						case GreatVEngine::OpenIL::Image::ComponentType::UInt8: return Format::R8G8B8A8_UInt;
+						case GreatVEngine::OpenIL::Image::ComponentType::SFloat32: return Format::R32G32B32A32_SFloat;
+						default: throw Exception("Unsupported component type");
+					}
+				} break;
+				case GreatVEngine::OpenIL::Image::Format::BGRA:
+				{
+					switch(componentType_)
+					{
+						case GreatVEngine::OpenIL::Image::ComponentType::UInt8: return Format::B8G8R8A8_UInt;
+						default: throw Exception("Unsupported component type");
+					}
+				} break;
+				default: throw Exception("Unsupported format");
 			}
 		}
-		inline OpenGL::Texture::ComponentType GetOpenGLComponentType(const Image::ComponentType& componentType_)
+		inline Image::Format GetFormat(const Format& format_)
 		{
-			switch(componentType_)
+			switch(format_)
 			{
-				case GreatVEngine::OpenIL::Image::ComponentType::SInt8: return OpenGL::Texture::ComponentType::SInt8;
-				case GreatVEngine::OpenIL::Image::ComponentType::UInt8: return OpenGL::Texture::ComponentType::UInt8;
-				case GreatVEngine::OpenIL::Image::ComponentType::SInt16: return OpenGL::Texture::ComponentType::SInt16;
-				case GreatVEngine::OpenIL::Image::ComponentType::UInt16: return OpenGL::Texture::ComponentType::UInt16;
-				case GreatVEngine::OpenIL::Image::ComponentType::SInt32: return OpenGL::Texture::ComponentType::SInt32;
-				case GreatVEngine::OpenIL::Image::ComponentType::UInt32: return OpenGL::Texture::ComponentType::UInt32;
-				case GreatVEngine::OpenIL::Image::ComponentType::SFloat32: return OpenGL::Texture::ComponentType::SFloat32;
-				case GreatVEngine::OpenIL::Image::ComponentType::Data8: return OpenGL::Texture::ComponentType::UInt8;
-				case GreatVEngine::OpenIL::Image::ComponentType::Data16: return OpenGL::Texture::ComponentType::UInt16;
-				case GreatVEngine::OpenIL::Image::ComponentType::Data32: return OpenGL::Texture::ComponentType::UInt32;
-				default: throw Exception("Unknown component type");
+				case GreatVEngine::Format::R8G8B8_UInt:
+				case GreatVEngine::Format::R32G32B32_SFloat:
+					return Image::Format::RGB;
+				case GreatVEngine::Format::R8G8B8A8_UInt:
+				case GreatVEngine::Format::R32G32B32A32_SFloat:
+					return Image::Format::RGBA;
+				case GreatVEngine::Format::B8G8R8_UInt:
+					return Image::Format::BGR;
+				case GreatVEngine::Format::B8G8R8A8_UInt:
+					return Image::Format::BGRA;
+				default: throw Exception("Unsupported format");
+			}
+		}
+		inline Image::ComponentType GetComponentType(const Format& format_)
+		{
+			switch(format_)
+			{
+				case GreatVEngine::Format::R8G8B8_UInt: 
+				case GreatVEngine::Format::R8G8B8A8_UInt:
+				case GreatVEngine::Format::B8G8R8_UInt:
+				case GreatVEngine::Format::B8G8R8A8_UInt:
+					return Image::ComponentType::UInt8;
+				case GreatVEngine::Format::R32G32B32_SFloat: 
+				case GreatVEngine::Format::R32G32B32A32_SFloat:
+					return Image::ComponentType::SFloat32;
+				default: throw Exception("Unsupported format");
 			}
 		}
 	}
@@ -217,8 +272,6 @@ GreatVEngine::OpenIL::Initer GreatVEngine::OpenIL::Initer::initer;
 
 inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL::Image::Load2D(const Filename& filename)
 {
-	// initer.Initer::Initer();
-
 	Handle handle = ilGenImage(); ErrorTest();
 	ilBindImage(handle); ErrorTest();
 
@@ -252,7 +305,9 @@ inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL
 			switch(format)
 			{
 				case GreatVEngine::OpenIL::Image::Format::RGB:
+				case GreatVEngine::OpenIL::Image::Format::BGR:
 				case GreatVEngine::OpenIL::Image::Format::RGBA:
+				case GreatVEngine::OpenIL::Image::Format::BGRA:
 					break;
 				default:
 					throw Exception("Invalid component format: " + (decltype(ilFormat))format);
@@ -293,7 +348,11 @@ inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL
 			ilOriginMode == IL_ORIGIN_UPPER_LEFT ? Origin::UpperLeft :
 			throw Exception("Invalid origin mode: " + std::to_string(ilOriginMode));
 
-		Data data = ilData != nullptr ? ilData :
+		Size dataSize = ilDataSize >= 0 ?
+			(Size)ilDataSize :
+			throw Exception("Data size is invalid");
+
+		RawData data = ilData != nullptr ? ilData :
 			throw Exception("Invalid data(null)");
 
 		auto image = new Image(
@@ -306,7 +365,7 @@ inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL
 			bitsPerPixel,
 			mipmapsCount,
 			originMode,
-			data
+			Data(data, data + dataSize)
 		);
 
 		try
@@ -352,13 +411,9 @@ inline GreatVEngine::OpenIL::Image::Image(
 	bitsPerPixel(bitsPerPixel_),
 	mipmapsCount(mipmapsCount_),
 	originMode(originMode_),
-	data(malloc(bytesPerPixel*width*height*depth))
+	data(data_) // data(malloc(bytesPerPixel*width*height*depth))
 {
-	memcpy(data, data_, bytesPerPixel*width*height*depth);
-}
-inline GreatVEngine::OpenIL::Image::~Image()
-{
-	free(data);
+	// memcpy(data, data_, bytesPerPixel*width*height*depth);
 }
 
 inline void GreatVEngine::OpenIL::Image::Save2D(const Filename & filename) const
@@ -376,7 +431,7 @@ inline void GreatVEngine::OpenIL::Image::Save2D(const Filename & filename) const
 		}
 	}
 
-	ilTexImage(width, height, depth, ilComponentCount, (ILenum)format, (ILenum)componentType, data); ErrorTest();
+	ilTexImage(width, height, depth, ilComponentCount, (ILenum)format, (ILenum)componentType, (void*)data.data()); ErrorTest();
 
 	// ilSetInteger(IL_IMAGE_WIDTH, (ILint)width); ErrorTest();
 	// ilSetInteger(IL_IMAGE_HEIGHT, (ILint)height); ErrorTest();

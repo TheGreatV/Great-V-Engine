@@ -30,9 +30,6 @@
     <ClCompile Include="..\..\..\..\..\..\Source\APIs\OpenGL\WinAPI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Source\APIs\OpenGL\Infrastructure.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\..\..\Source\APIs\OpenGL\Wrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,9 +48,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\..\Source\APIs\OpenGL\WinAPI.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Source\APIs\OpenGL\Infrastructure.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\..\Source\APIs\OpenGL\Wrapper.hpp">

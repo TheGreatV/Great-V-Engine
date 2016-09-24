@@ -59,11 +59,16 @@ void func()
 		Vec3(1.0f));
 
 	auto geometry = Geometry::CreateBox(Vec3(10.0f), Vec3(1.0f), UVec3(50));
-	auto dataVertices = geometry->PackVertices();
-	auto dataIndices = geometry->PackIndices();
+	auto dataVertices = geometry->GetVertices();
+	auto dataIndices = geometry->GetIndices();
 
-	auto image = OpenIL::Image::Load2D("../../../../../Media/Images/image.png");
-
+	auto image = OpenIL::Image::Load2D("../../../../../Media/Images/Brick1_D.png");
+	{
+		if(image->GetOriginMode() != OpenIL::Image::Origin::LowerLeft)
+		{
+			image->Flip();
+		}
+	}
 
 	auto vkInstance = [&]()
 	{
@@ -81,7 +86,7 @@ void func()
 
 		instance->Subscribe_OnDebug([](String message)
 		{
-			cout << message << endl;
+			// cout << message << endl;
 			Log::Write(message + "\n");
 		});
 
@@ -109,7 +114,6 @@ void func()
 		return new Vulkan::Device(physicalDevice, layersNames, extensionsNames);
 	}();
 
-
 	auto surface = new Vulkan::SurfaceKHR(physicalDevice, winInstance->GetHangle(), window->GetHandle());
 	auto swapchain = new Vulkan::SwapchainKHR(vkDevice, surface, surface->GetCapabilities().currentExtent, surface->GetFormats()[0].format, surface->GetFormats()[0].colorSpace);
 	auto swapchainImages = swapchain->GetImages();
@@ -126,14 +130,32 @@ void func()
 
 	auto imageTexture = new Vulkan::Image(
 		vkDevice, {image->GetWidth(), image->GetHeight(), 1}, Vulkan::Image::Type::VK_IMAGE_TYPE_2D,
-		Vulkan::Image::Format::VK_FORMAT_R8G8B8A8_UNORM, Vulkan::Image::UsageBits::VK_IMAGE_USAGE_SAMPLED_BIT,
+		
+		// Vulkan::Image::Format::VK_FORMAT_R8G8B8A8_UNORM, // OpenIL::GetVulkanFormat(image->GetFormat(), image->GetComponentType()),
+		Vulkan::GetFormat(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
+		
+		Vulkan::Image::UsageBits::VK_IMAGE_USAGE_SAMPLED_BIT,
 		Vulkan::Image::Tiling::VK_IMAGE_TILING_LINEAR, Vulkan::Image::Layout::VK_IMAGE_LAYOUT_PREINITIALIZED);
 	{
 		auto memory = new Vulkan::DeviceMemory(imageTexture, Vulkan::DeviceMemory::Properties::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		{
 			auto data = memory->Map();
 			{
-				memcpy(data, image->GetData(), image->GetBytesPerPixel()*image->GetWidth()*image->GetHeight());
+				auto usedFormat = Vulkan::GetFormat(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType()));
+
+				if(usedFormat != imageTexture->GetFormat())
+				{
+					auto transformedData = Vulkan::Image::TransformData(
+						image->GetData(),
+						usedFormat,
+						imageTexture->GetFormat());
+				
+					memcpy(data, transformedData.data(), memory->GetSize());
+				}
+				else
+				{
+					memcpy(data, image->GetRawData(), image->GetBytesPerPixel()*image->GetWidth()*image->GetHeight());
+				}
 			}
 			memory->Unmap();
 		}
@@ -286,7 +308,7 @@ void func()
 			swapchainImageViews[i] = new Vulkan::ImageView(vkDevice, swapchainImages[i], Vulkan::ImageView::Type::VK_IMAGE_VIEW_TYPE_2D);
 			framebuffers[i] = new Vulkan::Framebuffer(
 				vkDevice, renderPass,
-				{swapchainImageViews[i]->GetBasicImage()->GetSize().width, swapchainImageViews[i]->GetBasicImage()->GetSize().height},
+				{swapchainImageViews[i]->GetBasicImage()->GetExtent().width, swapchainImageViews[i]->GetBasicImage()->GetExtent().height},
 				{swapchainImageViews[i], imageViewDepth});
 		}
 	}
@@ -367,15 +389,41 @@ void func()
 		{Vulkan::GraphicPipeline::Binding(0, geometry->GetVertexSize(), Vulkan::GraphicPipeline::Binding::Rate::VK_VERTEX_INPUT_RATE_VERTEX)},
 		{Vulkan::GraphicPipeline::Attribute(0, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32B32_SFLOAT, 0),
 		Vulkan::GraphicPipeline::Attribute(1, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32_SFLOAT, sizeof(Float32)*3*4)},
-		{VkViewport{0, 0, (Float32)surface->GetCapabilities().currentExtent.width, (Float32)surface->GetCapabilities().currentExtent.height, 0.0f, 1.0f}},
-		{VkRect2D{{0, 0}, surface->GetCapabilities().currentExtent}},
+		{VkViewport{0, 0, (Float32)surface->GetCapabilities().currentExtent.width, (Float32)surface->GetCapabilities().currentExtent.height, 1.0f, 0.0f}},
+		{VkRect2D{{0, 0}, {surface->GetCapabilities().currentExtent.width, surface->GetCapabilities().currentExtent.height}}},
 		Vulkan::GraphicPipeline::Topology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 		Vulkan::GraphicPipeline::Fill::VK_POLYGON_MODE_FILL,
 		Vulkan::GraphicPipeline::Culls::VK_CULL_MODE_BACK_BIT,
-		Vulkan::GraphicPipeline::Face::VK_FRONT_FACE_COUNTER_CLOCKWISE);
+		Vulkan::GraphicPipeline::Face::VK_FRONT_FACE_COUNTER_CLOCKWISE,
+		Vulkan::GraphicPipeline::DepthState(true, true, false, Vulkan::GraphicPipeline::DepthState::Operation::VK_COMPARE_OP_LESS),
+		Vulkan::GraphicPipeline::BlendState(
+			false, Vulkan::GraphicPipeline::BlendState::Logic::VK_LOGIC_OP_AND,
+			Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+			{
+				Vulkan::GraphicPipeline::BlendState::Attachment(
+					true,
+					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_SRC_ALPHA,
+					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_ONE,
+					Vulkan::GraphicPipeline::BlendState::Operation::VK_BLEND_OP_ADD,
+					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_ZERO,
+					Vulkan::GraphicPipeline::BlendState::Operation::VK_BLEND_OP_ADD)
+			}
+	));
+
 
 	auto queue = new Vulkan::Queue(vkDevice, 0, 0);
 	auto commandPool = new Vulkan::CommandPool(vkDevice, 0);
+
+	auto t = new Vulkan::CommandBuffer(commandPool, Vulkan::CommandBuffer::Level::Secondary);
+	{
+		t->Record(nullptr, 0, nullptr, {
+			new Vulkan::Commands::BindGraphicPipeline(pipeline),
+		});
+
+		delete t;
+	}
+
 	auto commandBuffers = [&]()
 	{
 		Vector<Vulkan::CommandBuffer*> commandBuffers(2);
@@ -392,7 +440,7 @@ void func()
 				renderPass, framebuffer, Vulkan::Commands::RenderPass::Content::VK_SUBPASS_CONTENTS_INLINE,
 				{{0, 0}, surface->GetCapabilities().currentExtent}, {
 					{1.0f, 0.0f, 0.0f, 1.0f},
-					{0.0f, 0}
+					{1.0f, 0}
 				}, {
 					new Vulkan::Commands::BindGraphicPipeline(pipeline),
 					new Vulkan::Commands::BindVertexBuffers({bufferVertices}, {0}),
@@ -418,7 +466,7 @@ void func()
 
 		auto memory = bufferUniforms->GetDeviceMemory();
 		{
-			auto mat = Scale4(Vec3(1.0f, 1.0f, -1.0f)) * camera.GetVPMat() * model.GetMMat();
+			auto mat = camera.GetVPMat() * model.GetMMat();
 
 			auto data = memory->Map<Float32>();
 			{

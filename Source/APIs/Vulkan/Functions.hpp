@@ -28,6 +28,7 @@ namespace GreatVEngine
 		inline VkPhysicalDeviceProperties						GetPhysicalDeviceProperties(VkPhysicalDevice vk_physicalDevice);
 		inline Vector<VkQueueFamilyProperties>					GetPhysicalDeviceQueueFamilyProperties(VkPhysicalDevice vk_physicalDevice);
 		inline VkPhysicalDeviceMemoryProperties					GetPhysicalDeviceMemoryProperties(VkPhysicalDevice vk_physicalDevice);
+		inline VkImageFormatProperties							GetPhysicalDeviceImageFormatProperties(VkPhysicalDevice vk_physicalDevice, VkFormat vk_format, VkImageType vkImageType, VkImageTiling vk_imageTiling, VkImageUsageFlags vk_imageUsageFlags, VkImageCreateFlags vk_imageCreateFlags);
 
 		inline VkDevice											CreateDevice(VkPhysicalDevice vk_physicalDevice, VkDeviceCreateInfo* vk_deviceCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
 		inline void												DestroyDevice(VkDevice vk_device, VkAllocationCallbacks* vk_allocationCallbacks);
@@ -191,6 +192,14 @@ inline VkPhysicalDeviceMemoryProperties							GreatVEngine::Vulkan::GetPhysicalD
 	vkGetPhysicalDeviceMemoryProperties(vk_physicalDevice, &vk_physicalDeviceMemoryProperties);
 
 	return vk_physicalDeviceMemoryProperties;
+}
+inline VkImageFormatProperties									GreatVEngine::Vulkan::GetPhysicalDeviceImageFormatProperties(VkPhysicalDevice vk_physicalDevice, VkFormat vk_format, VkImageType vkImageType, VkImageTiling vk_imageTiling, VkImageUsageFlags vk_imageUsageFlags, VkImageCreateFlags vk_imageCreateFlags)
+{
+	VkImageFormatProperties vk_imageFormatProperties;
+
+	ErrorTest(vkGetPhysicalDeviceImageFormatProperties(vk_physicalDevice, vk_format, vkImageType, vk_imageTiling, vk_imageUsageFlags, vk_imageCreateFlags, &vk_imageFormatProperties));
+
+	return vk_imageFormatProperties;
 }
 
 inline VkDevice													GreatVEngine::Vulkan::CreateDevice(VkPhysicalDevice vk_physicalDevice, VkDeviceCreateInfo* vk_deviceCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)

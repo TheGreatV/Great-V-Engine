@@ -33,15 +33,13 @@ namespace GreatVEngine
 			virtual ~Scene() = default;
 		public:
 			inline Scene& operator = (const Scene&) = delete;
-		public:
-			virtual Link<Context> GetContext() const = 0;
 		};
 
 		//	Logic of material rendering
 		class Technique
 		{
 		public:
-			inline static Reference<Technique> Load(const Filename& filename_);
+			// inline static Reference<Technique> Load(const Filename& filename_);
 		public:
 			inline Technique() = default;
 			inline ~Technique() = default;
@@ -50,7 +48,7 @@ namespace GreatVEngine
 		class Map
 		{
 		public:
-			inline static Reference<Map> Load(const Filename& filename_);
+			// inline static Reference<Map> Load(const Filename& filename_);
 		public:
 			inline Map() = default;
 			inline ~Map() = default;
@@ -114,10 +112,16 @@ namespace GreatVEngine
 		};
 
 		class Camera:
-			public Helper::Transformation::Dimension3::ViewMatrix
+			public Helper::Transformation::Dimension3::ViewProjectionMatrix
 		{
 		public:
-			inline Camera() = default;
+			inline Camera():
+				ViewProjectionMatrix(
+					Vec3(0.0f),
+					Vec3(0.0f),
+					Helper::Transformation::Dimension3::Projection::Params::Perspective(60.0f, 4.0f / 3.0f, 0.1f, 1000.0f))
+			{
+			}
 			inline Camera(const Camera&) = default;
 			inline ~Camera() = default;
 		public:
@@ -129,11 +133,30 @@ namespace GreatVEngine
 			public Helper::Logic::Visible,
 			public Helper::Logic::Color,
 			public Helper::Transformation::Dimension3::HierarchyMatrix,
-			public Helper::Subscrption::Destruction
+			public Helper::Subscrption::OnDestructionAction
 		{
 		public:
-			inline Object() = default;
+			using OnModelChange =  Helper::Subscrption::OnAction<Reference<Model>>;
+		public:
+			inline Object():
+				Visible(true),
+				Color(Vec4(1.0f)),
+				HierarchyMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f), nullptr),
+				OnDestructionAction()
+			{
+			}
 			inline ~Object() = default;
+		protected:
+			OnModelChange onModelChange;
+		public:
+			inline void Subscribe_OnModelChange(void* data_, OnModelChange::Subscriber subscriber_)
+			{
+				onModelChange += {data_, subscriber_};
+			}
+			inline void Unsubscribe_OnModelChange(void* data_, OnModelChange::Subscriber subscriber_)
+			{
+				onModelChange -= {data_, subscriber_};
+			}
 		};
 
 		class Light

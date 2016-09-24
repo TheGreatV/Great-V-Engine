@@ -16,5 +16,6 @@ void main()
 	
 	gl_Position = modelMatrix * vec4(vPos, 1.0f);
 	// gl_Position.xyz /= gl_Position.w;
-	gl_Position.y *= -1.0f;
+	gl_Position.y = -gl_Position.y;
+	gl_Position.z = -gl_Position.z;
 }

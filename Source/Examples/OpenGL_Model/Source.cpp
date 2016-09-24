@@ -41,8 +41,9 @@ void func()
 		graphicContext.get(),
 		image->GetWidth(), image->GetHeight(), image->GetDepth(),
 		OpenGL::Texture::Type::D2, OpenGL::Texture::InternalFormat::RGBA8,
-		OpenIL::GetOpenGLFormat(image->GetFormat()), OpenIL::GetOpenGLComponentType(image->GetComponentType()),
-		OpenGL::Texture::Wrap::Repeat, OpenGL::Texture::Filter::Linear, image->GetData()));
+		OpenGL::GetFormat(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())), 
+		OpenGL::GetComponentType(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
+		OpenGL::Texture::Wrap::Repeat, OpenGL::Texture::Filter::Linear, image->GetRawData()));
 	{
 		texture->Set(0);
 	}
@@ -74,8 +75,8 @@ void func()
 		program->Set();
 	}
 
-	auto dataVertices = geometry->PackVertices();
-	auto dataIndices = geometry->PackIndices();
+	auto dataVertices = geometry->GetVertices();
+	auto dataIndices = geometry->GetIndices();
 
 	auto vertices = MakeReference(new OpenGL::Buffers::Array(graphicContext.get(), *dataVertices.get()));
 	{

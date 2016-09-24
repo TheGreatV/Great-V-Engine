@@ -5,7 +5,6 @@
 #include "ErrorHandling.hpp"
 #include "Functions.hpp"
 #include "WinAPI.hpp"
-#include "Infrastructure.hpp"
 #pragma endregion
 
 

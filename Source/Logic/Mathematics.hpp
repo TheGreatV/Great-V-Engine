@@ -32,6 +32,9 @@ namespace GreatVEngine
 	using Float32		= std::float_t;
 	using Float64		= std::double_t;
 
+	using Size2			= glm::tvec2<Size, glm::highp>;
+	using Size3			= glm::tvec3<Size, glm::highp>;
+	using Size4			= glm::tvec4<Size, glm::highp>;
 	using Vec2			= glm::vec2;
 	using Vec3			= glm::vec3;
 	using Vec4			= glm::vec4;
@@ -52,6 +55,11 @@ namespace GreatVEngine
 	using Mat3			= glm::mat3;
 	using Mat4			= glm::mat4;
 
+
+	inline Vec3 VecXYZ(const Vec4& vec_)
+	{
+		return Vec3(vec_.x, vec_.y, vec_.z);
+	}
 
 	inline Mat3 RotateX3(const Float32& angle_)
 	{
@@ -88,11 +96,11 @@ namespace GreatVEngine
 	}
 	inline Mat3 RotateZXY3(const Vec3& angle_)
 	{
-		return RotateZ3(angle_.z) * RotateX3(angle_.x) * RotateY3(angle_.y);
+		return RotateY3(angle_.y) * RotateX3(angle_.x) * RotateZ3(angle_.z);
 	}
 	inline Mat3 RotateYXZ3(const Vec3& angle_)
 	{
-		return RotateY3(angle_.y) * RotateX3(angle_.x) * RotateZ3(angle_.z);
+		return RotateZ3(angle_.z) * RotateX3(angle_.x) * RotateY3(angle_.y);
 	}
 
 	inline Mat4 Move4(const Vec3& position_)
@@ -149,11 +157,11 @@ namespace GreatVEngine
 	}
 	inline Mat4 RotateZXY4(const Vec3& angle_)
 	{
-		return RotateZ4(angle_.z) * RotateX4(angle_.x) * RotateY4(angle_.y);
+		return  RotateY4(angle_.y) * RotateX4(angle_.x) * RotateZ4(angle_.z);
 	}
 	inline Mat4 RotateYXZ4(const Vec3& angle_)
 	{
-		return RotateY4(angle_.y) * RotateX4(angle_.x) * RotateZ4(angle_.z);
+		return  RotateZ4(angle_.z) * RotateX4(angle_.x) * RotateY4(angle_.y);
 	}
 	inline Mat4 Perspective(const Float32& fov_, const Float32& aspect_, const Float32& near_, const Float32& far_)
 	{

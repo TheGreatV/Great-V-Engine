@@ -60,8 +60,8 @@ void func()
 		program->Set();
 	}
 
-	auto dataVertices = geometry->PackVertices();
-	auto dataIndices = geometry->PackIndices();
+	auto dataVertices = geometry->GetVertices();
+	auto dataIndices = geometry->GetIndices();
 
 	auto vertices = MakeReference(new OpenGL::Buffers::Array(graphicContext.get(), *dataVertices.get()));
 	{

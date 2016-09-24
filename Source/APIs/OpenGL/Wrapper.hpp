@@ -30,6 +30,22 @@ namespace GreatVEngine
 		class Context:
 			public Graphics::Context
 		{
+		public:
+			class Dependent
+			{
+			protected:
+				Context*const context;
+			public:
+				Dependent(Context* context_):
+					context(context_)
+				{
+				}
+			public:
+				Context* GetContext() const
+				{
+					return context;
+				}
+			};
 		protected:
 			Buffers::Array* currentBufferArray = nullptr;
 			Buffers::Index* currentBufferIndex = nullptr;
@@ -88,27 +104,12 @@ namespace GreatVEngine
 				return currentTexture[slot_];
 			}
 		};
-		class ContextDependent
-		{
-		protected:
-			Context*const context;
-		public:
-			ContextDependent(Context* context_):
-				context(context_)
-			{
-			}
-		public:
-			Context* GetContext() const
-			{
-				return context;
-			}
-		};
 
 		class Shader
 		{
 		public:
 			using Handle = GLuint;
-			using Data = String;
+			using Source = String;
 		public:
 			enum class Type: GLenum
 			{
@@ -129,14 +130,14 @@ namespace GreatVEngine
 			const Type type;
 			const Handle handle;
 		public:
-			inline Shader(const Type& type_, const Data& data_):
+			inline Shader(const Type& type_, const Source& source_):
 				type(type_),
 				handle(glCreateShader((GLenum)type))
 			{
 				DebugTest();
 
-				auto data = data_.data();
-				GLint length = data_.size();
+				auto data = source_.data();
+				GLint length = source_.size();
 				glShaderSource(handle, 1, &data, &length); DebugTest();
 
 				glCompileShader(handle);
@@ -172,7 +173,7 @@ namespace GreatVEngine
 			}
 		};
 		class Program:
-			public ContextDependent
+			public Context::Dependent
 		{
 		public:
 			using Handle = GLuint;
@@ -185,15 +186,18 @@ namespace GreatVEngine
 			const Handle handle;
 		public:
 			inline Program(Context* context_, const Initializer<Shader*>& shaders):
-				ContextDependent(context_),
+				Context::Dependent(context_),
 				handle(glCreateProgram())
 			{
 				DebugTest();
 
 				for(auto &shader : shaders)
 				{
-					glAttachShader(handle, shader->GetHandle());
-					DebugTest();
+					if(shader)
+					{
+						glAttachShader(handle, shader->GetHandle());
+						DebugTest();
+					}
 				}
 
 				glLinkProgram(handle);
@@ -253,6 +257,30 @@ namespace GreatVEngine
 				DebugTest();
 				return uniform;
 			}
+			inline void SetInt(const Uniform& uniform_, const SInt32& val_)
+			{
+				glUniform1i(uniform_, val_); DebugTest();
+			}
+			inline void SetInt(const UniformName& uniformName_, const SInt32& val_)
+			{
+				auto uniform = GetUniform(uniformName_);
+				if(uniform != -1)
+				{
+					SetInt(uniform, val_);
+				}
+			}
+			inline void SetMat3(const Uniform& uniform_, const Mat3& mat_)
+			{
+				glUniformMatrix3fv(uniform_, 1, GL_FALSE, (const GLfloat*)&mat_);
+			}
+			inline void SetMat3(const UniformName& uniformName_, const Mat3& mat_)
+			{
+				auto uniform = GetUniform(uniformName_);
+				if(uniform != -1)
+				{
+					SetMat3(uniform, mat_);
+				}
+			}
 			inline void SetMat4(const Uniform& uniform_, const Mat4& mat_)
 			{
 				glUniformMatrix4fv(uniform_, 1, GL_FALSE, (const GLfloat*)&mat_);
@@ -268,7 +296,7 @@ namespace GreatVEngine
 		};
 
 		class Texture:
-			public ContextDependent
+			public Context::Dependent
 		{
 		public:
 			using Handle = GLuint;
@@ -404,61 +432,58 @@ namespace GreatVEngine
 				const Size& width_, const Size& height_, const Size& depth_,
 				const Type& type_, const InternalFormat& internalFormat_, const Format& format_, const ComponentType& componentType_,
 				const Wrap& wrap_, const Filter& filter_, Data data_):
-				ContextDependent(context_),
+				Context::Dependent(context_),
 				width(width_), height(height_), depth(depth_),
 				type(type_), internalFormat(internalFormat_), componentType(componentType_),
 				wrap(wrap_), filter(filter_),
-				handle([&]()
+				handle([]()
 				{
-					Handle handle;
-
-					glGenTextures(1, &handle); DebugTest();
-					context->SetTexture(0, this);
-					//glBindTexture((GLenum)type, handle); DebugTest();
-
-					glTexParameteri((GLenum)type, GL_TEXTURE_MIN_FILTER, (GLint)filter.min); DebugTest();
-					glTexParameteri((GLenum)type, GL_TEXTURE_MAG_FILTER, (GLint)filter.mag); DebugTest();
-
-					glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_S, (GLint)wrap); DebugTest();
-					glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_T, (GLint)wrap); DebugTest();
-					glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_R, (GLint)wrap); DebugTest();
-
-					// glTexParameterfv((GLenum)type, GL_TEXTURE_BORDER_COLOR, );
-
-					switch(type)
-					{
-						case Type::D1:
-						{
-							glTexImage1D((GLenum)type, 0, (GLint)internalFormat, width, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
-						} break;
-						case Type::D2:
-						{
-							glTexImage2D((GLenum)type, 0, (GLint)internalFormat, width, height, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
-						} break;
-						case Type::D3:
-						{
-							glTexImage3D((GLenum)type, 0, (GLint)internalFormat, width, height, depth, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
-						} break;
-						case Type::Cube:
-						{
-							glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[0] : NULL); DebugTest();
-							glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[1] : NULL); DebugTest();
-							glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[2] : NULL); DebugTest();
-							glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[3] : NULL); DebugTest();
-							glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[4] : NULL); DebugTest();
-							glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[5] : NULL); DebugTest();
-						} break;
-						default: throw Exception("Unsupported texture type");
-					}
-
-					if(filter.min != Filter::Min::Off && filter.min != Filter::Min::Linear)
-					{
-						glGenerateMipmap((GLenum)type); DebugTest();
-					}
-
-					return handle;
+					Handle handle_;
+					glGenTextures(1, &handle_); DebugTest();
+					return handle_;
 				}())
 			{
+				context->SetTexture(0, this);
+
+				glTexParameteri((GLenum)type, GL_TEXTURE_MIN_FILTER, (GLint)filter.min); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_MAG_FILTER, (GLint)filter.mag); DebugTest();
+
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_S, (GLint)wrap); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_T, (GLint)wrap); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_R, (GLint)wrap); DebugTest();
+
+				// glTexParameterfv((GLenum)type, GL_TEXTURE_BORDER_COLOR, );
+
+				switch(type)
+				{
+					case Type::D1:
+					{
+						glTexImage1D((GLenum)type, 0, (GLint)internalFormat, width, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
+					} break;
+					case Type::D2:
+					{
+						glTexImage2D((GLenum)type, 0, (GLint)internalFormat, width, height, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
+					} break;
+					case Type::D3:
+					{
+						glTexImage3D((GLenum)type, 0, (GLint)internalFormat, width, height, depth, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
+					} break;
+					case Type::Cube:
+					{
+						glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[0] : NULL); DebugTest();
+						glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[1] : NULL); DebugTest();
+						glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[2] : NULL); DebugTest();
+						glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[3] : NULL); DebugTest();
+						glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[4] : NULL); DebugTest();
+						glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[5] : NULL); DebugTest();
+					} break;
+					default: throw Exception("Unsupported texture type");
+				}
+
+				if(filter.min != Filter::Min::Off && filter.min != Filter::Min::Linear)
+				{
+					glGenerateMipmap((GLenum)type); DebugTest();
+				}
 			}
 			inline ~Texture();
 		public:
@@ -544,7 +569,7 @@ namespace GreatVEngine
 		namespace Buffers
 		{
 			class Array:
-				public ContextDependent,
+				public Context::Dependent,
 				public Buffer
 			{
 			protected:
@@ -556,12 +581,12 @@ namespace GreatVEngine
 				const Handle handle;
 			public:
 				inline Array(Context* context_, const Size& size_, Input input_, const Usage& usage_ = Usage::Static):
-					ContextDependent(context_),
+					Context::Dependent(context_),
 					Buffer(size_, usage_),
 					handle([](){
-						Handle handle;
-						glGenBuffers(1, &handle); DebugTest();
-						return handle;
+						Handle handle_;
+						glGenBuffers(1, &handle_); DebugTest();
+						return handle_;
 					}())
 				{
 					context->SetBufferArray(this);
@@ -616,7 +641,7 @@ namespace GreatVEngine
 				}
 			};
 			class Index:
-				public ContextDependent,
+				public Context::Dependent,
 				public Buffer
 			{
 			protected:
@@ -628,7 +653,7 @@ namespace GreatVEngine
 				const Handle handle;
 			public:
 				inline Index(Context* context_, const Size& size_, Input input_, const Usage& usage_ = Usage::Static):
-					ContextDependent(context_),
+					Context::Dependent(context_),
 					Buffer(size_, usage_),
 					handle([](){
 						Handle handle;
@@ -692,7 +717,7 @@ namespace GreatVEngine
 			{
 			};
 			class Attribute:
-				public ContextDependent
+				public Context::Dependent
 			{
 			public:
 				using Handle = GLuint;
@@ -717,7 +742,7 @@ namespace GreatVEngine
 				public:
 					const Location location;
 					const Type type;
-					const Size componentType;
+					const Size count;
 					const bool isNormalized;
 					const Size stride;
 					const Size offset;
@@ -725,14 +750,14 @@ namespace GreatVEngine
 					inline Data(
 						const Location location_,
 						const Type type_,
-						const Size componentType_,
+						const Size count_,
 						const bool isNormalized_,
 						const Size stride_,
 						const Size offset_
 					):
 						location(location_),
 						type(type_),
-						componentType(componentType_),
+						count(count_),
 						isNormalized(isNormalized_),
 						stride(stride_),
 						offset(offset_)
@@ -742,14 +767,18 @@ namespace GreatVEngine
 			protected:
 				friend Context;
 				const Handle handle;
+				Array*const bufferArray;
+				Index*const bufferIndex;
 			public:
 				inline Attribute(Context* context_, Program* program_, Buffers::Array* bufferArray_, Buffers::Index* bufferIndex_, const Initializer<Data>& datas_):
-					ContextDependent(context_),
+					Context::Dependent(context_),
 					handle([](){
 						Handle handle;
 						glGenVertexArrays(1, &handle); DebugTest();
 						return handle;
-					}())
+					}()),
+					bufferArray(bufferArray_),
+					bufferIndex(bufferIndex_)
 				{
 					context->SetBufferAttribute(this);
 
@@ -758,14 +787,14 @@ namespace GreatVEngine
 						throw Exception("Program is not set");
 					}
 
-					if(context->GetBufferArray() != bufferArray_)
+					if(context->GetBufferArray() != bufferArray)
 					{
 						throw Exception("Array buffer is not set");
 					}
 					
-					if(bufferIndex_)
+					if(bufferIndex)
 					{
-						bufferIndex_->Set();
+						bufferIndex->Set();
 					}
 
 					for(auto data : datas_)
@@ -774,7 +803,7 @@ namespace GreatVEngine
 						{
 							glVertexAttribPointer(
 								data.location,
-								data.componentType,
+								data.count,
 								(GLenum)data.type,
 								data.isNormalized,
 								data.stride,
@@ -801,6 +830,8 @@ namespace GreatVEngine
 			public:
 				inline void Set()
 				{
+					// bufferArray->Set();
+					// bufferIndex->Set();
 					context->SetBufferAttribute(this);
 				}
 				inline void Reset()
@@ -808,6 +839,81 @@ namespace GreatVEngine
 					context->ResetBufferAttribute(this);
 				}
 			};
+		}
+
+		inline Format GetFormat(const Texture::InternalFormat& format_, const Texture::ComponentType& componentType_)
+		{
+			switch(format_)
+			{
+				case Texture::InternalFormat::RGB8:
+				{
+					switch(componentType_)
+					{
+						case Texture::ComponentType::UInt8: return Format::R8G8B8_UInt;
+						default: throw Exception("Unsupported component type");
+					}
+				} break;
+				case Texture::InternalFormat::RGBA8:
+				{
+					switch(componentType_)
+					{
+						case Texture::ComponentType::UInt8: return Format::R8G8B8A8_UInt;
+						default: throw Exception("Unsupported component type");
+					}
+				} break;
+				default: throw Exception("Unsupported format");
+			}
+		}
+		inline Texture::InternalFormat GetInternalFormat(const Format& format_)
+		{
+			switch(format_)
+			{
+				case Format::R8G8B8_UInt:
+					return Texture::InternalFormat::RGB8;
+				case Format::R32G32B32_SFloat:
+					return Texture::InternalFormat::RGB32F;
+				case Format::R8G8B8A8_UInt:
+					return Texture::InternalFormat::RGBA8;
+				case Format::R32G32B32A32_SFloat:
+					return Texture::InternalFormat::RGBA32F;
+				case Format::B8G8R8_UInt:
+					return Texture::InternalFormat::RGB8;
+				case Format::B8G8R8A8_UInt:
+					return Texture::InternalFormat::RGBA8;
+				default: throw Exception("Unsupported format");
+			}
+		}
+		inline Texture::Format GetFormat(const Format& format_)
+		{
+			switch(format_)
+			{
+				case Format::R8G8B8_UInt:
+				case Format::R32G32B32_SFloat:
+					return Texture::Format::RGB;
+				case Format::R8G8B8A8_UInt:
+				case Format::R32G32B32A32_SFloat:
+					return Texture::Format::RGBA;
+				case Format::B8G8R8_UInt:
+					return Texture::Format::BGR;
+				case Format::B8G8R8A8_UInt:
+					return Texture::Format::BGRA;
+				default: throw Exception("Unsupported format");
+			}
+		}
+		inline Texture::ComponentType GetComponentType(const Format& format_)
+		{
+			switch(format_)
+			{
+				case Format::R8G8B8_UInt: 
+				case Format::R8G8B8A8_UInt:
+				case Format::B8G8R8_UInt:
+				case Format::B8G8R8A8_UInt:
+					return Texture::ComponentType::UInt8;
+				case Format::R32G32B32_SFloat: 
+				case Format::R32G32B32A32_SFloat:
+					return Texture::ComponentType::SFloat32;
+				default: throw Exception("Unsupported format");
+			}
 		}
 	}
 }
@@ -916,6 +1022,8 @@ inline GreatVEngine::OpenGL::Texture::~Texture()
 	{
 		context->ResetTexture(i, this);
 	}
+
+	glDeleteTextures(1, &handle);
 }
 #pragma endregion
 

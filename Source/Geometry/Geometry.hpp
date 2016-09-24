@@ -41,6 +41,7 @@ namespace GreatVEngine
 		};
 	public:
 		inline static Reference<Geometry> CreateBox(const Vec3& size_, const Vec3& tex_, const UVec3& seg_);
+		inline static Reference<Geometry> CreateTorus(const Float32 radius_, const Float32 width_, const Vec2& tex_, const UVec2& seg_);
 	public:
 		Vector<Vertex> vertices;
 		Vector<Index> indices;
@@ -68,7 +69,7 @@ namespace GreatVEngine
 			return *this;
 		}
 	public:
-		inline Reference<Bytes> PackVertices(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
+		inline Reference<Bytes> GetVertices(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
 		{
 			switch(vertexPackMode_)
 			{
@@ -99,7 +100,7 @@ namespace GreatVEngine
 				} break;
 			}
 		}
-		inline Size GetVertexSize(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
+		inline static Size GetVertexSize(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default)
 		{
 			switch(vertexPackMode_)
 			{
@@ -108,7 +109,7 @@ namespace GreatVEngine
 				default: throw Exception("nknown vertex packing mode");
 			}
 		}
-		inline Reference<Bytes> PackIndices(const IndexPackMode& indexPackMode_ = IndexPackMode::Default) const
+		inline Reference<Bytes> GetIndices(const IndexPackMode& indexPackMode_ = IndexPackMode::Default) const
 		{
 			switch(indexPackMode_)
 			{
@@ -135,7 +136,7 @@ namespace GreatVEngine
 				} break;
 			}
 		}
-		inline Size GetIndexSize(const IndexPackMode& indexPackMode_ = IndexPackMode::Default) const
+		inline static Size GetIndexSize(const IndexPackMode& indexPackMode_ = IndexPackMode::Default)
 		{
 			switch(indexPackMode_)
 			{
@@ -292,6 +293,63 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->indices[id+3] = geometry->indices[id+2];
 		geometry->indices[id+4] = geometry->indices[id+1];
 		geometry->indices[id+5] = offsetVertexTop + (x+1)*(seg_.z+1) + (z+1);
+	}
+
+	return MakeReference(geometry);
+}
+inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateTorus(const Float32 radius_, const Float32 width_, const Vec2& tex_, const UVec2& seg_)
+{
+	if(seg_.x < 3 || seg_.y < 3)
+	{
+		throw Exception("Invalid segment count");
+	}
+
+	auto geometry = new Geometry(
+		(seg_.x + 1)*(seg_.y + 1),
+		seg_.x*seg_.y * 6);
+
+	SInt32 segX = seg_.x + 1;
+	SInt32 segY = seg_.y + 1;
+	Float32 step_tx = tex_.x / Float32(seg_.x);
+	Float32 step_ty = tex_.y / Float32(seg_.y);
+	Float32 step_ay = 360.0f / Float32(seg_.y);
+	Float32 step_ax = 360.0f / Float32(seg_.x);
+
+	Vec3 tpos;
+	Mat3 tmat;
+	SInt32 id;
+
+	for(SInt32 x = 0; x < SInt32(seg_.x) + 1; ++x)
+	{
+		for(SInt32 y = 0; y < SInt32(seg_.y) + 1; ++y)
+		{
+			id = (seg_.y + 1)*x + y;
+			tpos = VecXYZ((
+				RotateZXY4(Vec3(0, step_ax*x, 0))
+				*Move4(Vec3(0, 0, radius_))
+				*RotateZXY4(Vec3(step_ay*y, 0, 0))
+				) * Vec4(Vec3(0, 0, width_), 1.0f));
+			geometry->vertices[id].pos = tpos;
+			geometry->vertices[id].tex = Vec2(step_tx*x, step_ty*y);
+			tmat = RotateZXY3(Vec3(step_ay*y, step_ax*x, 0));
+			geometry->vertices[id].tan = tmat * Vec3(1, 0, 0);
+			geometry->vertices[id].bin = tmat * Vec3(0, -1, 0);
+			geometry->vertices[id].nor = tmat * Vec3(0, 0, 1);
+		}
+	}
+
+	for(SInt32 x = 0; x < SInt32(seg_.x); ++x)
+	{
+		for(SInt32 y = 0; y < SInt32(seg_.y); ++y)
+		{
+			id = 6 * (seg_.y*x + y);
+			geometry->indices[id + 0] = (seg_.y + 1)*(x + 0) + (y + 0);
+			geometry->indices[id + 1] = (seg_.y + 1)*(x + 1) + (y + 0);
+			geometry->indices[id + 2] = (seg_.y + 1)*(x + 0) + (y + 1);
+			geometry->indices[id + 3] = geometry->indices[id + 1];
+			geometry->indices[id + 4] = (seg_.y + 1)*(x + 1) + (y + 1);
+			geometry->indices[id + 5] = geometry->indices[id + 2];
+		}
 	}
 
 	return MakeReference(geometry);

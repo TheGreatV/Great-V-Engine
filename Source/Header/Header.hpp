@@ -69,6 +69,16 @@ namespace GreatVEngine
 	{
 		return std::make_shared(t);
 	}
+
+	enum class Format
+	{
+		R8G8B8_UInt,
+		R8G8B8A8_UInt,
+		B8G8R8_UInt,
+		B8G8R8A8_UInt,
+		R32G32B32_SFloat,
+		R32G32B32A32_SFloat,
+	};
 }
 
 

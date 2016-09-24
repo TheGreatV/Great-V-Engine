@@ -68,13 +68,98 @@ namespace GreatVEngine
 				}
 			};
 			
-			class Destruction
+			template<class Arguments> class OnAction
+			{
+			public:
+				using Data = void*;
+				using Subscriber = bool(*)(Data, Arguments); // return true for remove from list
+			public:
+				struct Subscription
+				{
+					Data d;
+					Subscriber s;
+					inline bool operator == (const Subscription& x) { return d == x.d && s == x.s; }
+				};
+			protected:
+				mutable Vector<Subscription> subscribers;
+			public:
+				inline OnAction() = default;
+				inline OnAction(const OnAction&) = delete;
+				inline ~OnAction() = default;
+			public:
+				inline OnAction& operator = (const OnAction&) = delete;
+				inline void operator += (Subscription s)
+				{
+					subscribers.push_back(s);
+				}
+				inline void operator -= (Subscription s)
+				{
+					subscribers.erase(std::find(subscribers.begin(), subscribers.end(), s));
+				}
+				inline void operator () (Arguments arguments) const
+				{
+					auto local = subscribers;
+
+					for(auto it = local.begin(); it != local.end(); ++it)
+					{
+						auto &subscriber = *it;
+						if(subscriber.s(subscriber.d, arguments))
+						{
+							subscribers.erase(std::find(subscribers.begin(), subscribers.end(), subscriber));
+						}
+					}
+				}
+			};
+			template<> class OnAction<void>
+			{
+			public:
+				using Data = void*;
+				using Subscriber = bool(*)(Data);// return true for remove from list
+			public:
+				struct Subscription
+				{
+					Data d;
+					Subscriber s;
+					inline bool operator == (const Subscription& x) { return d == x.d && s == x.s; }
+				};
+			protected:
+				mutable Vector<Subscription> subscribers;
+			public:
+				inline OnAction() = default;
+				inline OnAction(const OnAction&) = delete;
+				inline ~OnAction() = default;
+			public:
+				inline OnAction& operator = (const OnAction&) = delete;
+				inline void operator += (Subscription s)
+				{
+					subscribers.push_back(s);
+				}
+				inline void operator -= (Subscription s)
+				{
+					subscribers.erase(std::find(subscribers.begin(), subscribers.end(), s));
+				}
+				inline void operator () () const
+				{
+					auto local = subscribers;
+
+					for(auto it = local.begin(); it != local.end(); ++it)
+					{
+						auto &subscriber = *it;
+						if(subscriber.s(subscriber.d))
+						{
+							subscribers.erase(std::find(subscribers.begin(), subscribers.end(), subscriber));
+						}
+					}
+				}
+			};
+
+			class OnDestructionEvent
 			{
 			protected:
 				OnEvent<void> onDestruction;
 			public:
-				inline Destruction() = default;
-				inline ~Destruction()
+				inline OnDestructionEvent() = default;
+				inline ~OnDestructionEvent()
 				{
 					onDestruction();
 				}
@@ -86,6 +171,26 @@ namespace GreatVEngine
 				inline void Unsubscribe_OnDestruction(OnEvent<void>::Subscriber subscriber)
 				{
 					onDestruction -= subscriber;
+				}
+			};
+			class OnDestructionAction
+			{
+			protected:
+				OnAction<void> onDestruction;
+			public:
+				inline OnDestructionAction() = default;
+				inline ~OnDestructionAction()
+				{
+					onDestruction();
+				}
+			public:
+				inline void Subscribe_OnDestruction(void* data, OnAction<void>::Subscriber subscriber)
+				{
+					onDestruction += {data, subscriber};
+				}
+				inline void Unsubscribe_OnDestruction(void* data, OnAction<void>::Subscriber subscriber)
+				{
+					onDestruction -= {data, subscriber};
 				}
 			};
 		}
@@ -1085,9 +1190,18 @@ namespace GreatVEngine
 					{
 					}
 				public:
-					inline void SetLocalAngle(const Angle::Value& angle_);
-					inline void SetLocalPosition(const Position::Value& position_);
-					inline void SetLocalScale(const Scale::Value& scale_);
+					inline void SetLocalAngle(const Angle::Value& angle_)
+					{
+						ModelMatrix::SetAngle(angle_);
+					}
+					inline void SetLocalPosition(const Position::Value& position_)
+					{
+						ModelMatrix::SetPosition(position_);
+					}
+					inline void SetLocalScale(const Scale::Value& scale_)
+					{
+						ModelMatrix::SetScale(scale_);
+					}
 					inline Angle::Value GetLocalAngle() const
 					{
 						return ModelMatrix::GetAngle();

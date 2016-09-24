@@ -519,7 +519,7 @@ namespace GreatVEngine
 		{
 		public:
 			using Handle = VkDeviceMemory;
-			using Size = VkDeviceSize;
+			using DeviceSize = VkDeviceSize;
 			using Property = VkMemoryPropertyFlags;
 			using Properties = VkMemoryPropertyFlagBits;
 			using Requirements = VkMemoryRequirements;
@@ -546,7 +546,7 @@ namespace GreatVEngine
 			};
 		protected:
 			const Handle handle;
-			const Size size;
+			const DeviceSize size;
 		protected:
 			inline DeviceMemory(Device* device_, const Requirements& requirements_, const Property& property_);
 		public:
@@ -558,7 +558,7 @@ namespace GreatVEngine
 			}
 		public:
 			template<class T = void>
-			inline T* Map(Size size_, Size offset_)
+			inline T* Map(const DeviceSize& size_, const DeviceSize& offset_)
 			{
 				return (T*)MapMemory(device->GetHandle(), handle, offset_, size_, 0);
 			}
@@ -575,6 +575,14 @@ namespace GreatVEngine
 			inline Handle GetHandle() const
 			{
 				return handle;
+			}
+			inline DeviceSize GetDeviceSize() const
+			{
+				return size;
+			}
+			inline Size GetSize() const
+			{
+				return (Size)size;
 			}
 		};
 		class Buffer:
@@ -660,16 +668,19 @@ namespace GreatVEngine
 			};
 		public:
 			using Handle = VkImage;
-			using Size = VkExtent3D;
+			using Extent = VkExtent3D;
 			using Type = VkImageType;
 			using Format = VkFormat;
 			using Tiling = VkImageTiling;
 			using Usage = VkImageUsageFlags;
 			using UsageBits = VkImageUsageFlagBits;
 			using Layout = VkImageLayout;
+			using Data = Vector<UInt8>;
+		public:
+			inline static Data TransformData(const Data& inputData_, const Format& inputFormat_, const Format& outputFormat_);
 		protected:
 			const Handle handle;
-			const Size size;
+			const Extent extent;
 			const Type type;
 			const Format format;
 			const Usage usage;
@@ -679,7 +690,7 @@ namespace GreatVEngine
 			inline BasicImage(
 				Device* device_,
 				Handle handle_,
-				const Size& size_,
+				const Extent& extent_,
 				const Type& type_,
 				const Format& format_,
 				const Usage& usage_,
@@ -687,7 +698,7 @@ namespace GreatVEngine
 				const Layout& layout_ = Layout::VK_IMAGE_LAYOUT_UNDEFINED):
 				Device::Dependent(device_),
 				handle(handle_),
-				size(size_),
+				extent(extent_),
 				type(type_),
 				format(format_),
 				usage(usage_),
@@ -701,9 +712,9 @@ namespace GreatVEngine
 			{
 				return handle;
 			}
-			inline Size GetSize() const
+			inline Extent GetExtent() const
 			{
-				return size;
+				return extent;
 			}
 			inline Type GetType() const
 			{
@@ -736,19 +747,41 @@ namespace GreatVEngine
 			// }
 			inline Image(
 				Device* device_,
-				const Size& size_,
+				const Extent& extent_,
 				const Type& type_,
-				const Format& format_,
+				Format format_, // const Format& format_,
 				const Usage& usage_,
 				const Tiling& tiling_,
 				const Layout& layout_):
 				BasicImage(
 					device_,
 					[&](){
-						VkImageFormatProperties vk_imageFormatProperties;
-						ErrorTest(vkGetPhysicalDeviceImageFormatProperties(
-							device_->GetPhysicalDevice()->GetHandle(),
-							format_, type_, tiling_, usage_, 0, &vk_imageFormatProperties));
+						try
+						{
+							auto imageFormatProperties = GetPhysicalDeviceImageFormatProperties(
+								device_->GetPhysicalDevice()->GetHandle(),
+								format_, type_, tiling_, usage_, 0);
+						}
+						catch(Exception e)
+						{
+							if(e.GetCode() == Exception::Code::VK_ERROR_FORMAT_NOT_SUPPORTED)
+							{
+								switch(format_)
+								{
+									case Format::VK_FORMAT_R8G8B8_UNORM: format_ = Format::VK_FORMAT_R8G8B8A8_UNORM; break;
+									case Format::VK_FORMAT_B8G8R8_UNORM: format_ = Format::VK_FORMAT_R8G8B8A8_UNORM; break;
+									default: throw e;
+								}
+
+								auto imageFormatProperties = GetPhysicalDeviceImageFormatProperties(
+									device_->GetPhysicalDevice()->GetHandle(),
+									format_, type_, tiling_, usage_, 0);
+							}
+							else
+							{
+								throw e;
+							}
+						}
 
 						VkImageCreateInfo vk_imageCreateInfo;
 						{
@@ -757,7 +790,7 @@ namespace GreatVEngine
 							vk_imageCreateInfo.flags = 0;
 							vk_imageCreateInfo.imageType = type_;
 							vk_imageCreateInfo.format = format_;
-							vk_imageCreateInfo.extent = size_;
+							vk_imageCreateInfo.extent = extent_;
 							vk_imageCreateInfo.mipLevels = 1;
 							vk_imageCreateInfo.arrayLayers = 1;
 							vk_imageCreateInfo.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
@@ -771,7 +804,7 @@ namespace GreatVEngine
 
 						return CreateImage(device_->GetHandle(), &vk_imageCreateInfo, nullptr);
 					}(),
-					size_,
+					extent_,
 					type_,
 					format_,
 					usage_,
@@ -901,9 +934,9 @@ namespace GreatVEngine
 				public BasicImage
 			{
 			public:
-				inline Image(SwapchainKHR* swapchainKHR_, Handle handle_, Size size_, Type type_, Format format_, Usage usage_):
+				inline Image(SwapchainKHR* swapchainKHR_, Handle handle_, const Extent& extent_, const Type& type_, const Format& format_, const Usage& usage_):
 					SwapchainKHR::Dependent(swapchainKHR_),
-					BasicImage(swapchainKHR->GetDevice(), handle_, size_, type_, format_, usage_)
+					BasicImage(swapchainKHR->GetDevice(), handle_, extent_, type_, format_, usage_)
 				{
 				}
 				inline ~Image() = default;
@@ -957,7 +990,7 @@ namespace GreatVEngine
 						images[i] = new Image(
 							this,
 							vk_images[i],
-							Image::Size{extent_.width, extent_.height, 1},
+							Image::Extent{extent_.width, extent_.height, 1},
 							Image::Type::VK_IMAGE_TYPE_2D,
 							format_,
 							Image::UsageBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
@@ -1136,39 +1169,52 @@ namespace GreatVEngine
 				}
 			};
 		public:
-			// class Attachment
-			// {
-			// };
-			// class Reference
-			// {
-			// public:
-			// 	enum class Type
-			// 	{
-			// 		None,
-			// 		Input,
-			// 		Color,
-			// 		DepthStencil
-			// 	};
-			// public:
-			// 	const Type type;
-			// 	Attachment*const attachment;
-			// public:
-			// 	inline Reference(const Type& type_, Attachment* attachment_):
-			// 		type(type_),
-			// 		attachment(attachment_)
-			// 	{
-			// 	}
-			// };
-			// class Subpass
-			// {
-			// public:
-			// 	const Vector<Reference*> references;
-			// public:
-			// 	inline Subpass(const Initializer<Reference*>& references_):
-			// 		references(references_)
-			// 	{
-			// 	}
-			// };
+			class AttachmentDescription;
+			class AttachmentReference;
+			class Subpass;
+
+			class AttachmentDescription:
+				public VkAttachmentDescription
+			{
+			public:
+				inline AttachmentDescription(VkFormat format_)
+				{
+					flags = 0; // VkAttachmentDescriptionFlagBits::VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
+					format = format_; // surface->GetFormats()[0].format;
+					samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+					loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+					storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+					stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+					finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+				}
+			};
+			class AttachmentReference
+			{
+			public:
+				AttachmentDescription* description;
+				VkImageLayout layout;
+			public:
+				inline AttachmentReference(AttachmentDescription* description_, VkImageLayout layout_):
+					description(description_),
+					layout(layout_)
+				{
+				}
+			};
+			class Subpass
+			{
+			public:
+				using Attachments = Vector<AttachmentReference*>;
+			public:
+				Attachments colorAttachments;
+				AttachmentReference* depthAttachment;
+			public:
+				inline Subpass(const Attachments& colorAttachments_, AttachmentReference* depthAttachment_):
+					colorAttachments(colorAttachments_), depthAttachment(depthAttachment_)
+				{
+				}
+			};
 		public:
 			using Handle = VkRenderPass;
 			using Rect = VkRect2D;
@@ -1988,6 +2034,102 @@ namespace GreatVEngine
 					offset = offset_;
 				}
 			};
+			struct DepthState:
+				public VkPipelineDepthStencilStateCreateInfo
+			{
+			public:
+				using Operation = VkCompareOp;
+			public:
+				inline DepthState(bool depthTest_, bool depthWrite_, bool stencilTest_, const Operation& operation_ = Operation::VK_COMPARE_OP_ALWAYS)
+				{
+					sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+					pNext = nullptr;
+					flags = 0;
+					depthTestEnable = depthTest_ ? VK_TRUE : VK_FALSE;
+					depthWriteEnable = depthWrite_ ? VK_TRUE : VK_FALSE;
+					depthCompareOp = operation_; // VkCompareOp::VK_COMPARE_OP_ALWAYS;
+					depthBoundsTestEnable = VK_FALSE;
+					stencilTestEnable = stencilTest_ ? VK_TRUE : VK_FALSE;
+					front;
+					{
+						front.failOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+						front.passOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+						front.depthFailOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+						front.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+						front.compareMask = 0;
+						front.writeMask = 0;
+						front.reference = 0;
+					}
+					back;
+					{
+						back.failOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+						back.passOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+						back.depthFailOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+						back.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+						back.compareMask = 0;
+						back.writeMask = 0;
+						back.reference = 0;
+					}
+					minDepthBounds = 0.0f;
+					maxDepthBounds = 0.0f;
+				}
+			};
+			struct BlendState:
+				public VkPipelineColorBlendStateCreateInfo
+			{
+			public:
+				// using Attachment = VkPipelineColorBlendAttachmentState;
+				using Factor = VkBlendFactor;
+				using Operation = VkBlendOp;
+				using Logic = VkLogicOp;
+				using Constants = Vec4;
+			public:
+				class Attachment:
+					public VkPipelineColorBlendAttachmentState
+				{
+				public:
+					inline Attachment(
+						bool blend_,
+						const Factor& srcColor_, const Factor& srcAlpha_, const Operation& colorOp_,
+						const Factor& dstColor_, const Factor& dstAlpha_, const Operation& alphaOp_)
+					{
+						blendEnable = blend_ ? VK_TRUE : VK_FALSE;
+						srcColorBlendFactor = srcColor_; // VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA;
+						dstColorBlendFactor = dstColor_; // VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+						colorBlendOp = colorOp_; // VkBlendOp::VK_BLEND_OP_ADD;
+						srcAlphaBlendFactor = srcAlpha_; // VkBlendFactor::VK_BLEND_FACTOR_ONE;
+						dstAlphaBlendFactor = dstAlpha_; // VkBlendFactor::VK_BLEND_FACTOR_ONE;
+						alphaBlendOp = alphaOp_; // VkBlendOp::VK_BLEND_OP_ADD;
+						colorWriteMask =
+							VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT |
+							VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT |
+							VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT |
+							VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT |
+							0;
+					}
+				};
+			public:
+				const Vector<Attachment> attachments;
+			public:
+				inline BlendState(bool enable_, const Logic& logic_, const Constants& constants_, const Vector<Attachment> attachments_):
+					attachments(attachments_)
+				{
+					sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+					pNext = nullptr;
+					flags = 0;
+					logicOpEnable = enable_ ? VK_TRUE : VK_FALSE;
+					logicOp = logic_; // VkLogicOp::VK_LOGIC_OP_CLEAR;
+					attachmentCount = attachments.size();
+					pAttachments = attachments.data();
+					blendConstants;
+					{
+						blendConstants[0] = constants_[0]; //1.0f;
+						blendConstants[1] = constants_[1]; //1.0f;
+						blendConstants[2] = constants_[2]; //1.0f;
+						blendConstants[3] = constants_[3]; //1.0f;
+					}
+				}
+			};
 		public:
 			using Handle = VkPipeline;
 			using Topology = VkPrimitiveTopology;
@@ -2004,25 +2146,13 @@ namespace GreatVEngine
 				const Shaders& shaders_,
 				const Vector<Binding>& bindings_, const Vector<Attribute> attributes_,
 				Vector<VkViewport> viewports, Vector<VkRect2D> scissors,
-				const Topology& topology_, const Fill& fill_, const Cull& cull_, const Face& face_):
+				const Topology& topology_, const Fill& fill_, const Cull& cull_, const Face& face_,
+				const DepthState& depthState_, const BlendState& blendState_):
 				Dependent(device_),
 				handle([&]()
 				{
 					auto vk_pipelineShaderStageCreateInfos = shaders_.Get();
 
-					// VkVertexInputBindingDescription vk_vertexInputBindingDescription;
-					// {
-					// 	vk_vertexInputBindingDescription.binding = 0;
-					// 	vk_vertexInputBindingDescription.stride = sizeof(float)*2;
-					// 	vk_vertexInputBindingDescription.inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
-					// }
-					// VkVertexInputAttributeDescription vk_vertexInputAttributeDescription;
-					// {
-					// 	vk_vertexInputAttributeDescription.location = 0;
-					// 	vk_vertexInputAttributeDescription.binding = 0;
-					// 	vk_vertexInputAttributeDescription.format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
-					// 	vk_vertexInputAttributeDescription.offset = 0;
-					// }
 					VkPipelineVertexInputStateCreateInfo vk_pipelineVertexInputStateCreateInfo;
 					{
 						vk_pipelineVertexInputStateCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -2084,7 +2214,8 @@ namespace GreatVEngine
 						vk_pipelineMultisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
 					}
 
-					VkPipelineDepthStencilStateCreateInfo vk_pipelineDepthStencilStateCreateInfo;
+					VkPipelineDepthStencilStateCreateInfo vk_pipelineDepthStencilStateCreateInfo = depthState_;
+					/*VkPipelineDepthStencilStateCreateInfo vk_pipelineDepthStencilStateCreateInfo;
 					{
 						vk_pipelineDepthStencilStateCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 						vk_pipelineDepthStencilStateCreateInfo.pNext = nullptr;
@@ -2116,9 +2247,10 @@ namespace GreatVEngine
 						}
 						vk_pipelineDepthStencilStateCreateInfo.minDepthBounds = 0.0f;
 						vk_pipelineDepthStencilStateCreateInfo.maxDepthBounds = 0.0f;
-					}
+					}*/
 
-					VkPipelineColorBlendAttachmentState vk_pipelineColorBlendAttachmentState;
+					VkPipelineColorBlendStateCreateInfo vk_pipelineColorBlendStateCreateInfo = blendState_;
+					/*VkPipelineColorBlendAttachmentState vk_pipelineColorBlendAttachmentState;
 					{
 						vk_pipelineColorBlendAttachmentState.blendEnable = VK_TRUE;
 						vk_pipelineColorBlendAttachmentState.srcColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA;
@@ -2130,7 +2262,9 @@ namespace GreatVEngine
 						vk_pipelineColorBlendAttachmentState.colorWriteMask = 
 							VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT |
 							VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT |
-							VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT;
+							VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT |
+							// VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT |
+							0;
 					}
 					VkPipelineColorBlendStateCreateInfo vk_pipelineColorBlendStateCreateInfo;
 					{
@@ -2148,7 +2282,7 @@ namespace GreatVEngine
 							vk_pipelineColorBlendStateCreateInfo.blendConstants[2] = 1.0f;
 							vk_pipelineColorBlendStateCreateInfo.blendConstants[3] = 1.0f;
 						}
-					}
+					}*/
 
 					VkGraphicsPipelineCreateInfo vk_graphicsPipelineCreateInfo;
 					{
@@ -2233,6 +2367,25 @@ namespace GreatVEngine
 				return handle;
 			}
 		};
+
+		inline Format GetFormat(const Image::Format& format_)
+		{
+			switch(format_)
+			{
+				case Image::Format::VK_FORMAT_R8G8B8_UNORM: return Format::R8G8B8_UInt;
+				case Image::Format::VK_FORMAT_R8G8B8A8_UNORM: return Format::R8G8B8A8_UInt;
+				default: throw Exception("Unsupported format");
+			}
+		}
+		inline Image::Format GetFormat(const Format& format_)
+		{
+			switch(format_)
+			{
+				case Format::R8G8B8_UInt: return Image::Format::VK_FORMAT_R8G8B8_UNORM;
+				case Format::R8G8B8A8_UInt: return Image::Format::VK_FORMAT_R8G8B8A8_UNORM;
+				default: throw Exception("Unsupported format");
+			}
+		}
 	}
 }
 
@@ -2402,6 +2555,86 @@ inline void GreatVEngine::Vulkan::Queue::Submit(CommandBuffer* commandBuffers_)
 	}
 
 	QueueSubmit(handle, Vector<VkSubmitInfo>({vk_submitInfo}), VK_NULL_HANDLE);
+}
+#pragma endregion
+
+#pragma region BasicImage
+inline GreatVEngine::Vulkan::BasicImage::Data GreatVEngine::Vulkan::BasicImage::TransformData(const Data& inputData_, const Format& inputFormat_, const Format& outputFormat_)
+{
+	enum class Type
+	{
+		UNorm,
+		SNorm,
+		UScaled,
+		SScaled,
+		UInt,
+		SInt,
+		SRGB,
+		SFloat,
+	};
+
+	Type inputType;
+	Size4 inputSize; // Size of every component of pixel of input data in BYTES
+	Size4 inputOffset; // Offset of channels of pixel of input data in BYTES
+
+	switch(inputFormat_)
+	{
+		case Format::VK_FORMAT_R8G8B8_UNORM:		inputType = Type::UNorm;	inputSize = Size4(1, 1, 1, 0);		inputOffset = IVec4(0, 1, 2, 0); break;
+		case Format::VK_FORMAT_B8G8R8_UNORM:		inputType = Type::UNorm;	inputSize = Size4(1, 1, 1, 0);		inputOffset = IVec4(2, 1, 0, 0); break;
+		case Format::VK_FORMAT_R8G8B8A8_UNORM:		inputType = Type::UNorm;	inputSize = Size4(1, 1, 1, 1);		inputOffset = IVec4(0, 1, 2, 3); break;
+		case Format::VK_FORMAT_B8G8R8A8_UNORM:		inputType = Type::UNorm;	inputSize = Size4(1, 1, 1, 1);		inputOffset = IVec4(2, 1, 0, 3); break;
+		default: throw Exception("Unsupported input format");
+	}
+
+
+	Type outputType;
+	Size4 outputSize; // Size of every component of pixel of ioutnput data in BYTES
+	Size4 outputOffset; // Offset of channels of pixel of output data in BYTES
+
+	switch(outputFormat_)
+	{
+		case Format::VK_FORMAT_R8G8B8_UNORM:		outputType = Type::UNorm;	outputSize = Size4(1, 1, 1, 0);		outputOffset = IVec4(0, 1, 2, 0); break;
+		case Format::VK_FORMAT_B8G8R8_UNORM:		outputType = Type::UNorm;	outputSize = Size4(1, 1, 1, 0);		outputOffset = IVec4(2, 1, 0, 0); break;
+		case Format::VK_FORMAT_R8G8B8A8_UNORM:		outputType = Type::UNorm;	outputSize = Size4(1, 1, 1, 1);		outputOffset = IVec4(0, 1, 2, 3); break;
+		case Format::VK_FORMAT_B8G8R8A8_UNORM:		outputType = Type::UNorm;	outputSize = Size4(1, 1, 1, 1);		outputOffset = IVec4(2, 1, 0, 3); break;
+		default: throw Exception("Unsupported output format");
+	}
+
+
+	auto inputPixelsCount = inputData_.size() / (inputSize.r + inputSize.g + inputSize.b + inputSize.a);
+
+	Data outputData(inputPixelsCount * (outputSize.r + outputSize.g + outputSize.b + outputSize.a), 0x00);
+
+	auto input = inputData_.data();
+	auto output = outputData.data();
+
+	for(Size i = 0; i < inputPixelsCount; ++i)
+	{
+		auto inputPixel = input + i*(inputSize.r + inputSize.g + inputSize.b + inputSize.a);
+		auto outputPixel = output + i*(outputSize.r + outputSize.g + outputSize.b + outputSize.a);
+
+		for(Size j = 0; j < 4; ++j)
+		{
+			if(inputSize[j] > 0 && outputSize[j] > 0)
+			{
+				if(inputSize[j] != outputSize[j] || inputType != outputType)
+				{
+					throw Exception("Format convertion not implemented yet");
+					// TODO: convertion from int to float and so on
+				}
+				memcpy(outputPixel + outputOffset[j], inputPixel + inputOffset[j], outputSize[j]);
+			}
+			else
+			{
+				if(j == 3) // fill alpha with 0xFF
+				{
+					memset(outputPixel + outputOffset[j], 0xFF, outputSize[j]);
+				}
+			}
+		}
+	}
+
+	return std::move(outputData);
 }
 #pragma endregion
 

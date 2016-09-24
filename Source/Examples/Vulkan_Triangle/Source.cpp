@@ -182,7 +182,7 @@ void func()
 			swapchainImageViews[i] = new Vulkan::ImageView(vkDevice, swapchainImages[i], Vulkan::ImageView::Type::VK_IMAGE_VIEW_TYPE_2D);
 			framebuffers[i] = new Vulkan::Framebuffer(
 				vkDevice, renderPass,
-				{swapchainImageViews[i]->GetBasicImage()->GetSize().width, swapchainImageViews[i]->GetBasicImage()->GetSize().height},
+				{swapchainImageViews[i]->GetBasicImage()->GetExtent().width, swapchainImageViews[i]->GetBasicImage()->GetExtent().height},
 				{swapchainImageViews[i]});
 		}
 	}
@@ -204,7 +204,22 @@ void func()
 		Vulkan::GraphicPipeline::Topology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 		Vulkan::GraphicPipeline::Fill::VK_POLYGON_MODE_LINE,
 		Vulkan::GraphicPipeline::Culls::VK_CULL_MODE_NONE,
-		Vulkan::GraphicPipeline::Face::VK_FRONT_FACE_COUNTER_CLOCKWISE);
+		Vulkan::GraphicPipeline::Face::VK_FRONT_FACE_COUNTER_CLOCKWISE,
+		Vulkan::GraphicPipeline::DepthState(false, false, false),
+		Vulkan::GraphicPipeline::BlendState(
+			true, Vulkan::GraphicPipeline::BlendState::Logic::VK_LOGIC_OP_CLEAR,
+			Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+			{
+				Vulkan::GraphicPipeline::BlendState::Attachment(
+					true,
+					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_SRC_ALPHA,
+					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_ONE,
+					Vulkan::GraphicPipeline::BlendState::Operation::VK_BLEND_OP_ADD,
+					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_ONE,
+					Vulkan::GraphicPipeline::BlendState::Operation::VK_BLEND_OP_ADD)
+			}
+	));
 
 	auto queue = new Vulkan::Queue(vkDevice, 0, 0);
 	auto commandPool = new Vulkan::CommandPool(vkDevice, 0);
