@@ -54,6 +54,11 @@ namespace GreatVEngine
 
 	using Filename = String;
 
+	inline Filename Filepath(const Filename& filename_)
+	{
+		return "../../../../../" + filename_;
+	}
+
 	template<class T>
 	inline Reference<T> MakeReference(T* t)
 	{

@@ -3,6 +3,9 @@
 
 
 #include "ErrorHandling.hpp"
+
+
+#include <Logic/Mathematics.hpp>
 #pragma endregion
 
 
@@ -44,16 +47,42 @@ namespace GreatVEngine
 		public:
 			using Handle = HWND;
 			using Name = String;
+			using Style = DWORD;
+			using Size = Size2;
+		protected:
+			const static Style styleDefault = WS_SYSMENU | WS_VISIBLE;
 		protected:
 			const Reference<const WindowClass> windowClass;
 			const Name name;
+			const Style style;
+			Size size;
 			const Handle handle;
 		public:
 			Window(Reference<const WindowClass> windowClass_, const Name& name_);
+			Window(Reference<const WindowClass> windowClass_, const Name& name_, const Size& size_);
+			Window(Reference<const WindowClass> windowClass_, const Name& name_, const Size& size_, const Style& style_);
 			~Window();
 		public:
-			Name GetName() const;
-			Handle GetHandle() const;
+			inline Name GetName() const
+			{
+				return name;
+			}
+			inline Handle GetHandle() const
+			{
+				return handle;
+			}
+			inline Style GetStyle() const
+			{
+				return style;
+			}
+			inline Size GetSize() const
+			{
+				return size;
+			}
+			inline Float32 GetAspect() const
+			{
+				return (Float32)size.x / (Float32)size.y;
+			}
 			void Loop() const;
 		};
 

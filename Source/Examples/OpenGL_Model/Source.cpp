@@ -1,5 +1,4 @@
 #include <Logic/Logic.hpp>
-#include <Infrastructure/Infrastructure.hpp>
 #include <APIs/OpenGL/OpenGL.hpp>
 #include <Utilities/OpenIL/Functions.hpp>
 

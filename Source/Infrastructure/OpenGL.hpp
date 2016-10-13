@@ -6,6 +6,7 @@
 
 
 #include <APIs/OpenGL/Wrapper.hpp>
+#include <APIs/OpenGL/WinAPI.hpp>
 #include <Utilities/OpenIL/Functions.hpp>
 #pragma endregion
 
@@ -14,6 +15,29 @@ namespace GreatVEngine
 {
 	namespace OpenGL
 	{
+		String LoadFileAsString(const Filename& filename_)
+		{
+			FILE* file = nullptr;
+			if(fopen_s(&file, filename_.c_str(), "rb") != 0)
+			{
+				throw Exception("failed to load file: " + filename_);
+			}
+			fseek(file, 0, FILE_END);
+			auto size = ftell(file);
+
+			rewind(file);
+
+			String result;
+			result.resize(size);
+			fread((void*)result.data(), 1, size, file);
+
+			fclose(file);
+
+			return std::move(result);
+		}
+
+
+		class Engine;
 		class Technique;
 		class Map;
 		class Material;
@@ -21,6 +45,40 @@ namespace GreatVEngine
 		class Model;
 		class Object;
 		class Scene;
+		class Light;
+		namespace Lights
+		{
+			class Direction;
+			class Point;
+			class Spot;
+		}
+		namespace Environments
+		{
+			class Cubemap;
+		};
+
+		class Engine
+		{
+			friend Technique;
+			friend Map;
+			friend Material;
+			friend Shape;
+			friend Model;
+			friend Object;
+			friend Scene;
+		public: // protected:
+			Context*const context;
+		public:
+			inline Engine(Reference<OpenGL::WinAPI::Context::DeviceContext> deviceContext_):
+				context(new OpenGL::WinAPI::ExtendedContext(deviceContext_))
+			{
+				context->Set();
+			}
+			inline ~Engine()
+			{
+				delete context;
+			}
+		};
 
 		class Technique:
 			public Graphics::Technique
@@ -32,7 +90,7 @@ namespace GreatVEngine
 			friend Shape;
 			friend Object;
 		protected:
-			const Reference<Context> context;
+			const Reference<Engine> engine;
 			Shader*const vertex;
 			Shader*const tessellationControl;
 			Shader*const tessellationEvaluation;
@@ -41,19 +99,19 @@ namespace GreatVEngine
 			Program*const program;
 		public:
 			inline Technique(
-				Reference<Context> context_,
+				Reference<Engine> engine_,
 				const Shader::Source& sourceVertex_,
 				const Shader::Source& sourceTessellationControl_,
 				const Shader::Source& sourceTessellationEvaluation_,
 				const Shader::Source& sourceGeometry_,
 				const Shader::Source& sourceFragment_):
-				context(context_),
+				engine(engine_),
 				vertex(!sourceVertex_.empty() ? new Shader(Shader::Type::Vertex, sourceVertex_) : nullptr),
 				tessellationControl(!sourceTessellationControl_.empty() ? new Shader(Shader::Type::TessellationControl, sourceTessellationControl_) : nullptr),
 				tessellationEvaluation(!sourceTessellationEvaluation_.empty() ? new Shader(Shader::Type::TessellationEvaluation, sourceTessellationEvaluation_) : nullptr),
 				geometry(!sourceGeometry_.empty() ? new Shader(Shader::Type::Geometry, sourceGeometry_) : nullptr),
 				fragment(!sourceFragment_.empty() ? new Shader(Shader::Type::Fragment, sourceFragment_) : nullptr),
-				program(new Program(context.get(), {vertex, tessellationControl, tessellationEvaluation, geometry, fragment}))
+				program(new Program(engine->context, {vertex, tessellationControl, tessellationEvaluation, geometry, fragment}))
 			{
 			}
 			inline ~Technique()
@@ -83,7 +141,7 @@ namespace GreatVEngine
 			}
 		public:
 			static Reference<Technique> Load(
-				Reference<Context> context_,
+				Reference<Engine> engine_,
 				const Filename& base_,
 				const Filename& vertex_,
 				const Filename& tessellationControl_,
@@ -91,39 +149,13 @@ namespace GreatVEngine
 				const Filename& geometry_,
 				const Filename& fragment_)
 			{
-				auto LoadFile = [](const Filename& filename_)
-				{
-					FILE* file = nullptr;
-					if(fopen_s(&file, filename_.c_str(), "rb") != 0)
-					{
-						throw Exception("failed to load file");
-					}
-					fseek(file, 0, FILE_END);
-					auto size = ftell(file);
-
-					rewind(file);
-
-					Shader::Source result;
-					result.resize(size);
-					fread((void*)result.data(), 1, size, file);
-
-					fclose(file);
-
-					return std::move(result);
-				};
-
-				if(vertex_.size() > 0)
-				{
-					auto source = LoadFile(base_ + vertex_);
-				}
-
 				return MakeReference(new Technique(
-					context_,
-					vertex_.size() > 0 ? LoadFile(base_ + vertex_) : Shader::Source(),
-					tessellationControl_.size() > 0 ? LoadFile(base_ + tessellationControl_) : Shader::Source(),
-					tessellationEvaluation_.size() > 0 ? LoadFile(base_ + tessellationEvaluation_) : Shader::Source(),
-					geometry_.size() > 0 ? LoadFile(base_ + geometry_) : Shader::Source(),
-					fragment_.size() > 0 ? LoadFile(base_ + fragment_) : Shader::Source()));
+					engine_,
+					vertex_.size() > 0 ? LoadFileAsString(base_ + vertex_) : Shader::Source(),
+					tessellationControl_.size() > 0 ? LoadFileAsString(base_ + tessellationControl_) : Shader::Source(),
+					tessellationEvaluation_.size() > 0 ? LoadFileAsString(base_ + tessellationEvaluation_) : Shader::Source(),
+					geometry_.size() > 0 ? LoadFileAsString(base_ + geometry_) : Shader::Source(),
+					fragment_.size() > 0 ? LoadFileAsString(base_ + fragment_) : Shader::Source()));
 			}
 		};
 		class Map:
@@ -148,12 +180,12 @@ namespace GreatVEngine
 				delete texture;
 			}
 		public:
-			inline static Reference<Map> Load2D(Reference<Context> context_, const Filename& filename_)
+			inline static Reference<Map> Load2D(Reference<Engine> engine_, const Filename& filename_)
 			{
 				auto image = OpenIL::Image::Load2D(filename_);
 				
 				auto texture = new OpenGL::Texture(
-					context_.get(),
+					engine_->context,
 					image->GetWidth(), image->GetHeight(), image->GetDepth(),
 					OpenGL::Texture::Type::D2, OpenGL::Texture::InternalFormat::RGBA8,
 					OpenGL::GetFormat(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
@@ -173,12 +205,12 @@ namespace GreatVEngine
 			friend Shape;
 			friend Object;
 		protected:
-			const Reference<Context> context;
+			const Reference<Engine> engine;
 			Array<Reference<Technique>, TechniquesCount> techniques;
 			Array<Reference<Map>, MapsCount> maps;
 		public:
-			inline Material(Reference<Context> context_):
-				context(context_)
+			inline Material(Reference<Engine> engine_):
+				engine(engine_)
 			{
 			}
 			inline ~Material() = default;
@@ -213,6 +245,29 @@ namespace GreatVEngine
 					throw Exception("No technique available");
 				}
 			}
+		public:
+			inline void SetValue(const String& name_, const Float32& value_)
+			{
+				for(auto &technique : techniques)
+				{
+					if(technique)
+					{
+						technique->program->Set();
+						technique->program->SetFloat(name_, value_);
+					}
+				}
+			}
+			inline void SetValue(const String& name_, const Vec3& value_)
+			{
+				for(auto &technique : techniques)
+				{
+					if(technique)
+					{
+						technique->program->Set();
+						technique->program->SetVec3(name_, value_);
+					}
+				}
+			}
 		};
 
 		class Shape:
@@ -228,16 +283,16 @@ namespace GreatVEngine
 			static const Geometry::VertexPackMode vertexPackMode = Geometry::VertexPackMode::Pos32F_TBN32F_Tex32F;
 			static const Geometry::IndexPackMode indexPackMode = Geometry::IndexPackMode::UInt32;
 		protected:
-			const Reference<Context> context;
+			const Reference<Engine> engine;
 			Buffers::Array* vertices;
 			Buffers::Index* indices;
 			Size verticesCount;
 			Size indicesCount;
 		public:
-			inline Shape(Reference<Context> context_, Reference<Geometry> geometry_):
-				context(context_),
-				vertices(new OpenGL::Buffers::Array(context.get(), *geometry_->GetVertices(vertexPackMode).get())),
-				indices(new OpenGL::Buffers::Index(context.get(), *geometry_->GetIndices(indexPackMode).get())),
+			inline Shape(Reference<Engine> engine_, Reference<Geometry> geometry_):
+				engine(engine_),
+				vertices(new OpenGL::Buffers::Array(engine->context, *geometry_->GetVertices(vertexPackMode).get())),
+				indices(new OpenGL::Buffers::Index(engine->context, *geometry_->GetIndices(indexPackMode).get())),
 				verticesCount(geometry_->vertices.size()),
 				indicesCount(geometry_->indices.size())
 			{
@@ -265,13 +320,13 @@ namespace GreatVEngine
 			friend Shape;
 			friend Object;
 		protected:
-			const Reference<Context> context;
+			const Reference<Engine> engine;
 			const Reference<Shape> shape;
 			const Reference<Material> material;
 			const Array<Buffers::Attribute*, Material::TechniquesCount> attributes;
 		public:
-			inline Model(Reference<Context> context_, Reference<Shape> shape_, Reference<Material> material_):
-				context(context_),
+			inline Model(Reference<Engine> engine_, Reference<Shape> shape_, Reference<Material> material_):
+				engine(engine_),
 				shape(shape_),
 				material(material_),
 				attributes([&]()
@@ -293,7 +348,7 @@ namespace GreatVEngine
 							program->Set();
 
 							attributes[i] = new Buffers::Attribute(
-								context.get(),
+								engine->context,
 								program,
 								shape->vertices,
 								shape->indices, {
@@ -356,6 +411,16 @@ namespace GreatVEngine
 			{
 				glDrawElements(GL_TRIANGLES, shape->indicesCount, GL_UNSIGNED_INT, 0);
 			}
+		public:
+			inline bool operator < (const Model& source_)
+			{
+				if(material.get() == source_.material.get())
+				{
+					return shape.get() < source_.shape.get();
+				}
+
+				return material.get() < source_.material.get();
+			}
 		};
 
 		class Object:
@@ -379,6 +444,21 @@ namespace GreatVEngine
 				onModelChange(model_);
 				model = model_;
 			}
+		public:
+			inline bool operator < (const Object& source_)
+			{
+				if(model != nullptr)
+				{
+					if(source_.model != nullptr)
+					{
+						return *model < *source_.model;
+					}
+
+					return true;
+				}
+
+				return false;
+			}
 		};
 
 		class Scene:
@@ -390,20 +470,339 @@ namespace GreatVEngine
 			friend Model;
 			friend Shape;
 			friend Object;
-		protected:
-			const Reference<Context> context;
-			Vector<Reference<Object>> objects;
 		public:
-			inline Scene(Reference<Context> context_):
-				context(context_)
+			using Viewport = Size2;
+		protected:
+			struct Target
+			{
+			public:
+				Texture*const diffuse;
+				Texture*const specular;
+				Buffers::Frame*const frameComplete;
+				Buffers::Frame*const frameSpecular;
+			public:
+				inline Target(Context* context_, const Viewport& viewport_):
+					diffuse(new Texture(
+						context_, viewport_.x, viewport_.y, 1, Texture::Type::D2,
+						Texture::InternalFormat::RGBA16F, Texture::Format::RGBA, Texture::ComponentType::SFloat16,
+						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
+					specular(new Texture(
+						context_, viewport_.x, viewport_.y, 1, Texture::Type::D2,
+						Texture::InternalFormat::RGBA16F, Texture::Format::RGBA, Texture::ComponentType::SFloat16,
+						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
+					frameComplete(new Buffers::Frame(context_, {diffuse, specular}, nullptr, nullptr)),
+					frameSpecular(new Buffers::Frame(context_, {specular}, nullptr, nullptr))
+				{
+				}
+			};
+			struct Presenter
+			{
+			public:
+				Program*const program;
+				Buffers::Array*const vertices;
+				Buffers::Attribute*const attributes;
+			public:
+				inline Presenter(Context* context_):
+					program([&](){
+						auto program_ = new Program(context_, {
+							new Shader(Shader::Type::Vertex, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.vs"))),
+							new Shader(Shader::Type::Geometry, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.gs"))),
+							new Shader(Shader::Type::Fragment, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.fs"))),
+						});
+
+						program_->Set();
+
+							return program_;
+					}()),
+					vertices(new Buffers::Array(context_, 1, nullptr)),
+					attributes(new Buffers::Attribute(context_, program, vertices, nullptr, {}))
+				{
+					program->SetInt("textureColor", 0);
+				}
+			};
+			struct GeometyPass
+			{
+			public:
+				// /*
+				// */
+				// Texture*const color;	//	R8	G8	B8	XX	colorRGB
+				// Texture*const normals;	//	R8	G8	B8	XX	encodedNormal2, roughness
+				// Texture*const normals;	//	R8	G8	B8	XX	gloss, metallic, ???
+				// Texture*const depth;	//	D24	S8
+				/*
+				Color + Alpha
+				Specular + Roughness
+				Normals + Height
+				*/
+			public:
+				Texture*const color;	//	R8	G8	B8	XX	colorRGB
+				Texture*const specular;	//	R8	G8	B8	XX	specularRGB
+				Texture*const normals;	//	R16	G16	B16	XX	normalXYZ
+				Texture*const material;	//	R8	XX	XX	XX	roughness, ???, ???
+				Texture*const depthStencil;	//	D24	S8
+				Buffers::Frame*const frame;
+			public:
+				inline GeometyPass(Context* context_, const Viewport& viewport_):
+					color(new Texture(context_, viewport_.x, viewport_.y, 1,
+						Texture::Type::D2, Texture::InternalFormat::RGBA8, Texture::Format::RGBA, Texture::ComponentType::UInt8,
+						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
+					specular(new Texture(context_, viewport_.x, viewport_.y, 1,
+						Texture::Type::D2, Texture::InternalFormat::RGBA8, Texture::Format::RGBA, Texture::ComponentType::UInt8,
+						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
+					normals(new Texture(context_, viewport_.x, viewport_.y, 1,
+						Texture::Type::D2, Texture::InternalFormat::RGBA16F, Texture::Format::RGBA, Texture::ComponentType::SFloat16,
+						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
+					material(new Texture(context_, viewport_.x, viewport_.y, 1,
+						Texture::Type::D2, Texture::InternalFormat::RGBA8, Texture::Format::RGBA, Texture::ComponentType::UInt8,
+						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
+					depthStencil(new Texture(context_, viewport_.x, viewport_.y, 1,
+						Texture::Type::D2, Texture::InternalFormat::Depth24Stencil8, Texture::Format::DepthStencil, Texture::ComponentType::UInt24_8,
+						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
+					frame(new Buffers::Frame(context_, {color, specular, normals, material}, depthStencil))
+				{
+					frame->Reset();
+				}
+				inline ~GeometyPass()
+				{
+					delete frame;
+					delete color;
+					delete specular;
+					delete normals;
+					delete material;
+					delete depthStencil;
+				}
+			};
+			struct LightPass
+			{
+			public:
+				struct Direction
+				{
+				public:
+					Program*const program;
+					Buffers::Array*const vertices;
+					Buffers::Attribute*const attributes;
+				public:
+					inline Direction(Context* context_):
+						program([&](){
+							auto program_ = new Program(context_, {
+								new Shader(Shader::Type::Vertex, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Direction Light/Basic/1.vs"))),
+								new Shader(Shader::Type::Geometry, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Direction Light/Basic/1.gs"))),
+								new Shader(Shader::Type::Fragment, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Direction Light/Basic/1.fs"))),
+							});
+
+							program_->Set();
+
+							return program_;
+						}()),
+						vertices(new Buffers::Array(context_, 1, nullptr)),
+						attributes(new Buffers::Attribute(context_, program, vertices, nullptr, {}))
+					{
+						program->SetInt("textureColor", 0);
+						program->SetInt("textureSpecular", 1);
+						program->SetInt("textureNormal", 2);
+						program->SetInt("textureMaterial", 3);
+						program->SetInt("textureDepth", 4);
+					}
+				};
+				struct Point
+				{
+				public:
+					Program*const program;
+					Buffers::Array* vertices;
+					Buffers::Attribute* attributes;
+				public:
+					inline Point(Context* context_):
+						program([&](){
+						auto program_ = new Program(context_, {
+							new Shader(Shader::Type::Vertex,	LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Point Light/Basic/1.vs"))),
+							new Shader(Shader::Type::Geometry,	LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Point Light/Basic/1.gs"))),
+							new Shader(Shader::Type::Fragment,	LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Point Light/Basic/1.fs"))),
+						});
+
+						program_->Set();
+
+						return program_;
+					}()),
+						vertices(new Buffers::Array(context_, 1, nullptr)),
+						attributes(new Buffers::Attribute(context_, program, vertices, nullptr, {}))
+					{
+						program->SetInt("textureColor", 0);
+						program->SetInt("textureSpecular", 1);
+						program->SetInt("textureNormal", 2);
+						program->SetInt("textureMaterial", 3);
+						program->SetInt("textureDepth", 4);
+					}
+				};
+			public:
+				Direction*const direction;
+				Point*const point;
+			public:
+				inline LightPass(Context* context_):
+					direction(new Direction(context_)),
+					point(new Point(context_))
+				{
+				}
+				inline ~LightPass()
+				{
+					delete direction;
+				}
+			};
+			struct EnvironmentPass
+			{
+			public:
+				struct Cubemap
+				{
+				public:
+					Sampler* sampler;
+					Program*const program;
+					Buffers::Array* vertices;
+					Buffers::Attribute* attributes;
+				public:
+					inline Cubemap(Context* context_):
+						sampler(new Sampler(context_, Sampler::Wrap::Repeat, Sampler::Filter::Mipmap)),
+						program([&](){
+							auto program_ = new Program(context_, {
+								new Shader(Shader::Type::Vertex,	LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Cubemap Environment/1.vs"))),
+								new Shader(Shader::Type::Geometry,	LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Cubemap Environment/1.gs"))),
+								new Shader(Shader::Type::Fragment,	LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Deferred Shading/Cubemap Environment/1.fs"))),
+							});
+
+							program_->Set();
+
+							return program_;
+						}()),
+						vertices(new Buffers::Array(context_, 1, nullptr)),
+						attributes(new Buffers::Attribute(context_, program, vertices, nullptr, {}))
+					{
+						program->SetInt("textureColor", 0);
+						program->SetInt("textureSpecular", 1);
+						program->SetInt("textureNormal", 2);
+						program->SetInt("textureMaterial", 3);
+						program->SetInt("textureDepth", 4);
+						program->SetInt("textureDiffuse", 5);
+						program->SetInt("textureEnvironment", 8);
+					}
+				};
+			public:
+				Cubemap*const cubemap;
+			public:
+				inline EnvironmentPass(Context* context_):
+					cubemap(new Cubemap(context_))
+				{
+				}
+				inline ~EnvironmentPass()
+				{
+					delete cubemap;
+				}
+			};
+		protected:
+			const Reference<Engine> engine;
+			Viewport viewport;
+			Target* target;
+			GeometyPass* geometyPass;
+			LightPass* lightPass;
+			EnvironmentPass* environmentPass;
+			Presenter* presenter;
+			Vector<Reference<Object>> objects;
+			Vector<Reference<Lights::Direction>> lightsDirection;
+			Vector<Reference<Lights::Point>> lightsPoint;
+			Vector<Reference<Lights::Spot>> lightsSpot;
+			Vector<Reference<Environments::Cubemap>> environmentsCubemap;
+		public:
+			inline Scene(Reference<Engine> engine_, const Viewport& viewport_):
+				engine(engine_),
+				viewport(viewport_),
+				target(new Target(engine_->context, viewport_)),
+				geometyPass(new GeometyPass(engine->context, viewport_)),
+				lightPass(new LightPass(engine->context)),
+				environmentPass(new EnvironmentPass(engine->context)),
+				presenter(new Presenter(engine->context))
 			{
 			}
-			virtual ~Scene() override = default;
+			virtual ~Scene() override
+			{
+				delete geometyPass;
+				delete lightPass;
+				delete presenter;
+			}
 		public:
 			inline void Add(Reference<Object> object_);
+			inline void Add(Reference<Lights::Direction> light_);
+			inline void Add(Reference<Lights::Point> light_);
+			inline void Add(Reference<Lights::Spot> light_);
+			inline void Add(Reference<Environments::Cubemap> environment_);
 			inline void Remove(Reference<Object> object_);
+			inline void Remove(Reference<Lights::Direction> light_);
+			inline void Remove(Reference<Lights::Point> light_);
+			inline void Remove(Reference<Lights::Spot> light_);
+			inline void Remove(Reference<Environments::Cubemap> environment_);
 			inline void Render(Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_ = Material::TechniqueType::Basic);
 		};
+
+		class Light
+		{
+		};
+		namespace Lights
+		{
+			class Direction:
+				public Graphics::Lights::Direction,
+				public Light
+			{
+			};
+			class Point:
+				public Graphics::Lights::Point,
+				public Light
+			{
+			};
+			class Spot:
+				public Graphics::Lights::Spot,
+				public Light
+			{
+			};
+		}
+
+		namespace Environments
+		{
+			class Cubemap:
+				public Graphics::Environments::Cubemap
+			{
+			public:
+				Texture*const texture;
+			public:
+				inline Cubemap(Texture* texture_):
+					texture(texture_)
+				{
+				}
+				inline ~Cubemap()
+				{
+					delete texture;
+				}
+			public:
+				inline static Reference<Cubemap> LoadCube(Reference<Engine> engine_, const Filename& filename_)
+				{
+					auto cubeImages = OpenIL::Image::LoadCube(filename_);
+					auto image = cubeImages[OpenIL::Image::Face::NegativeX];
+
+					OpenGL::Texture::CubeData data;
+					data[0] = (void*)cubeImages[OpenIL::Image::Face::NegativeX]->GetData().data();
+					data[1] = (void*)cubeImages[OpenIL::Image::Face::PositiveX]->GetData().data();
+					data[2] = (void*)cubeImages[OpenIL::Image::Face::NegativeY]->GetData().data();
+					data[3] = (void*)cubeImages[OpenIL::Image::Face::PositiveY]->GetData().data();
+					data[4] = (void*)cubeImages[OpenIL::Image::Face::NegativeZ]->GetData().data();
+					data[5] = (void*)cubeImages[OpenIL::Image::Face::PositiveZ]->GetData().data();
+
+					auto texture = new OpenGL::Texture(
+						engine_->context,
+						image->GetWidth(),
+						OpenGL::Texture::InternalFormat::RGBA8,
+						OpenGL::GetFormat(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
+						OpenGL::GetComponentType(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
+						OpenGL::Texture::Wrap::Repeat, OpenGL::Texture::Filter::Off, data, true);
+
+					return MakeReference(new Cubemap(texture));
+				}
+			};
+		}
 	}
 }
 
@@ -429,42 +828,248 @@ inline void GreatVEngine::OpenGL::Scene::Add(Reference<OpenGL::Object> object_)
 
 	objects.push_back(object_);
 }
+inline void GreatVEngine::OpenGL::Scene::Add(Reference<Lights::Direction> light_)
+{
+	lightsDirection.push_back(light_);
+}
+inline void GreatVEngine::OpenGL::Scene::Add(Reference<Lights::Point> light_)
+{
+	lightsPoint.push_back(light_);
+}
+inline void GreatVEngine::OpenGL::Scene::Add(Reference<Lights::Spot> light_)
+{
+	lightsSpot.push_back(light_);
+}
+inline void GreatVEngine::OpenGL::Scene::Add(Reference<Environments::Cubemap> environment_)
+{
+	environmentsCubemap.push_back(environment_);
+}
 inline void GreatVEngine::OpenGL::Scene::Remove(Reference<OpenGL::Object> object_)
 {
 	objects.erase(std::find(objects.begin(), objects.end(), object_));
 }
+inline void GreatVEngine::OpenGL::Scene::Remove(Reference<Lights::Direction> light_)
+{
+	lightsDirection.erase(std::find(lightsDirection.begin(), lightsDirection.end(), light_));
+}
+inline void GreatVEngine::OpenGL::Scene::Remove(Reference<Lights::Point> light_)
+{
+	lightsPoint.erase(std::find(lightsPoint.begin(), lightsPoint.end(), light_));
+}
+inline void GreatVEngine::OpenGL::Scene::Remove(Reference<Lights::Spot> light_)
+{
+	lightsSpot.erase(std::find(lightsSpot.begin(), lightsSpot.end(), light_));
+}
+inline void GreatVEngine::OpenGL::Scene::Remove(Reference<Environments::Cubemap> environment_)
+{
+	environmentsCubemap.erase(std::find(environmentsCubemap.begin(), environmentsCubemap.end(), environment_));
+}
 inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_)
 {
+	auto previousFrame = engine->context->GetBufferFrame();
+
+
+	// sort by material/shape
+	std::sort(objects.begin(), objects.end(), [](Reference<Object> a, Reference<Object> b){
+		return *a.get() < *b.get();
+	});
+
+	// render to geometry buffer
+	geometyPass->frame->Set();
+	{
+		glEnable(GL_CULL_FACE); glCullFace(GL_BACK); glFrontFace(GL_CCW); DebugTest();
+		glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LESS); DebugTest();
+		glDisable(GL_BLEND); DebugTest();
+
+		glClearColor(0.16f, 0.16f, 0.16f, 1.0f);
+		glClearDepth(1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glViewport(0, 0, viewport.x, viewport.y);
+
+		for(auto &object : objects)
+		{
+			auto &model = object->model;
+
+			auto shape = model->shape;
+			auto material = model->material;
+			auto program = model->material->techniques[(Size)techniqueType_]->program;
+
+			model->Set(techniqueType_);
+
+			program->SetInt("textureColor", 0);
+			program->SetInt("textureNormals", 1);
+			program->SetInt("textureSpecular", 2);
+
+			program->SetMat4("modelViewProjectionMatrix", camera_->GetVPMat() * object->GetMMat());
+			program->SetMat4("modelMatrix", Move4(-camera_->GetPosition()) * object->GetMMat());
+			program->SetMat3("rotateMatrix", object->GetRMat());
+
+			model->DrawIndexed();
+		}
+	}
+
+	// render light (diffuse + specular)
+	target->frameComplete->Set();
+	{
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		geometyPass->color->Set(0);
+		geometyPass->specular->Set(1);
+		geometyPass->normals->Set(2);
+		geometyPass->material->Set(3);
+		geometyPass->depthStencil->Set(4);
+
+		lightPass->direction;
+		{
+			glDisable(GL_CULL_FACE);
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE);
+
+			lightPass->direction->attributes->Set();
+			lightPass->direction->vertices->Set();
+			lightPass->direction->program->Set();
+			lightPass->direction->program->SetFloat("camFar", camera_->GetPerspective().zFar);
+			lightPass->direction->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+			lightPass->direction->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+			lightPass->direction->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+			for(auto &light : lightsDirection)
+			{
+				if(light->IsVisible())
+				{
+					lightPass->direction->program->SetVec3("lightDirection", light->GetRMat() * Vec3(0.0f, 0.0f, 1.0f));
+					lightPass->direction->program->SetVec3("lightColor", VecXYZ(light->GetColor()) * light->GetColor().w);
+					lightPass->direction->program->SetFloat("lightAmbient", light->GetAmbient());
+					lightPass->direction->program->SetFloat("lightFog", light->GetFog());
+
+					glDrawArrays(GL_POINTS, 0, 1);
+				}
+			}
+		}
+
+		lightPass->point;
+		{
+			glEnable(GL_CULL_FACE); glCullFace(GL_FRONT);
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE);
+
+			lightPass->point->attributes->Set();
+			lightPass->point->vertices->Set();
+			lightPass->point->program->Set();
+			lightPass->point->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
+			lightPass->point->program->SetFloat("camFar", camera_->GetPerspective().zFar);
+			lightPass->point->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+			lightPass->point->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+			lightPass->point->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
+			lightPass->point->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+			for(auto &light : lightsPoint)
+			{
+				if(light->IsVisible())
+				{
+					lightPass->point->program->SetVec3("lightPosition", light->GetPosition() - camera_->GetPosition());
+					lightPass->point->program->SetVec3("lightColor", VecXYZ(light->GetColor()) * light->GetColor().w);
+					// lightPass->point->program->SetVec3("lightRange", Vec3(light->GetRangeNear(), 1.0f / (light->GetRangeFar() - light->GetRangeNear()), 0.0f));
+					lightPass->point->program->SetVec3("lightRange", Vec3(light->GetRangeNear(), light->GetRangeFar(), 0.0f));
+					lightPass->point->program->SetFloat("lightAmbient", light->GetAmbient());
+					lightPass->point->program->SetFloat("lightFog", light->GetFog());
+
+					glDrawArrays(GL_POINTS, 0, 1);
+				}
+			}
+		}
+	}
+
+	// render environment (specular only)
+	target->frameSpecular->Set();
+	{
+		target->diffuse->Set(5);
+
+		environmentPass->cubemap;
+		{
+			environmentPass->cubemap->sampler->Set(8);
+
+			glEnable(GL_CULL_FACE); glCullFace(GL_FRONT);
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE);
+
+			environmentPass->cubemap->attributes->Set();
+			environmentPass->cubemap->vertices->Set();
+			environmentPass->cubemap->program->Set();
+			environmentPass->cubemap->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
+			environmentPass->cubemap->program->SetFloat("camFar", camera_->GetPerspective().zFar);
+			environmentPass->cubemap->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+			environmentPass->cubemap->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+			environmentPass->cubemap->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
+			environmentPass->cubemap->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+			
+			for(auto &environment : environmentsCubemap)
+			{
+				if(environment->IsVisible())
+				{
+					environment->texture->Set(8);
+
+					environmentPass->cubemap->program->SetMat4("environmentMatrix", camera_->GetVPMat() * environment->GetMMat());
+					environmentPass->cubemap->program->SetMat4("environmentInverseMatrix", environment->GetMIMat() * Move4(camera_->GetPosition()));
+					environmentPass->cubemap->program->SetVec3("environmentColor", VecXYZ(environment->GetColor()) * environment->GetColor().w);
+					environmentPass->cubemap->program->SetFloat("environmentMipmapsCount", glm::log2((Float32)environment->texture->GetWidth()));
+
+					glDrawArrays(GL_POINTS, 0, 1);
+				}
+			}
+
+			environmentPass->cubemap->sampler->Reset(8);
+		}
+	}
+
+	// enable buffer to draw
+	if(previousFrame)
+	{
+		previousFrame->Set();
+	}
+	else
+	{
+		engine->context->SetBufferFrame(nullptr);
+	}
+
+	auto draw = [&](Texture* texture)
+	{
+		// glDisable(GL_CULL_FACE);
+		// glDisable(GL_DEPTH_TEST);
+		// glDisable(GL_BLEND);
+
+		texture->Set(0);
+
+		presenter->program->Set();
+		presenter->attributes->Set();
+		presenter->vertices->Set();
+		
+		glDrawArrays(GL_POINTS, 0, 1);
+	};
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	glDisable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LESS);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE);
+
+	draw(target->diffuse);
+	draw(target->specular);
+
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
-	glClearColor(0.16f, 0.16f, 0.16f, 1.0f);
-	glClearDepth(1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// draw(target->specular);
 
-	glViewport(0, 0, 800, 600);
-
-	for(auto &object : objects)
-	{
-		auto &model = object->model;
-
-		auto shape = model->shape;
-		auto material = model->material;
-		auto program = model->material->techniques[(Size)techniqueType_]->program;
-
-		model->Set(techniqueType_);
-
-		program->SetInt("textureColor", 0);
-		program->SetInt("textureNormals", 1);
-		program->SetInt("textureSpecular", 2);
-
-		program->SetMat4("modelViewProjectionMatrix", camera_->GetVPMat() * object->GetMMat());
-		program->SetMat4("modelMatrix", Move4(-camera_->GetPosition()) * object->GetMMat());
-		program->SetMat3("rotateMatrix", object->GetRMat());
-
-		model->DrawIndexed();
-	}
+	if(GetAsyncKeyState(VK_F1)) draw(geometyPass->color);
+	if(GetAsyncKeyState(VK_F2)) draw(geometyPass->specular);
+	if(GetAsyncKeyState(VK_F3)) draw(geometyPass->normals);
+	if(GetAsyncKeyState(VK_F4)) draw(geometyPass->material);
+	if(GetAsyncKeyState(VK_F5)) draw(geometyPass->depthStencil);
+	if(GetAsyncKeyState(VK_F6)) draw(target->diffuse);
+	if(GetAsyncKeyState(VK_F7)) draw(target->specular);
 
 	glFlush();
 }

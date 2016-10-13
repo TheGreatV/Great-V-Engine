@@ -8,7 +8,7 @@
 
 #pragma region Context
 GreatVEngine::OpenGL::WinAPI::Context::Context(Reference<DeviceContext> deviceContext_):
-	OpenGL::Context(32),
+	OpenGL::Context(32, 32),
 	deviceContext(deviceContext_),
 	handle(wglCreateContext(deviceContext->GetHandle()))
 {
@@ -59,6 +59,13 @@ GreatVEngine::OpenGL::WinAPI::ExtendedContext::Initer::Initer()
 		texturesCount = (Size)value;
 	}
 
+	samplersCount;
+	{
+		GLint value;
+		glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &value);
+		samplersCount = (Size)value;
+	}
+
 	GVE_OPENGL_GET_PROC(wglCreateContextAttribsARB);
 
 	GVE_OPENGL_GET_PROC(glEnablei);
@@ -78,6 +85,21 @@ GreatVEngine::OpenGL::WinAPI::ExtendedContext::Initer::Initer()
 	GVE_OPENGL_GET_PROC(glGetTexParameterIiv);
 	GVE_OPENGL_GET_PROC(glGenerateMipmap);
 	GVE_OPENGL_GET_PROC(glTexImage3D);
+	// Sampler
+	GVE_OPENGL_GET_PROC(glGenSamplers);
+	GVE_OPENGL_GET_PROC(glDeleteSamplers);
+	GVE_OPENGL_GET_PROC(glIsSampler);
+	GVE_OPENGL_GET_PROC(glBindSampler);
+	GVE_OPENGL_GET_PROC(glSamplerParameteri);
+	GVE_OPENGL_GET_PROC(glSamplerParameteriv);
+	GVE_OPENGL_GET_PROC(glSamplerParameterf);
+	GVE_OPENGL_GET_PROC(glSamplerParameterfv);
+	GVE_OPENGL_GET_PROC(glSamplerParameterIiv);
+	GVE_OPENGL_GET_PROC(glSamplerParameterIuiv);
+	GVE_OPENGL_GET_PROC(glGetSamplerParameteriv);
+	GVE_OPENGL_GET_PROC(glGetSamplerParameterIiv);
+	GVE_OPENGL_GET_PROC(glGetSamplerParameterfv);
+	GVE_OPENGL_GET_PROC(glGetSamplerParameterIuiv);
 	// Shader func
 	GVE_OPENGL_GET_PROC(glCreateProgram);
 	GVE_OPENGL_GET_PROC(glDeleteProgram);
@@ -190,7 +212,7 @@ const GLint GreatVEngine::OpenGL::WinAPI::ExtendedContext::attribs[] = {
 };
 
 GreatVEngine::OpenGL::WinAPI::ExtendedContext::ExtendedContext(Reference<DeviceContext> deviceContext_):
-	OpenGL::Context(initer.texturesCount),
+	OpenGL::Context(initer.texturesCount, initer.samplersCount),
 	deviceContext(deviceContext_),
 	handle(wglCreateContextAttribsARB(deviceContext->GetHandle(), nullptr, attribs))
 {

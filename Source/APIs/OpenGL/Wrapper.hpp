@@ -18,6 +18,7 @@ namespace GreatVEngine
 		class Program;
 		
 		class Texture;
+		class Sampler;
 
 		class Buffer;
 		namespace Buffers
@@ -25,6 +26,7 @@ namespace GreatVEngine
 			class Array;
 			class Index;
 			class Attribute;
+			class Frame;
 		}
 
 		class Context:
@@ -50,11 +52,14 @@ namespace GreatVEngine
 			Buffers::Array* currentBufferArray = nullptr;
 			Buffers::Index* currentBufferIndex = nullptr;
 			Buffers::Attribute* currentBufferAttribute = nullptr;
+			Buffers::Frame* currentBufferFrame = nullptr;
 			Vector<Texture*> currentTexture;
+			Vector<Sampler*> currentSampler;
 			Program* currentProgram = nullptr;
 		public:
-			inline Context(const Size& texturesCount_):
-				currentTexture(texturesCount_, nullptr)
+			inline Context(const Size& texturesCount_, const Size& samplersCount_):
+				currentTexture(texturesCount_, nullptr),
+				currentSampler(samplersCount_, nullptr)
 			{
 			}
 			inline Context(const Context&) = delete;
@@ -102,6 +107,30 @@ namespace GreatVEngine
 			inline Texture* GetTexture(const Size& slot_) const
 			{
 				return currentTexture[slot_];
+			}
+		public:
+			inline Size GetSamplersCount() const
+			{
+				return currentSampler.size();
+			}
+			inline void SetSampler(const Size& slot_, Sampler* sampler_);
+			inline void ResetSampler(const Size& slot_, Sampler* sampler_);
+			inline Sampler* GetSampler(const Size& slot_) const
+			{
+				return currentSampler[slot_];
+			}
+		public:
+			inline Size GetMaxFramebufferAttachments() const
+			{
+				GLint maxAttachments;
+				glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttachments); DebugTest();
+				return (Size)maxAttachments;
+			}
+			inline void SetBufferFrame(Buffers::Frame* buffer_);
+			inline void ResetBufferFrame(Buffers::Frame* buffer_);
+			inline Buffers::Frame* GetBufferFrame() const
+			{
+				return currentBufferFrame;
 			}
 		};
 
@@ -269,6 +298,54 @@ namespace GreatVEngine
 					SetInt(uniform, val_);
 				}
 			}
+			inline void SetFloat(const Uniform& uniform_, const Float32& val_)
+			{
+				glUniform1f(uniform_, val_); DebugTest();
+			}
+			inline void SetFloat(const UniformName& uniformName_, const Float32& val_)
+			{
+				auto uniform = GetUniform(uniformName_);
+				if(uniform != -1)
+				{
+					SetFloat(uniform, val_);
+				}
+			}
+			inline void SetVec2(const Uniform& uniform_, const Vec2& vec_)
+			{
+				glUniform2f(uniform_, vec_.x, vec_.y);
+			}
+			inline void SetVec2(const UniformName& uniformName_, const Vec2& vec_)
+			{
+				auto uniform = GetUniform(uniformName_);
+				if(uniform != -1)
+				{
+					SetVec2(uniform, vec_);
+				}
+			}
+			inline void SetVec3(const Uniform& uniform_, const Vec3& vec_)
+			{
+				glUniform3f(uniform_, vec_.x, vec_.y, vec_.z);
+			}
+			inline void SetVec3(const UniformName& uniformName_, const Vec3& vec_)
+			{
+				auto uniform = GetUniform(uniformName_);
+				if(uniform != -1)
+				{
+					SetVec3(uniform, vec_);
+				}
+			}
+			inline void SetVec4(const Uniform& uniform_, const Vec4& vec_)
+			{
+				glUniform4f(uniform_, vec_.x, vec_.y, vec_.z, vec_.w);
+			}
+			inline void SetVec4(const UniformName& uniformName_, const Vec4& vec_)
+			{
+				auto uniform = GetUniform(uniformName_);
+				if(uniform != -1)
+				{
+					SetVec4(uniform, vec_);
+				}
+			}
 			inline void SetMat3(const Uniform& uniform_, const Mat3& mat_)
 			{
 				glUniformMatrix3fv(uniform_, 1, GL_FALSE, (const GLfloat*)&mat_);
@@ -301,6 +378,7 @@ namespace GreatVEngine
 		public:
 			using Handle = GLuint;
 			using Data = void*;
+			using CubeData = Array<Data, 6>;
 		public:
 			enum class Type: GLenum
 			{
@@ -468,7 +546,7 @@ namespace GreatVEngine
 					{
 						glTexImage3D((GLenum)type, 0, (GLint)internalFormat, width, height, depth, 0, (GLenum)format_, (GLenum)componentType, data_); DebugTest();
 					} break;
-					case Type::Cube:
+					/*case Type::Cube:
 					{
 						glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[0] : NULL); DebugTest();
 						glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[1] : NULL); DebugTest();
@@ -476,11 +554,50 @@ namespace GreatVEngine
 						glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[3] : NULL); DebugTest();
 						glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[4] : NULL); DebugTest();
 						glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, data_ ? ((void**)data_)[5] : NULL); DebugTest();
-					} break;
+					} break;*/
 					default: throw Exception("Unsupported texture type");
 				}
 
 				if(filter.min != Filter::Min::Off && filter.min != Filter::Min::Linear)
+				{
+					glGenerateMipmap((GLenum)type); DebugTest();
+				}
+			}
+			inline Texture( // Cubemap
+				Context* context_,
+				const Size& size_,
+				const InternalFormat& internalFormat_, const Format& format_, const ComponentType& componentType_,
+				const Wrap& wrap_, const Filter& filter_, CubeData cubeData_, bool generateMipmaps_ = false):
+				Context::Dependent(context_),
+				width(size_), height(size_), depth(size_),
+				type(Type::Cube), internalFormat(internalFormat_), componentType(componentType_),
+				wrap(wrap_), filter(filter_),
+				handle([]()
+				{
+					Handle handle_;
+					glGenTextures(1, &handle_); DebugTest();
+					return handle_;
+				}())
+			{
+				context->SetTexture(0, this);
+
+				glTexParameteri((GLenum)type, GL_TEXTURE_MIN_FILTER, (GLint)filter.min); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_MAG_FILTER, (GLint)filter.mag); DebugTest();
+
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_S, (GLint)wrap); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_T, (GLint)wrap); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_R, (GLint)wrap); DebugTest();
+
+				// glTexParameterfv((GLenum)type, GL_TEXTURE_BORDER_COLOR, );
+
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, cubeData_[0] ? cubeData_[0] : NULL); DebugTest();
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, cubeData_[1] ? cubeData_[1] : NULL); DebugTest();
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, cubeData_[2] ? cubeData_[2] : NULL); DebugTest();
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, cubeData_[3] ? cubeData_[3] : NULL); DebugTest();
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, cubeData_[4] ? cubeData_[4] : NULL); DebugTest();
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, (GLint)internalFormat, width, width, 0, (GLenum)format_, (GLenum)componentType, cubeData_[5] ? cubeData_[5] : NULL); DebugTest();
+
+				if(generateMipmaps_) // filter.min != Filter::Min::Off && filter.min != Filter::Min::Linear)
 				{
 					glGenerateMipmap((GLenum)type); DebugTest();
 				}
@@ -523,6 +640,100 @@ namespace GreatVEngine
 			inline ComponentType GetComponents() const
 			{
 				return componentType;
+			}
+			inline Wrap GetWrap() const
+			{
+				return wrap;
+			}
+			inline Filter GetFilter() const
+			{
+				return filter;
+			}
+		};
+		class Sampler:
+			Context::Dependent
+		{
+		public:
+			using Handle = GLuint;
+		public:
+			enum class Wrap: GLint
+			{
+				Clamp							= GL_CLAMP_TO_EDGE,
+				Repeat							= GL_REPEAT,
+				Border							= GL_CLAMP_TO_BORDER,
+				Mirror							= GL_MIRRORED_REPEAT
+			};
+			struct Filter
+			{
+			public:
+				enum class Minification: GLint
+				{
+					Off						= GL_NEAREST,
+					Linear					= GL_LINEAR,
+					MipmapNearestNearest	= GL_NEAREST_MIPMAP_NEAREST,
+					MipmapLinearNearest		= GL_LINEAR_MIPMAP_NEAREST,
+					MipmapNearestLinear		= GL_NEAREST_MIPMAP_LINEAR,
+					MipmapLinearLinear		= GL_LINEAR_MIPMAP_LINEAR,
+					Mipmap					= MipmapLinearLinear
+				};
+				enum class Magnification: GLint
+				{
+					Off						= GL_NEAREST,
+					Linear					= GL_LINEAR
+				};
+			public:
+				using Min = Minification;
+				using Mag = Magnification;
+			public:
+				Minification				min = Minification::Mipmap;
+				Magnification				mag = Magnification::Linear;
+			public:
+				inline Filter() = default;
+				inline Filter(const Filter&) = default;
+				inline Filter(const Minification& min_,const Magnification& mag_):
+					min(min_),mag(mag_)
+				{
+				}
+			public:
+				static const Filter			Off;
+				static const Filter			Linear;
+				static const Filter			Mipmap;
+			};
+		protected:
+			const Wrap wrap;
+			const Filter filter;
+			const Handle handle;
+		public:
+			inline Sampler(Context* context_, const Wrap& wrap_, const Filter& filter_):
+				Dependent(context_),
+				wrap(wrap_),
+				filter(filter_),
+				handle([&](){
+					Handle handle_;
+					glGenSamplers(1, &handle_); DebugTest();
+					return handle_;
+				}())
+			{
+				glSamplerParameteri(handle, GL_TEXTURE_WRAP_R, (GLenum)wrap); DebugTest();
+				glSamplerParameteri(handle, GL_TEXTURE_WRAP_S, (GLenum)wrap); DebugTest();
+				glSamplerParameteri(handle, GL_TEXTURE_WRAP_T, (GLenum)wrap); DebugTest();
+				glSamplerParameteri(handle, GL_TEXTURE_MAG_FILTER, (GLenum)filter.mag); DebugTest();
+				glSamplerParameteri(handle, GL_TEXTURE_MIN_FILTER, (GLenum)filter.min); DebugTest();
+			}
+			inline ~Sampler();
+		public:
+			inline void Set(const Size& slot_)
+			{
+				context->SetSampler(slot_, this);
+			}
+			inline void Reset(const Size& slot_)
+			{
+				context->ResetSampler(slot_, this);
+			}
+		public:
+			inline Handle GetHandle() const
+			{
+				return handle;
 			}
 			inline Wrap GetWrap() const
 			{
@@ -839,6 +1050,111 @@ namespace GreatVEngine
 					context->ResetBufferAttribute(this);
 				}
 			};
+			class Frame:
+				public Context::Dependent
+			{
+				friend Context;
+				// TODO: Error test via glCheckFramebufferStatus(GL_FRAMEBUFFER)
+			public:
+				using Handle = GLuint;
+				using DrawBuffer = GLenum;
+			protected:
+				const Handle handle;
+				const Vector<Texture*> colors;
+				const Vector<DrawBuffer> drawBuffers;
+				Texture*const depthStencil;
+				Texture*const stencil;
+			public:
+				inline Frame(Context* context_, Vector<Texture*> colors_, Texture* depthStencil_, Texture* stencil_ = nullptr):
+					Dependent(context_),
+					handle([](){
+						Handle handle;
+						glGenFramebuffers(1, &handle); DebugTest();
+						return handle;
+					}()),
+					colors([&](){
+						Vector<Texture*> textures(
+							colors_.size() <= context->GetMaxFramebufferAttachments() ?
+							colors_.size() :
+							throw Exception("Too many color attachments"),
+							nullptr);
+
+						for(Size i = 0; i < colors_.size(); ++i)
+						{
+							textures[i] = colors_[i];
+						}
+
+						return textures;
+					}()),
+					drawBuffers([&](){
+						Vector<DrawBuffer> buffers(colors.size());
+
+						for(Size i = 0; i < buffers.size(); ++i)
+						{
+							buffers[i] = GL_COLOR_ATTACHMENT0 + i;
+						}
+
+						return buffers;
+					}()),
+					depthStencil(depthStencil_),
+					stencil(stencil_)
+				{
+					context->SetBufferFrame(this);
+
+					for(Size i = 0; i < colors.size(); ++i)
+					{
+						glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colors[i]->GetHandle(), 0); DebugTest();
+					}
+
+					if(depthStencil)
+					{
+						if(depthStencil->GetInternalFormat() == Texture::InternalFormat::Depth32FStencil8 ||
+							depthStencil->GetInternalFormat() == Texture::InternalFormat::Depth24Stencil8)
+						{
+							glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, depthStencil->GetHandle(), 0); DebugTest();
+						}
+						else
+						{
+							glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthStencil->GetHandle(), 0); DebugTest();
+						}
+					}
+
+					if(stencil)
+					{
+						glFramebufferTexture(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, depthStencil->GetHandle(), 0); DebugTest();
+					}
+				}
+				inline ~Frame()
+				{
+					glDeleteFramebuffers(1, &handle);
+				}
+			public:
+				inline Handle GetHandle() const
+				{
+					return handle;
+				}
+				inline const Vector<Texture*>& GetColorTextures() const
+				{
+					return colors;
+				}
+				inline Texture* GetDepthStencilTexture() const
+				{
+					return depthStencil;
+				}
+				inline Texture* GetStencilTexture() const
+				{
+					return stencil;
+				}
+			public:
+				inline void Set()
+				{
+					context->SetBufferFrame(this);
+				}
+				inline void Reset()
+				{
+					context->ResetBufferFrame(this);
+				}
+			};
 		}
 
 		inline Format GetFormat(const Texture::InternalFormat& format_, const Texture::ComponentType& componentType_)
@@ -1014,6 +1330,48 @@ inline void GreatVEngine::OpenGL::Context::ResetTexture(const Size& slot_, Textu
 		currentTexture[slot_] = nullptr;
 	}
 }
+inline void GreatVEngine::OpenGL::Context::SetSampler(const Size& slot_, Sampler* sampler_)
+{
+	if(currentSampler[slot_] != sampler_)
+	{
+		glBindSampler(slot_, sampler_->GetHandle());
+
+		currentSampler[slot_] = sampler_;
+	}
+}
+inline void GreatVEngine::OpenGL::Context::ResetSampler(const Size& slot_, Sampler* sampler_)
+{
+	if(currentSampler[slot_] == sampler_ && sampler_)
+	{
+		glBindSampler(slot_, 0);
+
+		currentSampler[slot_] = nullptr;
+	}
+}
+inline void GreatVEngine::OpenGL::Context::SetBufferFrame(Buffers::Frame* buffer_)
+{
+	if(currentBufferFrame != buffer_)
+	{
+		currentBufferFrame = buffer_;
+		if(currentBufferFrame)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, buffer_->handle); DebugTest();
+			glDrawBuffers(buffer_->drawBuffers.size(), buffer_->drawBuffers.data()); DebugTest();
+		}
+		else
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, NULL); DebugTest();
+		}
+	}
+}
+inline void GreatVEngine::OpenGL::Context::ResetBufferFrame(Buffers::Frame* buffer_)
+{
+	if(currentBufferFrame == buffer_)
+	{
+		currentBufferFrame = nullptr;
+		glBindFramebuffer(GL_FRAMEBUFFER, NULL); DebugTest();
+	}
+}
 #pragma endregion
 #pragma region Texture
 inline GreatVEngine::OpenGL::Texture::~Texture()
@@ -1024,6 +1382,17 @@ inline GreatVEngine::OpenGL::Texture::~Texture()
 	}
 
 	glDeleteTextures(1, &handle);
+}
+#pragma endregion
+#pragma region Sampler
+inline GreatVEngine::OpenGL::Sampler::~Sampler()
+{
+	for(Size i = 0; i < context->GetSamplersCount(); ++i)
+	{
+		context->ResetSampler(i, this);
+	}
+
+	glDeleteSamplers(1, &handle);
 }
 #pragma endregion
 

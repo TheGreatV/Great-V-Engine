@@ -159,14 +159,159 @@ namespace GreatVEngine
 			}
 		};
 
-		class Light
+		class Light:
+			public Helper::Transformation::Dimension3::HierarchyMatrix,
+			public Helper::Logic::Visible,
+			public Helper::Logic::Color
 		{
+		protected:
+			Float32 ambient = 0.0f;
+			Float32 fog;
 		public:
-			inline Light() = default;
+			inline Light():
+				HierarchyMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f)),
+				Visible(true),
+				Color(Vec4(1.0f))
+			{
+			}
 			inline ~Light() = default;
+		public:
+			inline Float32 GetAmbient() const
+			{
+				return ambient;
+			}
+			inline void SetAmbient(const Float32& ambient_)
+			{
+				ambient = ambient_;
+			}
+			inline Float32 GetFog() const
+			{
+				return fog;
+			}
+			inline void SetFog(const Float32& fog_)
+			{
+				fog = fog_;
+			}
 		};
+		namespace Lights
+		{
+			class Direction:
+				public Light
+			{
+			};
+			class Point:
+				public Light
+			{
+			protected:
+				Float32 rangeNear = 1.0f;
+				Float32 rangeMiddle = 8.0f;
+				Float32 rangeFar = 10.0f;
+			public:
+				inline Float32 GetRangeNear() const
+				{
+					return rangeNear;
+				}
+				inline void SetRangeNear(const Float32& rangeNear_)
+				{
+					rangeNear = rangeNear_;
+				}
+				inline Float32 GetRangeMiddle() const
+				{
+					return rangeMiddle;
+				}
+				inline void SetRangeMiddle(const Float32& rangeMiddle_)
+				{
+					rangeMiddle = rangeMiddle_;
+				}
+				inline Float32 GetRangeFar() const
+				{
+					return rangeFar;
+				}
+				inline void SetRangeFar(const Float32& rangeFar_)
+				{
+					rangeFar = rangeFar_;
+				}
+			};
+			class Spot:
+				public Light
+			{
+			protected:
+				Float32 rangeNear = 1.0f;
+				Float32 rangeMiddle = 8.0f;
+				Float32 rangeFar = 10.0f;
+				Float32 angleNear = 10.0f;
+				Float32 angleMiddle = 40.0f;
+				Float32 angleFar = 60.0f;
+			public:
+				inline Float32 GetRangeNear() const
+				{
+					return rangeNear;
+				}
+				inline void SetRangeNear(const Float32& rangeNear_)
+				{
+					rangeNear = rangeNear_;
+				}
+				inline Float32 GetRangeMiddle() const
+				{
+					return rangeMiddle;
+				}
+				inline void SetRangeMiddle(const Float32& rangeMiddle_)
+				{
+					rangeMiddle = rangeMiddle_;
+				}
+				inline Float32 GetRangeFar() const
+				{
+					return rangeFar;
+				}
+				inline void SetRangeFar(const Float32& rangeFar_)
+				{
+					rangeFar = rangeFar_;
+				}
+				inline Float32 GetAngleNear() const
+				{
+					return angleNear;
+				}
+				inline void SetAngleNear(const Float32& angleNear_)
+				{
+					angleNear = angleNear_;
+				}
+				inline Float32 GetAngleMiddle() const
+				{
+					return angleMiddle;
+				}
+				inline void SetAngle(const Float32& angleMiddle_)
+				{
+					angleMiddle = angleMiddle_;
+				}
+				inline Float32 GetAngleFar() const
+				{
+					return angleFar;
+				}
+				inline void SetAngleFar(const Float32& angleFar_)
+				{
+					angleFar = angleFar_;
+				}
+			};
+		}
 
 		class Environment;
+		namespace Environments
+		{
+			class Cubemap:
+				public Helper::Transformation::Dimension3::HierarchyMatrix,
+				public Helper::Logic::Visible,
+				public Helper::Logic::Color
+			{
+			public:
+				inline Cubemap():
+					HierarchyMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f), nullptr),
+					Visible(true),
+					Color(Vec4(1.0f))
+				{
+				}
+				inline ~Cubemap() = default;
+			};
+		}
 
 		class Particle;
 	}

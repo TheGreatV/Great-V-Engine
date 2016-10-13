@@ -784,6 +784,14 @@ namespace GreatVEngine
 
 						return inverseViewMatrix;
 					}
+					inline void Rotate(const Angle::Value& angle_)
+					{
+						SetAngle(GreatVEngine::GetAngle(GetRotateMatrix() * RotateZXY3(angle_)));
+					}
+					inline void Move(const Position::Value& position_)
+					{
+						SetPosition(VecXYZ(GetViewInverseMatrix() * Vec4(position_, 1.0f)));
+					}
 				public:
 					inline RotateMatrix::Value GetRMat() const
 					{
@@ -994,6 +1002,14 @@ namespace GreatVEngine
 
 						return inverseViewProjectionMatrix;
 					}
+					inline void Rotate(const Angle::Value& angle_)
+					{
+						SetAngle(GreatVEngine::GetAngle(GetRotateMatrix() * RotateZXY3(angle_)));
+					}
+					inline void Move(const Position::Value& position_)
+					{
+						SetPosition(VecXYZ(GetViewInverseMatrix() * Vec4(position_, 1.0f)));
+					}
 				public:
 					inline RotateMatrix::Value GetRMat() const
 					{
@@ -1144,6 +1160,14 @@ namespace GreatVEngine
 
 						return inverseModelMatrix;
 					}
+					inline void Rotate(const Angle::Value& angle_)
+					{
+						SetAngle(GreatVEngine::GetAngle(GetRotateMatrix() * RotateZXY3(angle_)));
+					}
+					inline void Move(const Position::Value& position_)
+					{
+						SetPosition(VecXYZ(GetModelMatrix() * Vec4(position_, 1.0f)));
+					}
 				public:
 					inline RotateMatrix::Value GetRMat() const
 					{
@@ -1262,6 +1286,14 @@ namespace GreatVEngine
 					inline Value GetLMIMat() const
 					{
 						return ModelMatrix::GetMIMat();
+					}
+					inline void LocalRotate(const Angle::Value& angle_)
+					{
+						SetLocalAngle(GreatVEngine::GetAngle(GetLocalRotateMatrix() * RotateZXY3(angle_)));
+					}
+					inline void LocalMove(const Position::Value& position_)
+					{
+						SetLocalPosition(VecXYZ(GetLocalModelMatrix() * Vec4(position_, 1.0f)));
 					}
 				public:
 					inline void SetAngle(const Angle::Value& angle_);

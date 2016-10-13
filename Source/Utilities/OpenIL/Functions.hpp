@@ -93,8 +93,20 @@ namespace GreatVEngine
 				LowerLeft,
 				UpperLeft
 			};
+			enum class Face
+			{
+				NegativeX = IL_CUBEMAP_NEGATIVEX,
+				PositiveX = IL_CUBEMAP_POSITIVEX,
+				NegativeY = IL_CUBEMAP_NEGATIVEY,
+				PositiveY = IL_CUBEMAP_POSITIVEY,
+				NegativeZ = IL_CUBEMAP_NEGATIVEZ,
+				PositiveZ = IL_CUBEMAP_POSITIVEZ,
+			};
+		public:
+			using CubeImages = Dictionary<Face, Reference<Image>>;
 		public:
 			inline static Reference<Image> Load2D(const Filename& filename) throw(...);
+			inline static CubeImages LoadCube(const Filename& filename) throw(...);
 		protected:
 			const Size width;
 			const Size height;
@@ -389,6 +401,145 @@ inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL
 	ilDeleteImage(handle); ErrorTest();
 
 	return nullptr;
+}
+inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::LoadCube(const Filename& filename)
+{
+	Handle handle = ilGenImage(); ErrorTest();
+	ilBindImage(handle); ErrorTest();
+
+	if(ilLoadImage(filename.c_str()))
+	{
+		ErrorTest();
+
+		CubeImages cubeImages;
+
+		for(Size i = 0; i < 6; ++i) // iterate all faces
+		{
+			ilBindImage(handle); ErrorTest();
+			ilActiveFace(i); ErrorTest();
+			ilActiveMipmap(0); ErrorTest();
+
+			auto ilFace = ilGetInteger(IL_IMAGE_CUBEFLAGS);
+
+			auto ilWidth = ilGetInteger(IL_IMAGE_WIDTH); ErrorTest();
+			auto ilHeight = ilGetInteger(IL_IMAGE_HEIGHT); ErrorTest();
+			auto ilDepth = ilGetInteger(IL_IMAGE_DEPTH); ErrorTest();
+			auto ilFormat = ilGetInteger(IL_IMAGE_FORMAT); ErrorTest(); // GL_RGBA
+			auto ilType = ilGetInteger(IL_IMAGE_TYPE); ErrorTest();
+			auto ilBytes = ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL); ErrorTest();
+			auto ilBits = ilGetInteger(IL_IMAGE_BITS_PER_PIXEL); ErrorTest();
+			auto ilMipmap = ilGetInteger(IL_NUM_MIPMAPS); ErrorTest();
+			auto ilOriginMode = ilGetInteger(IL_IMAGE_ORIGIN); ErrorTest();	// IL_ORIGIN_LOWER_LEFT, IL_ORIGIN_UPPER_LEFT
+			auto ilDataSize = ilGetInteger(IL_IMAGE_SIZE_OF_DATA); ErrorTest();
+			auto ilData = ilGetData(); ErrorTest();
+
+			Face face = (Face)ilFace;
+			{
+				switch(face)
+				{
+					case GreatVEngine::OpenIL::Image::Face::NegativeX:
+					case GreatVEngine::OpenIL::Image::Face::PositiveX:
+					case GreatVEngine::OpenIL::Image::Face::NegativeY:
+					case GreatVEngine::OpenIL::Image::Face::PositiveY:
+					case GreatVEngine::OpenIL::Image::Face::NegativeZ:
+					case GreatVEngine::OpenIL::Image::Face::PositiveZ:
+						break;
+					default:
+						throw Exception("Invalid face: " + std::to_string(ilFace));
+				}
+			}
+
+			Size width = ilWidth > 0 ? ilWidth :
+				throw Exception("Invalid width: " + std::to_string(ilWidth));
+
+			Size height = ilHeight > 0 ? ilHeight :
+				throw Exception("Invalid height: " + std::to_string(ilHeight));
+
+			Size depth = ilDepth > 0 ? ilDepth :
+				throw Exception("Invalid depth: " + std::to_string(ilDepth));
+
+			Format format = (Format)ilFormat;
+			{
+				switch(format)
+				{
+					case GreatVEngine::OpenIL::Image::Format::RGB:
+					case GreatVEngine::OpenIL::Image::Format::BGR:
+					case GreatVEngine::OpenIL::Image::Format::RGBA:
+					case GreatVEngine::OpenIL::Image::Format::BGRA:
+						break;
+					default:
+						throw Exception("Invalid component format: " + (decltype(ilFormat))format);
+				}
+			}
+
+			ComponentType componentType = (ComponentType)ilType;
+			{
+				switch(componentType)
+				{
+					case GreatVEngine::OpenIL::Image::ComponentType::SInt8:
+					case GreatVEngine::OpenIL::Image::ComponentType::UInt8:
+					case GreatVEngine::OpenIL::Image::ComponentType::SInt16:
+					case GreatVEngine::OpenIL::Image::ComponentType::UInt16:
+					case GreatVEngine::OpenIL::Image::ComponentType::SInt32:
+					case GreatVEngine::OpenIL::Image::ComponentType::UInt32:
+					case GreatVEngine::OpenIL::Image::ComponentType::SFloat32:
+					case GreatVEngine::OpenIL::Image::ComponentType::Data8:
+					case GreatVEngine::OpenIL::Image::ComponentType::Data16:
+					case GreatVEngine::OpenIL::Image::ComponentType::Data32:
+					case GreatVEngine::OpenIL::Image::ComponentType::SFloat64:
+						break;
+					default:
+						throw Exception("Invalid component type: " + (decltype(ilType))componentType);
+				}
+			}
+
+			Size bytesPerPixel = ilBytes >= 1 ? ilBytes :
+				throw Exception("Invalid bytes per pixel: " + std::to_string(ilBytes));
+
+			Size bitsPerPixel = ilBits >= 1 ? ilBits :
+				throw Exception("Invalid bits per pixel: " + std::to_string(ilBits));
+
+			Size mipmapsCount = ilMipmap >= 0 ? ilMipmap :
+				throw Exception("Invalid mipmaps count: " + std::to_string(ilMipmap));
+
+			Origin originMode = ilOriginMode == IL_ORIGIN_LOWER_LEFT ? Origin::LowerLeft :
+				ilOriginMode == IL_ORIGIN_UPPER_LEFT ? Origin::UpperLeft :
+				throw Exception("Invalid origin mode: " + std::to_string(ilOriginMode));
+
+			Size dataSize = ilDataSize >= 0 ?
+				(Size)ilDataSize :
+				throw Exception("Data size is invalid");
+
+			RawData data = ilData != nullptr ? ilData :
+				throw Exception("Invalid data(null)");
+
+			auto image = new Image(
+				width,
+				height,
+				depth,
+				format,
+				componentType,
+				bytesPerPixel,
+				bitsPerPixel,
+				mipmapsCount,
+				originMode,
+				Data(data, data + dataSize));
+
+			cubeImages[face] = MakeReference(image);
+		}
+
+		ilDeleteImage(handle); ErrorTest();
+
+		return cubeImages;
+	}
+	else
+	{
+		ErrorTest();
+	}
+
+	ilDeleteImage(handle); ErrorTest();
+
+	return CubeImages();
 }
 inline GreatVEngine::OpenIL::Image::Image(
 	const Size& width_,

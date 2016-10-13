@@ -115,6 +115,7 @@ namespace GreatVEngine
 		inline void												DestroyDescriptorPool(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, VkAllocationCallbacks* vk_allocationCallbacks);
 		inline Vector<VkDescriptorSet>							AllocateDescriptorSets(VkDevice vk_device, VkDescriptorSetAllocateInfo* vk_descriptorSetAllocateInfo);
 		inline void												FreeDescriptorSets(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, const std::vector<VkDescriptorSet>& vk_descriptorSets);
+		inline void												UpdateDescriptorSets(VkDevice vk_device, const Vector<VkWriteDescriptorSet>& vk_writeDescriptorSets, Vector<VkCopyDescriptorSet>& vk_copyDescriptorSets);
 
 
 		inline uint32_t											GetCorrectMemoryType(const VkPhysicalDeviceMemoryProperties& vk_physicalDeviceMemoryProperties, uint32_t vk_memoryTypeBits, VkFlags flags);
@@ -647,6 +648,10 @@ inline GreatVEngine::Vector<VkDescriptorSet>					GreatVEngine::Vulkan::AllocateD
 inline void														GreatVEngine::Vulkan::FreeDescriptorSets(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, const std::vector<VkDescriptorSet>& vk_descriptorSets)
 {
 	vkFreeDescriptorSets(vk_device, vk_descriptorPool, vk_descriptorSets.size(), vk_descriptorSets.data());
+}
+inline void														GreatVEngine::Vulkan::UpdateDescriptorSets(VkDevice vk_device, const Vector<VkWriteDescriptorSet>& vk_writeDescriptorSets, Vector<VkCopyDescriptorSet>& vk_copyDescriptorSets)
+{
+	vkUpdateDescriptorSets(vk_device, vk_writeDescriptorSets.size(), vk_writeDescriptorSets.data(), vk_copyDescriptorSets.size(), vk_copyDescriptorSets.data());
 }
 
 

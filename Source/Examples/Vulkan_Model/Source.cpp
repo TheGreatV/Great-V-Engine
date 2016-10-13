@@ -415,14 +415,14 @@ void func()
 	auto queue = new Vulkan::Queue(vkDevice, 0, 0);
 	auto commandPool = new Vulkan::CommandPool(vkDevice, 0);
 
-	auto t = new Vulkan::CommandBuffer(commandPool, Vulkan::CommandBuffer::Level::Secondary);
-	{
-		t->Record(nullptr, 0, nullptr, {
-			new Vulkan::Commands::BindGraphicPipeline(pipeline),
-		});
-
-		delete t;
-	}
+	// auto t = new Vulkan::CommandBuffer(commandPool, Vulkan::CommandBuffer::Level::Secondary);
+	// {
+	// 	t->Record(nullptr, 0, nullptr, {
+	// 		new Vulkan::Commands::BindGraphicPipeline(pipeline),
+	// 	});
+	// 
+	// 	delete t;
+	// }
 
 	auto commandBuffers = [&]()
 	{

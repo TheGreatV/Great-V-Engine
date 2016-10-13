@@ -61,6 +61,66 @@ namespace GreatVEngine
 		return Vec3(vec_.x, vec_.y, vec_.z);
 	}
 
+	inline Float32 Rnd()
+	{
+		return static_cast <Float32> (rand()) / static_cast <Float32> (RAND_MAX);
+	}
+	inline Float32 Rnd(const Float32& max_)
+	{
+		return static_cast <Float32> (rand()) / (static_cast <Float32> (RAND_MAX / max_));
+	}
+	inline Float32 Rnd(const Float32& min_, const Float32& max_)
+	{
+		return min_ + static_cast <Float32> (rand()) / (static_cast <Float32> (RAND_MAX / (max_ - min_)));
+	}
+	inline Vec2 Rnd2()
+	{
+		return Vec2(Rnd(), Rnd());
+	}
+	inline Vec2 Rnd2(const Float32& max_)
+	{
+		return Vec2(Rnd(max_), Rnd(max_));
+	}
+	inline Vec2 Rnd2(const Float32& min_, const Float32& max_)
+	{
+		return Vec2(Rnd(min_, max_), Rnd(min_, max_));
+	}
+	inline Vec3 Rnd3()
+	{
+		return Vec3(Rnd(), Rnd(), Rnd());
+	}
+	inline Vec3 Rnd3(const Float32& max_)
+	{
+		return Vec3(Rnd(max_), Rnd(max_), Rnd(max_));
+	}
+	inline Vec3 Rnd3(const Float32& min_, const Float32& max_)
+	{
+		return Vec3(Rnd(min_, max_), Rnd(min_, max_), Rnd(min_, max_));
+	}
+	inline Vec4 Rnd4()
+	{
+		return Vec4(Rnd(), Rnd(), Rnd(), Rnd());
+	}
+	inline Vec4 Rnd4(const Float32& max_)
+	{
+		return Vec4(Rnd(max_), Rnd(max_), Rnd(max_), Rnd(max_));
+	}
+	inline Vec4 Rnd4(const Float32& min_, const Float32& max_)
+	{
+		return Vec4(Rnd(min_, max_), Rnd(min_, max_), Rnd(min_, max_), Rnd(min_, max_));
+	}
+
+	template <typename genTypeT, typename genTypeU>
+	inline genTypeT Mix(const genTypeT& a, const genTypeT& b, const genTypeU& t)
+	{
+		return glm::mix(a, b, t);
+	}
+	template <typename T>
+	inline T Normalize(const T& t)
+	{
+		return glm::normalize(t);
+	}
+
 	inline Mat3 RotateX3(const Float32& angle_)
 	{
 		auto a = glm::radians(angle_);
@@ -119,6 +179,14 @@ namespace GreatVEngine
 			0.0f,		0.0f,		scale_.z,	0.0f,
 			0.0f,		0.0f,		0.0f,		1.0f));
 	}
+	inline Mat4 Scale4(const Vec4& scale_)
+	{
+		return glm::transpose(Mat4(
+			scale_.x, 0.0f, 0.0f, 0.0f,
+			0.0f, scale_.y, 0.0f, 0.0f,
+			0.0f, 0.0f, scale_.z, 0.0f,
+			0.0f, 0.0f, 0.0f, scale_.w));
+	}
 	inline Mat4 RotateX4(const Float32& angle_)
 	{
 		auto a = glm::radians(angle_);
@@ -170,10 +238,15 @@ namespace GreatVEngine
 		float32 a = (far_ + near_) / (near_ - far_);
 		float32 b = (2.0f * far_ * near_) / (near_ - far_);
 
-		return glm::transpose(Mat4(
+		// return glm::transpose(Mat4( // original
+		// 	f / aspect_,	0.0f,	0.0f,	0.0f,
+		// 	0.0f,			f,		0.0f,	0.0f,
+		// 	0.0f,			0.0f,	a,		b,
+		// 	0.0f,			0.0f,	-1.0f,	0.0f));
+		return glm::transpose(Mat4( // corrected by *(1,1,-1)
 			f / aspect_,	0.0f,	0.0f,	0.0f,
 			0.0f,			f,		0.0f,	0.0f,
-			0.0f,			0.0f,	b,		a,
+			0.0f,			0.0f,	-a,		b,
 			0.0f,			0.0f,	1.0f,	0.0f));
 	}
 	inline Mat4 PerspectiveInverse(const Float32& fov_, const Float32& aspect_, const Float32& near_, const Float32& far_)
@@ -183,11 +256,16 @@ namespace GreatVEngine
 		float32 a = (far_ + near_) / (near_ - far_);
 		float32 b = (2.0f * far_ * near_) / (near_ - far_);
 
-		return glm::transpose(Mat4(
+		// return glm::transpose(Mat4( // original
+		// 	aspect_ / f,	0.0f,		0.0f,		0.0f,
+		// 	0.0f,			1.0f / f,	0.0f,		0.0f,
+		// 	0.0f,			0.0f,		0.0f,		-1.0f,
+		// 	0.0f,			0.0f,		1.0f / b,	a / b));
+		return glm::transpose(Mat4( // corrected by *(1,1,-1)
 			aspect_ / f,	0.0f,		0.0f,		0.0f,
 			0.0f,			1.0f / f,	0.0f,		0.0f,
 			0.0f,			0.0f,		0.0f,		1.0f,
-			0.0f,			0.0f,		1.0f / b,	a / b));
+			0.0f,			0.0f,		-1.0f / b,	a / b));
 	}
 	inline Mat4 Orthogonal(const Float32& left_, const Float32& right_, const Float32& bottom_, const Float32& top_, const Float32& back_, const Float32& front_)
 	{
@@ -213,6 +291,35 @@ namespace GreatVEngine
 			mat_[1].x,	mat_[1].y,	mat_[1].z,	0.0f,
 			mat_[2].x,	mat_[2].y,	mat_[2].z,	0.0f,
 			0.0f,		0.0f,		0.0f,		1.0f);
+	}
+
+	inline Float32 GetAngle(const Vec2& a)
+	{
+		return degrees(atan2(a.x, a.y));
+	}
+	inline Vec2 GetAngle(const Vec3& a)
+	{
+		Vec2 out;
+		out.x = GetAngle(Vec2(-a.y, sqrt(a.x*a.x + a.z*a.z)));
+		out.y = GetAngle(Vec2(a.x, a.z));
+		return out;
+	}
+	inline Vec3 GetAngle(const Mat3& mat)
+	{
+		Vec3	result(0.0f), v_xz(0.0f), v_y(0.0f);
+
+		v_xz = mat * Vec3(0.0f, 0.0f, 1.0f);
+
+		auto t = GetAngle(v_xz);
+
+		result.x = t.x;
+		result.y = t.y;
+
+		v_y = (RotateYXZ3(Vec3(-result.x, -result.y, 0.0f)) * mat) * Vec3(0.0f, 1.0f, 0.0f);
+
+		result.z = degrees(atan2(v_y.x, v_y.y));
+
+		return result;
 	}
 }
 

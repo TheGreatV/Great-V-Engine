@@ -70,6 +70,7 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinAPI", "Projects\Libraries\APIs\WinAPI\WinAPI.vcxproj", "{452DB57D-ADCE-4947-AD50-5CB962A7B19F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CE1446BC-5B23-43C3-BF45-68C5ACF46640} = {CE1446BC-5B23-43C3-BF45-68C5ACF46640}
+		{E03D89E7-C9A7-4328-B157-A756D51C54FB} = {E03D89E7-C9A7-4328-B157-A756D51C54FB}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Input", "Projects\Libraries\Input\Input.vcxproj", "{599C3F64-8B23-4F93-B87D-97402E2E0BEE}"
@@ -142,10 +143,15 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenIL", "Projects\Librarie
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenGL_Infrastructure", "Projects\Example\OpenGL_Infrastructure\OpenGL_Infrastructure.vcxproj", "{1DD07C16-67AF-4078-BEC4-684A198A701A}"
 	ProjectSection(ProjectDependencies) = postProject
+		{599C3F64-8B23-4F93-B87D-97402E2E0BEE} = {599C3F64-8B23-4F93-B87D-97402E2E0BEE}
 		{35C7ACBA-6404-415F-A7F6-E15D7169A187} = {35C7ACBA-6404-415F-A7F6-E15D7169A187}
+		{4A0F10C5-C7E2-4467-B155-C86271E26DB1} = {4A0F10C5-C7E2-4467-B155-C86271E26DB1}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Vulkan_Infrastructure", "Projects\Example\Vulkan_Infrastructure\Vulkan_Infrastructure.vcxproj", "{791D1F80-E16E-45CF-996B-A38F069D4B7F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4A0F10C5-C7E2-4467-B155-C86271E26DB1} = {4A0F10C5-C7E2-4467-B155-C86271E26DB1}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

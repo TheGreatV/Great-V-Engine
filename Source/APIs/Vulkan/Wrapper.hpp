@@ -624,6 +624,11 @@ namespace GreatVEngine
 				sharing(sharing_)
 			{
 			}
+			template<class Container>
+			inline Buffer(Device* device_, const Container& container_, const Usage& usage_, const Sharing& sharing_):
+				Buffer(device_, container_.size() * sizeof(Container::value_type), usage_, sharing_)
+			{
+			}
 			inline ~Buffer()
 			{
 				DestroyBuffer(device->GetHandle(), handle, nullptr);
@@ -2288,7 +2293,7 @@ namespace GreatVEngine
 					{
 						vk_graphicsPipelineCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 						vk_graphicsPipelineCreateInfo.pNext = nullptr;
-						vk_graphicsPipelineCreateInfo.flags = 0;
+						vk_graphicsPipelineCreateInfo.flags = VkPipelineCreateFlagBits::VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
 						vk_graphicsPipelineCreateInfo.stageCount = vk_pipelineShaderStageCreateInfos.size();
 						vk_graphicsPipelineCreateInfo.pStages = vk_pipelineShaderStageCreateInfos.data();
 						vk_graphicsPipelineCreateInfo.pVertexInputState = &vk_pipelineVertexInputStateCreateInfo;

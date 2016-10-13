@@ -52,13 +52,23 @@ GreatVEngine::WinAPI::WindowClass::Name GreatVEngine::WinAPI::WindowClass::GetNa
 
 
 GreatVEngine::WinAPI::Window::Window(Reference<const WindowClass> windowClass_, const Name& name_):
+	Window(windowClass_, name_, Size(800, 600))
+{
+}
+GreatVEngine::WinAPI::Window::Window(Reference<const WindowClass> windowClass_, const Name& name_, const Size& size_):
+	Window(windowClass_, name_, size_, styleDefault)
+{
+}
+GreatVEngine::WinAPI::Window::Window(Reference<const WindowClass> windowClass_, const Name& name_, const Size& size_, const Style& style_):
 	windowClass(windowClass_),
 	name(name_),
+	size(size_),
+	style(style_),
 	handle(CreateWindowA(
 		windowClass->GetName().c_str(),
 		name.c_str(),
-		WS_SYSMENU | WS_VISIBLE,
-		0, 0, 800, 600,
+		style,
+		0, 0, size.x, size.y,
 		NULL,
 		NULL,
 		windowClass->GetInstance()->GetHangle(),
@@ -76,14 +86,6 @@ GreatVEngine::WinAPI::Window::~Window()
 	{
 		ErrorTest();
 	}
-}
-GreatVEngine::WinAPI::Window::Name GreatVEngine::WinAPI::Window::GetName() const
-{
-	return name;
-}
-GreatVEngine::WinAPI::Window::Handle GreatVEngine::WinAPI::Window::GetHandle() const
-{
-	return handle;
 }
 void GreatVEngine::WinAPI::Window::Loop() const
 {

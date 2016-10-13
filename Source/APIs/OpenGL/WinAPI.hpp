@@ -59,6 +59,7 @@ namespace GreatVEngine
 				{
 				public:
 					Size texturesCount;
+					Size samplersCount;
 				public:
 					Initer();
 				};

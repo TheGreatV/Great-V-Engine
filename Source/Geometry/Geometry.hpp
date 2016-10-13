@@ -41,6 +41,7 @@ namespace GreatVEngine
 		};
 	public:
 		inline static Reference<Geometry> CreateBox(const Vec3& size_, const Vec3& tex_, const UVec3& seg_);
+		inline static Reference<Geometry> CreateSphere(const Float32& radius_, const Vec2& tex_, const UVec2& seg_);
 		inline static Reference<Geometry> CreateTorus(const Float32 radius_, const Float32 width_, const Vec2& tex_, const UVec2& seg_);
 	public:
 		Vector<Vertex> vertices;
@@ -182,7 +183,7 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 	for(Size x = 0; x <= seg_.x; ++x)
 	for(Size y = 0; y <= seg_.y; ++y)
 	{
-		Vec2 t(float32(x)/float32(seg_.x),float32(y)/float32(seg_.y));
+		Vec2 t(Float32(x)/Float32(seg_.x),Float32(y)/Float32(seg_.y));
 
 		id = offsetVertexBack + y*(seg_.x+1) + x;
 		geometry->vertices[id].pos = Vec3(minPos.x + size_.x*t.x, minPos.y + size_.y*t.y, minPos.z);
@@ -198,10 +199,10 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->vertices[id].bin = Vec3(0.0f,1.0f,0.0f);
 		geometry->vertices[id].nor = Vec3(0.0f,0.0f,1.0f);
 	}
-	for(uint32 y = 0; y <= seg_.y; ++y)
-	for(uint32 z = 0; z <= seg_.z; ++z)
+	for(Size y = 0; y <= seg_.y; ++y)
+	for(Size z = 0; z <= seg_.z; ++z)
 	{
-		Vec2 t(float32(z)/float32(seg_.z),float32(y)/float32(seg_.y));
+		Vec2 t(Float32(z)/Float32(seg_.z),Float32(y)/Float32(seg_.y));
 
 		id = offsetVertexLeft + z*(seg_.y+1) + y;
 		geometry->vertices[id].pos = Vec3(minPos.x,minPos.y + size_.y*t.y,minPos.z + size_.z*t.x);
@@ -217,10 +218,10 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->vertices[id].bin = Vec3(0.0f,1.0f,0.0f);
 		geometry->vertices[id].nor = Vec3(1.0f,0.0f,0.0f);
 	}
-	for(uint32 z = 0; z <= seg_.z; ++z)
-	for(uint32 x = 0; x <= seg_.x; ++x)
+	for(Size z = 0; z <= seg_.z; ++z)
+	for(Size x = 0; x <= seg_.x; ++x)
 	{
-		Vec2 t(float32(x)/float32(seg_.x),float32(z)/float32(seg_.z));
+		Vec2 t(Float32(x)/Float32(seg_.x),Float32(z)/Float32(seg_.z));
 
 		id = offsetVertexBottom + x*(seg_.z+1) + z;
 		geometry->vertices[id].pos = Vec3(minPos.x + size_.x*t.x,minPos.y,minPos.z + size_.z*t.y);
@@ -237,8 +238,8 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->vertices[id].nor = Vec3(0.0f,1.0f,0.0f);
 	}
 
-	for(uint32 x = 0; x < seg_.x; ++x)
-	for(uint32 y = 0; y < seg_.y; ++y)
+	for(Size x = 0; x < seg_.x; ++x)
+	for(Size y = 0; y < seg_.y; ++y)
 	{
 		id = offsetIndexBack + 6*(y*seg_.x + x);
 		geometry->indices[id + 0] = offsetVertexBack + (y + 0)*(seg_.x + 1) + (x + 0);
@@ -256,8 +257,8 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->indices[id+4] = geometry->indices[id+1];
 		geometry->indices[id+5] = offsetVertexFront + (y+1)*(seg_.x+1) + (x+1);
 	}
-	for(uint32 y = 0; y < seg_.y; ++y)
-	for(uint32 z = 0; z < seg_.z; ++z)
+	for(Size y = 0; y < seg_.y; ++y)
+	for(Size z = 0; z < seg_.z; ++z)
 	{
 		id = offsetIndexLeft + 6*(z*seg_.y + y);
 		geometry->indices[id+0] = offsetVertexLeft + (z+0)*(seg_.y+1) + (y+0);
@@ -275,8 +276,8 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->indices[id+4] = geometry->indices[id+1];
 		geometry->indices[id+5] = offsetVertexRight + (z+1)*(seg_.y+1) + (y+1);
 	}
-	for(uint32 z = 0; z < seg_.z; ++z)
-	for(uint32 x = 0; x < seg_.x; ++x)
+	for(Size z = 0; z < seg_.z; ++z)
+	for(Size x = 0; x < seg_.x; ++x)
 	{
 		id = offsetIndexBottom + 6*(x*seg_.z + z);
 		geometry->indices[id+0] = offsetVertexBottom + (x+0)*(seg_.z+1) + (z+0);
@@ -293,6 +294,45 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->indices[id+3] = geometry->indices[id+2];
 		geometry->indices[id+4] = geometry->indices[id+1];
 		geometry->indices[id+5] = offsetVertexTop + (x+1)*(seg_.z+1) + (z+1);
+	}
+
+	return MakeReference(geometry);
+}
+inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateSphere(const Float32& radius_, const Vec2& tex_, const UVec2& seg_)
+{
+	if(seg_.x < 3 || seg_.y < 3)
+	{
+		throw Exception("Invalid segments count");
+	}
+
+	auto geometry = new Geometry(
+		(seg_.x + 1)*(seg_.y + 1),
+		6 * seg_.x*seg_.y);
+
+	for(Size x = 0; x <= seg_.x; ++x)
+	for(Size y = 0; y <= seg_.y; ++y)
+	{
+		Float32 dx = Float32(x) / Float32(seg_.x);
+		Float32 dy = Float32(y) / Float32(seg_.y);
+		Size id = y*(seg_.x + 1) + x;
+		Mat3 rMat = RotateZXY3(Vec3(90.0f - dy*180.0f, 180.0f - dx*360.0f, 0.0f));
+		geometry->vertices[id].pos = rMat * Vec3(0.0f, 0.0f, radius_);
+		geometry->vertices[id].tex = Vec2(dx, dy)*tex_;
+		geometry->vertices[id].tan = rMat * Vec3(-1.0f, 0.0f, 0.0f);
+		geometry->vertices[id].bin = rMat * Vec3(0.0f, 1.0f, 0.0f);
+		geometry->vertices[id].nor = rMat * Vec3(0.0f, 0.0f, 1.0f);
+	}
+
+	for(Size x = 0; x < seg_.x; ++x)
+	for(Size y = 0; y < seg_.y; ++y)
+	{
+		Size id = 6 * (y*seg_.x + x);
+		geometry->indices[id + 0] = (y + 0)*(seg_.x + 1) + (x + 0);
+		geometry->indices[id + 1] = (y + 0)*(seg_.x + 1) + (x + 1);
+		geometry->indices[id + 2] = (y + 1)*(seg_.x + 1) + (x + 0);
+		geometry->indices[id + 3] = geometry->indices[id + 1];
+		geometry->indices[id + 4] = (y + 1)*(seg_.x + 1) + (x + 1);
+		geometry->indices[id + 5] = geometry->indices[id + 2];
 	}
 
 	return MakeReference(geometry);
