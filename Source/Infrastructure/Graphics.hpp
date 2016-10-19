@@ -132,6 +132,7 @@ namespace GreatVEngine
 		class Object:
 			public Helper::Logic::Visible,
 			public Helper::Logic::Color,
+			public Helper::Logic::BitGroup<UInt8>,
 			public Helper::Transformation::Dimension3::HierarchyMatrix,
 			public Helper::Subscrption::OnDestructionAction
 		{
@@ -141,6 +142,7 @@ namespace GreatVEngine
 			inline Object():
 				Visible(true),
 				Color(Vec4(1.0f)),
+				BitGroup(0),
 				HierarchyMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f), nullptr),
 				OnDestructionAction()
 			{
@@ -313,7 +315,118 @@ namespace GreatVEngine
 			};
 		}
 
+		class Decal:
+			public Helper::Logic::Visible,
+			public Helper::Logic::Priority,
+			public Helper::Logic::Color,
+			public Helper::Logic::BitGroup<UInt8>,
+			public Helper::Transformation::Dimension3::HierarchyMatrix
+		{
+		public:
+			inline Decal():
+				Visible(true),
+				Priority(0),
+				Color(Vec4(1.0f)),
+				BitGroup(0),
+				HierarchyMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f), nullptr)
+			{
+			}
+			inline ~Decal() = default;
+		public:
+			inline bool operator < (const Decal& source)
+			{
+				return Priority::operator<(source);
+			}
+		};
+
 		class Particle;
+
+		namespace UserInterface
+		{
+			class Item;
+
+			class Item:
+				public Helper::Logic::Visible,
+				public Helper::Logic::Priority,
+				public Helper::Logic::Color,
+				public Helper::Transformation::Dimension2::Size,
+				public Helper::Transformation::Dimension2::Position,
+				public Helper::Transformation::Dimension1::Angle,
+				public Helper::Transformation::Dimension2::Scale
+			{
+			public:
+				// using DrawFunction = void(*)(Item*, const Mat3&); //  std::function<void(Item*, const Mat3&)>;
+				using Homogeneous = Helper::Transformation::Dimension2::Homogeneous;
+			protected:
+				Homogeneous center = Homogeneous(Homogeneous::Side::Center); // local (0,0) of item rect
+				Homogeneous docking = Homogeneous(Homogeneous::Side::Center); // (0,0) of parent item rect
+				Vector<Reference<Item>> items;
+			public:
+				inline Item():
+					Visible(true),
+					Priority(0),
+					Color(Vec4(1.0f)),
+					Size(Vec2(100.0f)),
+					Position(Vec2(0.0f)),
+					Angle(0.0f),
+					Scale(Vec2(1.0f))
+				{
+				}
+			public:
+				inline void SetCenter(const Homogeneous::Value& value_)
+				{
+					center.SetValue(value_);
+				}
+				inline void SetCenter(const Homogeneous::Side& side_)
+				{
+					center.SetValue(side_);
+				}
+				inline Homogeneous::Value GetCenter() const
+				{
+					return center.GetValue();
+				}
+				inline void SetDocking(const Homogeneous::Value& value_)
+				{
+					docking.SetValue(value_);
+				}
+				inline void SetDocking(const Homogeneous::Side& side_)
+				{
+					docking.SetValue(side_);
+				}
+				inline Homogeneous::Value GetDocking() const
+				{
+					return docking.GetValue();
+				}
+			public:
+				template<class DrawFunction>
+				inline void Draw(DrawFunction drawFunction_, const Mat3& transformation_, const Vec2& canvas_)
+				{
+					Mat3 transformation =
+						transformation_*
+						Move3(GetDocking())*
+						Scale3(1.0f / canvas_)*
+
+						Move3(2.0f*GetPosition())* // [0,1] => [-1,+1]: *2.0f
+						Rotate3(GetAngle())*
+						Scale3(GetSize())*
+						Move3(-GetCenter())*
+
+						Move3(Vec2(0.0f))
+						;
+					
+					// Vec2 canvas = GetSize();
+
+					drawFunction_(this, transformation);
+
+					// std::sort(items.begin(), items.end(), [](Reference<Item> a, Reference<Item> b) {return a->GetPriority() < b->GetPriority(); });
+					// 
+					// for(auto &item : items)
+					// {
+					// 	item->Draw(drawFunction_, canvas);
+					// }
+				}
+			};
+		}
 	}
 }
 

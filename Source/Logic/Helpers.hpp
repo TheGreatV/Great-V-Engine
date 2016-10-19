@@ -3,6 +3,7 @@
 
 #include "Header.hpp"
 #include "Mathematics.hpp"
+#include <Header/ErrorHandling.hpp>
 
 
 namespace GreatVEngine
@@ -350,6 +351,128 @@ namespace GreatVEngine
 					color = color_;
 				}
 			};
+			template<class T> class BitGroup
+			{
+			public:
+				using Value = T;
+				using OnGroupsChange = Subscrption::OnAction<Value>;
+			public:
+				static const Size GROUPS_COUNT = sizeof(Value) * BITS_IN_BYTE;
+			protected:
+				Value groups;
+				OnGroupsChange onGroupsChange;
+			protected:
+				static inline Value Bit(const Size& bit_)
+				{
+#if GVE_DEBUG
+					if(bit_ >= GROUPS_COUNT)
+					{
+						throw Exception("Bin index '" + std::to_string(bit_) + "' is out of range '" + std::to_string(GROUPS_COUNT) + "'");
+					}
+#endif
+					return (Value)1 << bit_;
+				}
+				static inline Value Bit(const Initializer<Size>& bits_)
+				{
+					Value value;
+
+					for(auto &bit : bits_)
+					{
+#if GVE_DEBUG
+						if(bit >= GROUPS_COUNT)
+						{
+							throw Exception("Bin index '" + std::to_string(bit) + "' is out of range '" + std::to_string(GROUPS_COUNT) + "'");
+						}
+#endif
+						value |= (Value)1 << bit;
+					}
+
+					return value;
+				}
+			public:
+				inline BitGroup() = default;
+				inline BitGroup(const Size& group_):
+					groups(Bit(group_))
+				{
+				}
+				inline BitGroup(const Initializer<Size>& groups_):
+					groups(Bit(groups_))
+				{
+
+				}
+			public:
+				inline Value GetGroups() const
+				{
+					return groups;
+				}
+				inline void SetGroup(const Size& group_)
+				{
+					auto t = groups | Bit(group_);
+
+					onGroupsChange(t);
+
+					groups = t;
+				}
+				inline void SetGroup(const Initializer<Size>& groups_)
+				{
+					auto t = groups | Bit(groups_);
+
+					onGroupsChange(t);
+
+					groups = t;
+				}
+				inline void ResetGroup(const Size& group_)
+				{
+					auto t = groups & ~Bit(group_);
+
+					onGroupsChange(t);
+
+					groups = t;
+				}
+				inline void ResetGroup(const Initializer<Size>& groups_)
+				{
+					auto t = groups & ~Bit(groups_);
+
+					onGroupsChange(t);
+
+					groups = t;
+				}
+				inline bool IsGroup(const Size& group_) const
+				{
+					return (groups & Bit(group_)) != 0;
+				}
+				inline bool IsGroup(const Initializer<Size>& groups_) const
+				{
+					for(auto &group : groups_)
+					{
+						if((groups & Bit(group_)) != 0)
+						{
+							return true;
+						}
+					}
+
+					return false;
+				}
+			public:
+				template <class Pr_>
+				inline void Subscribe_OnGroupsChange(void* data, Pr_ subscriber)
+				{
+					onGroupsChange += {data, subscriber};
+				}
+				template <class Pr_>
+				inline void Unsubscribe_OnGroupsChange(void* data, Pr_ subscriber)
+				{
+					onGroupsChange -= {data, subscriber};
+				}
+				// inline void Subscribe_OnGroupsChange(void* data, OnGroupsChange::Subscriber subscriber)
+				// {
+				// 	onGroupsChange += {data, subscriber};
+				// }
+				// inline void Unsubscribe_OnGroupsChange(void* data, OnGroupsChange::Subscriber subscriber)
+				// {
+				// 	onGroupsChange -= {data, subscriber};
+				// }
+			};
 		}
 		namespace Transformation
 		{
@@ -361,15 +484,385 @@ namespace GreatVEngine
 				class Scale;
 				class Velocity;
 				class Omega;
+
+				class Position
+				{
+				public:
+					using Value = Float32;
+				protected:
+					Value position;
+				public:
+					inline Position() = default;
+					inline Position(const Value& position_):
+						position(position_)
+					{
+					}
+					inline Position(const Position&) = default;
+				public:
+					inline Position& operator = (const Position& source) = default;
+				public:
+					inline Value GetPosition() const
+					{
+						return position;
+					}
+					inline void SetPosition(const Value& position_)
+					{
+						position = position_;
+					}
+				};
+				class Angle
+				{
+				public:
+					using Value = Float32;
+				protected:
+					Value angle;
+				public:
+					inline Angle() = default;
+					inline Angle(const Value& angle_):
+						angle(angle_)
+					{
+					}
+					inline Angle(const Angle&) = default;
+				public:
+					inline Angle& operator = (const Angle& source) = default;
+				public:
+					inline Value GetAngle() const
+					{
+						return angle;
+					}
+					inline void SetAngle(const Value& angle_)
+					{
+						angle = angle_;
+					}
+				};
+				class Size
+				{
+				public:
+					using Value = Float32;
+				protected:
+					Value size;
+				public:
+					inline Size() = default;
+					inline Size(const Value& size_):
+						size(size_)
+					{
+					}
+					inline Size(const Size&) = default;
+				public:
+					inline Size& operator = (const Size& source) = default;
+				public:
+					inline Value GetSize() const
+					{
+						return size;
+					}
+					inline void SetSize(const Value& size_)
+					{
+						size = size_;
+					}
+				};
+				class Scale
+				{
+				public:
+					using Value = Float32;
+				protected:
+					Value scale;
+				public:
+					inline Scale() = default;
+					inline Scale(const Value& scale_):
+						scale(scale_)
+					{
+					}
+					inline Scale(const Scale&) = default;
+				public:
+					inline Scale& operator = (const Scale& source) = default;
+				public:
+					inline Value GetScale() const
+					{
+						return scale;
+					}
+					inline void SetScale(const Value& scale_)
+					{
+						scale = scale_;
+					}
+				};
+				class Velocity
+				{
+				public:
+					using Value = Float32;
+				protected:
+					Value velocity;
+				public:
+					inline Velocity() = default;
+					inline Velocity(const Value& velocity_):
+						velocity(velocity_)
+					{
+					}
+					inline Velocity(const Velocity&) = default;
+				public:
+					inline Velocity& operator = (const Velocity& source) = default;
+				public:
+					inline Value GetVelocity() const
+					{
+						return velocity;
+					}
+					inline void SetVelocity(const Value& velocity_)
+					{
+						velocity = velocity_;
+					}
+				};
+				class Omega
+				{
+				public:
+					using Value = Float32;
+				protected:
+					Value omega;
+				public:
+					inline Omega() = default;
+					inline Omega(const Value& omega_):
+						omega(omega_)
+					{
+					}
+					inline Omega(const Omega&) = default;
+				public:
+					inline Omega& operator = (const Omega& source) = default;
+				public:
+					inline Value GetOmega() const
+					{
+						return omega;
+					}
+					inline void SetOmega(const Value& omega_)
+					{
+						omega = omega_;
+					}
+				};
 			}
 			namespace Dimension2
 			{
+				class Homogeneous;
 				class Size;
 				class Position;
 				class Angle;
 				class Scale;
 				class Velocity;
 				class Omega;
+
+				class Homogeneous
+				{
+				public:
+					using Value = Vec2;
+				public:
+					enum class Side: UInt32
+					{
+						None,
+						Center,
+						Left,
+						Right,
+						Bottom,
+						Top,
+						LeftBottom,
+						LeftTop,
+						RightBottom,
+						RightTop,
+					};
+				public:
+					static const Value DEFAULT_VALUE;
+				public:
+					inline static Value GetValue(const Side& side_)
+					{
+						switch(side_)
+						{
+							case Side::Center:		return Value(+0.0f, +0.0f);
+							case Side::Left:		return Value(-1.0f, +0.0f);
+							case Side::Right:		return Value(+1.0f, +0.0f);
+							case Side::Bottom:		return Value(+0.0f, -1.0f);
+							case Side::Top:			return Value(+0.0f, +1.0f);
+							case Side::LeftBottom:	return Value(-1.0f, -1.0f);
+							case Side::LeftTop:		return Value(-1.0f, +1.0f);
+							case Side::RightBottom:	return Value(+1.0f, -1.0f);
+							case Side::RightTop:	return Value(+1.0f, +1.0f);
+							default: throw Exception("Invalid side: " + std::to_string((UInt32)side_));
+						}
+					}
+				protected:
+					Value value = DEFAULT_VALUE; // [-1.0f, +1.0f] left->right bottom->top
+				public:
+					inline Homogeneous() = default;
+					inline Homogeneous(const Value& value_):
+						value(value_)
+					{
+					}
+					inline Homogeneous(const Side& side_):
+						value(GetValue(side_))
+					{
+					}
+					inline Homogeneous(const Homogeneous&) = default;
+					inline ~Homogeneous() = default;
+				public:
+					inline Homogeneous& operator = (const Homogeneous&) = default;
+				public:
+					inline void SetValue(const Value& value_)
+					{
+						value = value_;
+					}
+					inline void SetValue(const Side& side_)
+					{
+						value = GetValue(side_);
+					}
+					inline Value GetValue() const
+					{
+						return value;
+					}
+				};
+				class Position
+				{
+				public:
+					using Value = Vec2;
+				protected:
+					Value position;
+				public:
+					inline Position() = default;
+					inline Position(const Value& position_):
+						position(position_)
+					{
+					}
+					inline Position(const Position&) = default;
+				public:
+					inline Position& operator = (const Position& source) = default;
+				public:
+					inline Value GetPosition() const
+					{
+						return position;
+					}
+					inline void SetPosition(const Value& position_)
+					{
+						position = position_;
+					}
+				};
+				class Angle
+				{
+				public:
+					using Value = Vec2;
+				protected:
+					Value angle;
+				public:
+					inline Angle() = default;
+					inline Angle(const Value& angle_):
+						angle(angle_)
+					{
+					}
+					inline Angle(const Angle&) = default;
+				public:
+					inline Angle& operator = (const Angle& source) = default;
+				public:
+					inline Value GetAngle() const
+					{
+						return angle;
+					}
+					inline void SetAngle(const Value& angle_)
+					{
+						angle = angle_;
+					}
+				};
+				class Size
+				{
+				public:
+					using Value = Vec2;
+				protected:
+					Value size;
+				public:
+					inline Size() = default;
+					inline Size(const Value& size_):
+						size(size_)
+					{
+					}
+					inline Size(const Size&) = default;
+				public:
+					inline Size& operator = (const Size& source) = default;
+				public:
+					inline Value GetSize() const
+					{
+						return size;
+					}
+					inline void SetSize(const Value& size_)
+					{
+						size = size_;
+					}
+				};
+				class Scale
+				{
+				public:
+					using Value = Vec2;
+				protected:
+					Value scale;
+				public:
+					inline Scale() = default;
+					inline Scale(const Value& scale_):
+						scale(scale_)
+					{
+					}
+					inline Scale(const Scale&) = default;
+				public:
+					inline Scale& operator = (const Scale& source) = default;
+				public:
+					inline Value GetScale() const
+					{
+						return scale;
+					}
+					inline void SetScale(const Value& scale_)
+					{
+						scale = scale_;
+					}
+				};
+				class Velocity
+				{
+				public:
+					using Value = Vec2;
+				protected:
+					Value velocity;
+				public:
+					inline Velocity() = default;
+					inline Velocity(const Value& velocity_):
+						velocity(velocity_)
+					{
+					}
+					inline Velocity(const Velocity&) = default;
+				public:
+					inline Velocity& operator = (const Velocity& source) = default;
+				public:
+					inline Value GetVelocity() const
+					{
+						return velocity;
+					}
+					inline void SetVelocity(const Value& velocity_)
+					{
+						velocity = velocity_;
+					}
+				};
+				class Omega
+				{
+				public:
+					using Value = Vec2;
+				protected:
+					Value omega;
+				public:
+					inline Omega() = default;
+					inline Omega(const Value& omega_):
+						omega(omega_)
+					{
+					}
+					inline Omega(const Omega&) = default;
+				public:
+					inline Omega& operator = (const Omega& source) = default;
+				public:
+					inline Value GetOmega() const
+					{
+						return omega;
+					}
+					inline void SetOmega(const Value& omega_)
+					{
+						omega = omega_;
+					}
+				};
 			}
 			namespace Dimension3
 			{
@@ -459,12 +952,7 @@ namespace GreatVEngine
 					}
 					inline Position(const Position&) = default;
 				public:
-					inline Position& operator = (const Position& source)
-					{
-						position = source.position;
-
-						return *this;
-					}
+					inline Position& operator = (const Position& source) = default;
 				public:
 					inline Value GetPosition() const
 					{
@@ -489,12 +977,7 @@ namespace GreatVEngine
 					}
 					inline Angle(const Angle&) = default;
 				public:
-					inline Angle& operator = (const Angle& source)
-					{
-						angle = source.angle;
-
-						return *this;
-					}
+					inline Angle& operator = (const Angle& source) = default;
 				public:
 					inline Value GetAngle() const
 					{
@@ -519,12 +1002,7 @@ namespace GreatVEngine
 					}
 					inline Size(const Size&) = default;
 				public:
-					inline Size& operator = (const Size& source)
-					{
-						size = source.size;
-
-						return *this;
-					}
+					inline Size& operator = (const Size& source) = default;
 				public:
 					inline Value GetSize() const
 					{
@@ -549,12 +1027,7 @@ namespace GreatVEngine
 					}
 					inline Scale(const Scale&) = default;
 				public:
-					inline Scale& operator = (const Scale& source)
-					{
-						scale = source.scale;
-
-						return *this;
-					}
+					inline Scale& operator = (const Scale& source) = default;
 				public:
 					inline Value GetScale() const
 					{
@@ -579,12 +1052,7 @@ namespace GreatVEngine
 					}
 					inline Velocity(const Velocity&) = default;
 				public:
-					inline Velocity& operator = (const Velocity& source)
-					{
-						velocity = source.velocity;
-
-						return *this;
-					}
+					inline Velocity& operator = (const Velocity& source) = default;
 				public:
 					inline Value GetVelocity() const
 					{
@@ -609,12 +1077,7 @@ namespace GreatVEngine
 					}
 					inline Omega(const Omega&) = default;
 				public:
-					inline Omega& operator = (const Omega& source)
-					{
-						omega = source.omega;
-
-						return *this;
-					}
+					inline Omega& operator = (const Omega& source) = default;
 				public:
 					inline Value GetOmega() const
 					{

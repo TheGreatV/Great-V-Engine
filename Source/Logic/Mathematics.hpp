@@ -56,6 +56,10 @@ namespace GreatVEngine
 	using Mat4			= glm::mat4;
 
 
+	inline Vec2 VecXY(const Vec3& vec_)
+	{
+		return Vec2(vec_.x, vec_.y);
+	}
 	inline Vec3 VecXYZ(const Vec4& vec_)
 	{
 		return Vec3(vec_.x, vec_.y, vec_.z);
@@ -119,6 +123,32 @@ namespace GreatVEngine
 	inline T Normalize(const T& t)
 	{
 		return glm::normalize(t);
+	}
+
+	inline Mat3 Rotate3(const Float32& angle_)
+	{
+		auto a = glm::radians(angle_);
+		auto s = glm::sin(a);
+		auto c = glm::cos(a);
+
+		return glm::transpose(Mat3(
+			c,		s,		0.0f,
+			-s,		c,		0.0f,
+			0.0f,	0.0f,	1.0f));
+	}
+	inline Mat3 Move3(const Vec2& position_)
+	{
+		return glm::transpose(Mat3(
+			1.0f,	0.0f,	position_.x,
+			0.0f,	1.0f,	position_.y,
+			0.0f,	0.0f,	1.0f));
+	}
+	inline Mat3 Scale3(const Vec2& scale_)
+	{
+		return glm::transpose(Mat3(
+			scale_.x,	0.0f,		0.0f,
+			0.0f,		scale_.y,	0.0f,
+			0.0f,		0.0f,		1.0f));
 	}
 
 	inline Mat3 RotateX3(const Float32& angle_)

@@ -19,13 +19,13 @@ void main()
 	vec4 texNormals = texture(textureNormals, fTex);
 	vec4 texSecular = texture(textureSpecular, fTex);
 	
-	float	ambient = 1.0f;
+	float	occlusion = 1.0f; // texSecular.w;
 	float	gloss = texSecular.x * 0.5f;
 	float	roughness = texSecular.y;
 	float	metallic = texSecular.z * 0.5f;
 	
 	// vec3 diffuse = vec3(1.0f);
-	vec3 diffuse = mix(texColor.xyz * ambient, vec3(0.0f), gloss);
+	vec3 diffuse = mix(texColor.xyz * occlusion, vec3(0.0f), gloss);
 	// vec3 specular = vec3(1.0f);
 	vec3 specular = mix(vec3(0.0f), mix(vec3(1.0f), diffuse, metallic), gloss);
 	vec3 position = fPos;

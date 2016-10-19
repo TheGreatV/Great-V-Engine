@@ -69,7 +69,8 @@ void main()
 	// float	specularIntensity = clamp(Specular(normal, light, view, roughness), 0.0f, 1.0f);
 	float	specularIntensity = clamp(Fresnel(normal, view, roughness), 0.0f, 1.0f);
 	
-	vec4	dataEnvironment = texture(textureEnvironment, reflection, pow(roughness, 2.0f)*environmentMipmapsCount);
+	float	mipmapLevel = pow(roughness, 1.0f)*environmentMipmapsCount;
+	vec4	dataEnvironment = textureLod(textureEnvironment, reflection, mipmapLevel);
 	vec3	environment = dataEnvironment.xyz;
 	
 	// oSpecular = vec4(vec3(specularIntensity), 1.0f);
@@ -116,7 +117,8 @@ float Specular(vec3 normal, vec3 light, vec3 view, float roughness) { // +light 
 	float	geometricAttenuation = GeometricAttenuation(normal, view, light);
 
 	
+	float	blinn = pow(dot(reflect(-view, normal), -light), 1.01f / (roughness + 0.01f));
 	float	cookTorrance = (distribution * fresnel * geometricAttenuation) / (dot(normal, view) * dot(normal, light));
 	
-	return	max(cookTorrance, 0.0f);
+	return	clamp(cookTorrance, 0.0f, 1.0f);
 }

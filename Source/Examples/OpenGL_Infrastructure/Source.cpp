@@ -7,7 +7,7 @@
 namespace GVE = GreatVEngine;
 using namespace GVE;
 using namespace GVE::Graphics;
-
+namespace UI = UserInterface;
 
 void func()
 {
@@ -22,6 +22,12 @@ void func()
 		deviceContext->SetPixelFormat();
 	}
 
+
+	auto uiItem = new UI::Item();
+	{
+		uiItem->SetPosition(Vec2(200.0f, 0.0f));
+		uiItem->SetSize(Vec2(400.0f, 100.0f));
+	}
 
 	auto camera = MakeReference(new Graphics::Camera());
 	{
@@ -41,9 +47,9 @@ void func()
 	auto material = MakeReference(new OpenGL::Material(engine));
 	{
 		material->Technique(OpenGL::Material::TechniqueType::Basic) = OpenGL::Technique::Load(engine, Filepath("Media/Shaders/Materials/Simple/Basic/1."), "vs", "", "", "", "fs");
-		material->Map(OpenGL::Material::MapType::Color)			= OpenGL::Map::Load2D(engine, Filepath("Media/Images/Tiles1_D.png"));
-		material->Map(OpenGL::Material::MapType::Topology)		= OpenGL::Map::Load2D(engine, Filepath("Media/Images/Tiles1_T.png"));
-		material->Map(OpenGL::Material::MapType::Reflections)	= OpenGL::Map::Load2D(engine, Filepath("Media/Images/Tiles1_R.png"));
+		material->Map(OpenGL::Material::MapType::Color)			= OpenGL::Map::Load2D(engine, Filepath("Media/Images/Materials/Brick1_D.png"));
+		material->Map(OpenGL::Material::MapType::Topology)		= OpenGL::Map::Load2D(engine, Filepath("Media/Images/Materials/Brick1_T.png"));
+		material->Map(OpenGL::Material::MapType::Reflections)	= OpenGL::Map::Load2D(engine, Filepath("Media/Images/Materials/Brick1_R.png"));
 	}
 
 
@@ -64,8 +70,8 @@ void func()
 	{
 		// lightDirection1->Hide();
 		lightDirection1->SetLocalAngle(Vec3(80.0f, 0.0f, 0.0f));
-		lightDirection1->SetColor(Vec4(Vec3(1.0f), 0.4f));
-		lightDirection1->SetAmbient(0.2f);
+		lightDirection1->SetColor(Vec4(Vec3(1.0f), 1.0f));
+		lightDirection1->SetAmbient(0.4f);
 	}
 	auto lightPoint1 = MakeReference(new OpenGL::Lights::Point());
 	{
@@ -88,14 +94,36 @@ void func()
 		environmentCubemap1->SetColor(Vec4(Vec3(1.0f), 1.0f));
 	}
 
+	auto decal1 = MakeReference(new OpenGL::Decal());
+	{
+		decal1->SetLocalPosition(Vec3(0.0f, 0.0f, 0.0f));
+		decal1->SetLocalAngle(Vec3(90.0f, 0.0f, 0.0f));
+		decal1->SetLocalScale(Vec3(10.0f, 10.0f, 10.0f));
+	}
+	auto decal2 = MakeReference(new OpenGL::Decal());
+	{
+		decal2->SetLocalPosition(Vec3(10.0f, 0.0f, 0.0f));
+		decal2->SetLocalAngle(Vec3(90.0f, 30.0f, 0.0f));
+		decal2->SetLocalScale(Vec3(15.0f, 15.0f, 10.0f));
+		decal2->SetPriority(5);
+		decal2->SetGroup(1);
+	}
+
 	auto scene = MakeReference(new OpenGL::Scene(engine, window->GetSize()));
 	{
+		scene->LoadDecals(
+			Filepath("Media/Images/Decals/GlassHole_Albedo.png"),
+			Filepath("Media/Images/Decals/GlassHole_Topology.png"),
+			Filepath("Media/Images/Decals/GlassHole_Material.png"));
+
 		// scene->Add(object1);
 		scene->Add(object2);
 		scene->Add(lightDirection1);
 		scene->Add(lightPoint1);
 		scene->Add(lightSpot1);
 		scene->Add(environmentCubemap1);
+		scene->Add(decal1);
+		scene->Add(decal2);
 	}
 
 
@@ -122,6 +150,15 @@ void func()
 			{
 				object->SetLocalPosition(Vec3(x*20.0f - 50.0f, y*20.0f, z*20.0f - 50.0f));
 				object->SetModel(model);
+				if(x%2 == 0) 
+					object->SetGroup(0);
+				else
+					object->ResetGroup(0);
+
+				if(z % 2 == 0)
+					object->SetGroup(1);
+				else
+					object->ResetGroup(1);
 			}
 
 			scene->Add(object);
@@ -151,10 +188,77 @@ void func()
 		}
 	}
 
+	float ang = 0.0f;
+
 	while(!KeyState(Keys::ESC))
 	{
 		Input::Keyboard::Loop();
 		window->Loop();
+
+		if(KeyState(Keys::ENTER))
+		{
+			if(KeyState(Keys::NUM_DIGIT1)) uiItem->SetCenter(UI::Item::Homogeneous::Side::LeftBottom);
+			if(KeyState(Keys::NUM_DIGIT2)) uiItem->SetCenter(UI::Item::Homogeneous::Side::Bottom);
+			if(KeyState(Keys::NUM_DIGIT3)) uiItem->SetCenter(UI::Item::Homogeneous::Side::RightBottom);
+			if(KeyState(Keys::NUM_DIGIT4)) uiItem->SetCenter(UI::Item::Homogeneous::Side::Left);
+			if(KeyState(Keys::NUM_DIGIT5)) uiItem->SetCenter(UI::Item::Homogeneous::Side::Center);
+			if(KeyState(Keys::NUM_DIGIT6)) uiItem->SetCenter(UI::Item::Homogeneous::Side::Right);
+			if(KeyState(Keys::NUM_DIGIT7)) uiItem->SetCenter(UI::Item::Homogeneous::Side::LeftTop);
+			if(KeyState(Keys::NUM_DIGIT8)) uiItem->SetCenter(UI::Item::Homogeneous::Side::Top);
+			if(KeyState(Keys::NUM_DIGIT9)) uiItem->SetCenter(UI::Item::Homogeneous::Side::RightTop);
+		}
+		else
+		{
+			if(KeyState(Keys::NUM_DIGIT1)) uiItem->SetDocking(UI::Item::Homogeneous::Side::LeftBottom);
+			if(KeyState(Keys::NUM_DIGIT2)) uiItem->SetDocking(UI::Item::Homogeneous::Side::Bottom);
+			if(KeyState(Keys::NUM_DIGIT3)) uiItem->SetDocking(UI::Item::Homogeneous::Side::RightBottom);
+			if(KeyState(Keys::NUM_DIGIT4)) uiItem->SetDocking(UI::Item::Homogeneous::Side::Left);
+			if(KeyState(Keys::NUM_DIGIT5)) uiItem->SetDocking(UI::Item::Homogeneous::Side::Center);
+			if(KeyState(Keys::NUM_DIGIT6)) uiItem->SetDocking(UI::Item::Homogeneous::Side::Right);
+			if(KeyState(Keys::NUM_DIGIT7)) uiItem->SetDocking(UI::Item::Homogeneous::Side::LeftTop);
+			if(KeyState(Keys::NUM_DIGIT8)) uiItem->SetDocking(UI::Item::Homogeneous::Side::Top);
+			if(KeyState(Keys::NUM_DIGIT9)) uiItem->SetDocking(UI::Item::Homogeneous::Side::RightTop);
+		}
+
+		if(KeyState(Keys::NUM_MUL)) uiItem->SetPosition(uiItem->GetPosition() + Vec2(1.0f, 0.0f));
+		if(KeyState(Keys::NUM_DIV)) uiItem->SetPosition(uiItem->GetPosition() - Vec2(1.0f, 0.0f));
+		if(KeyState(Keys::NUM_ADD)) uiItem->SetAngle(uiItem->GetAngle() + 1.0f);
+		if(KeyState(Keys::NUM_SUB)) uiItem->SetAngle(uiItem->GetAngle() - 1.0f);
+
+		if(KeyState(Keys::PLUS)) ang += 1.0f;
+		if(KeyState(Keys::MINUS)) ang -= 1.0f;
+
+		auto canvas = Vec2(resolution) / 2.0f;
+		auto transformation =
+			Move3(canvas)*
+			Rotate3(ang)*
+			Scale3(canvas / 2.0f);
+
+		auto leftBottom		= VecXY(transformation * Vec3(-1.0f, -1.0f, 1.0f));
+		auto rightBottom	= VecXY(transformation * Vec3(+1.0f, -1.0f, 1.0f));
+		auto leftTop		= VecXY(transformation * Vec3(-1.0f, +1.0f, 1.0f));
+		auto rightTop		= VecXY(transformation * Vec3(+1.0f, +1.0f, 1.0f));
+
+		scene->DrawLine(leftBottom, rightBottom);
+		scene->DrawLine(leftTop, rightTop);
+		scene->DrawLine(leftBottom, leftTop);
+		scene->DrawLine(rightBottom, rightTop);
+
+		uiItem->Draw([&](UI::Item* item, const Mat3& transformation_) {
+			auto leftBottom		= VecXY(transformation_ * Vec3(-1.0f, -1.0f, 1.0f));
+			auto rightBottom	= VecXY(transformation_ * Vec3(+1.0f, -1.0f, 1.0f));
+			auto leftTop		= VecXY(transformation_ * Vec3(-1.0f, +1.0f, 1.0f));
+			auto rightTop		= VecXY(transformation_ * Vec3(+1.0f, +1.0f, 1.0f));
+
+			scene->DrawLine(leftBottom, rightBottom);
+			scene->DrawLine(leftTop, rightTop);
+			scene->DrawLine(leftBottom, leftTop);
+			scene->DrawLine(rightBottom, rightTop);
+		}, transformation, canvas);
+		// if(KeyState(Keys::ENTER))
+		// {
+		// 	scene->DrawLine(Vec2(400.0f, 300.0f), Vec2(800.0f, 600.0f));
+		// }
 
 		for(Size i = 0; i < stage.size(); ++i)
 		{

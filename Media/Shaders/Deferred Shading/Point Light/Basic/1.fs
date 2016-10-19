@@ -41,13 +41,13 @@ float Specular(vec3 normal, vec3 light, vec3 view, float roughness);
 
 void main()
 {
-	vec2 screenTex = gl_FragCoord.xy/screen;
+	vec2	screenTex = gl_FragCoord.xy/screen;
 
-	vec4 dataColor = texture(textureColor, screenTex);
-	vec4 dataSpecular = texture(textureSpecular, screenTex);
-	vec4 dataNormal = texture(textureNormal, screenTex);
-	vec4 dataMaterial = texture(textureMaterial, screenTex);
-	vec4 dataDepth = texture(textureDepth, screenTex);
+	vec4	dataColor = texture(textureColor, screenTex);
+	vec4	dataSpecular = texture(textureSpecular, screenTex);
+	vec4	dataNormal = texture(textureNormal, screenTex);
+	vec4	dataMaterial = texture(textureMaterial, screenTex);
+	vec4	dataDepth = texture(textureDepth, screenTex);
 
 	vec3	color = dataColor.xyz;
 	vec3	specular = dataSpecular.xyz;
@@ -110,8 +110,9 @@ float Specular(vec3 normal, vec3 light, vec3 view, float roughness) { // +light 
 	float	geometricAttenuation = GeometricAttenuation(normal, view, light);
 
 	
+	float	blinn = pow(dot(reflect(-view, normal), -light), 128.0f);
 	float	cookTorrance = (distribution * fresnel * geometricAttenuation) / (dot(normal, view) * dot(normal, light));
 	
-	return	max(cookTorrance, 0.0f);
+	return	clamp(blinn, 0.0f, 1.0f);
 }
 

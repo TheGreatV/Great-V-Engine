@@ -13,6 +13,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <functional>
 #pragma endregion
 
 
@@ -59,21 +60,20 @@ namespace GreatVEngine
 		return "../../../../../" + filename_;
 	}
 
-	template<class T>
-	inline Reference<T> MakeReference(T* t)
+	template<class T> inline Reference<T> MakeReference(T* t)
 	{
 		return Reference<T>(t);
 	}
-	template<class T>
-	inline Link<T> MakeLink(T* t)
+	template<class T> inline Link<T> MakeLink(T* t)
 	{
 		return Link<T>(t);
 	}
-	template<class T>
-	inline Reference<T> Share(Link<T> t)
+	template<class T> inline Reference<T> Share(Link<T> t)
 	{
 		return std::make_shared(t);
 	}
+
+	const Size BITS_IN_BYTE = 8;
 
 	enum class Format
 	{

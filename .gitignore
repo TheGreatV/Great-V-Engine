@@ -50,6 +50,7 @@ Temporary Items
 # Visual Studio 2013 stuff
 _Build
 _Intermediate
+_Tools
 *.suo
 *.sdf
 *.opensdf

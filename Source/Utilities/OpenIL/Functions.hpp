@@ -83,10 +83,10 @@ namespace GreatVEngine
 			};
 			enum class Format: GLenum
 			{
-				RGB				= IL_RGB, // GL_RGB,
-				BGR				= IL_BGR, // GL_BGR,
-				RGBA			= IL_RGBA, //GL_RGBA,
-				BGRA			= IL_BGRA, //GL_BGRA,
+				RGB				= IL_RGB,
+				BGR				= IL_BGR,
+				RGBA			= IL_RGBA,
+				BGRA			= IL_BGRA,
 			};
 			enum class Origin
 			{
@@ -103,6 +103,89 @@ namespace GreatVEngine
 				PositiveZ = IL_CUBEMAP_POSITIVEZ,
 			};
 		public:
+			class Mipmap
+			{
+			protected:
+				const Size width;
+				const Size height;
+				const Size depth;
+				const Size bytesPerPixel;
+				const Data data;
+			public:
+				inline Mipmap(
+					const Size& width_,
+					const Size& height_,
+					const Size& depth_,
+					const Size& bytesPerPixel_,
+					Data&& data_):
+					width(width_),
+					height(height_),
+					depth(depth_),
+					bytesPerPixel(bytesPerPixel_),
+					data(std::move(data_))
+				{
+				}
+				inline Mipmap(const Mipmap&) = default;
+				inline Mipmap(Mipmap&& mipmap_):
+					width(mipmap_.width),
+					height(mipmap_.height),
+					depth(mipmap_.depth),
+					bytesPerPixel(mipmap_.bytesPerPixel),
+					data(std::move(mipmap_.data))
+				{
+				}
+				inline ~Mipmap() = default;
+			public:
+				inline Mipmap& operator = (const Mipmap&) = delete;
+			public:
+				inline Size GetWidth() const
+				{
+					return width;
+				}
+				inline Size GetHeight() const
+				{
+					return height;
+				}
+				inline Size GetDepth() const
+				{
+					return depth;
+				}
+				inline Size GetBytesPerPixel() const
+				{
+					return bytesPerPixel;
+				}
+				inline const Data& GetData() const
+				{
+					return data;
+				}
+				inline RawData GetRawData() const
+				{
+					return (RawData)data.data();
+				}
+			public:
+				inline void Flip()
+				{
+					auto p = data.data();
+					auto d = bytesPerPixel * width;
+					auto t = malloc(d);
+
+					for(Size z = 0; z < depth; ++z)
+					{
+						for(Size y = 0; y < height / 2; ++y)
+						{
+							auto m1 = (std::uint8_t*)p + ((y + z*height)*width) * bytesPerPixel;
+							auto m2 = (std::uint8_t*)p + (((height - 1 - y) + z*height)*width) * bytesPerPixel;
+							memcpy(t, m1, d);
+							memcpy(m1, m2, d);
+							memcpy(m2, t, d);
+						}
+					}
+
+					free(t);
+				}
+			};
+			using Mipmaps = Vector<Mipmap>;
+		public:
 			using CubeImages = Dictionary<Face, Reference<Image>>;
 		public:
 			inline static Reference<Image> Load2D(const Filename& filename) throw(...);
@@ -115,9 +198,8 @@ namespace GreatVEngine
 			const ComponentType componentType;
 			const Size bytesPerPixel;
 			const Size bitsPerPixel;
-			const Size mipmapsCount;
 			const Origin originMode;
-			const Data data;
+			Mipmaps mipmaps;
 		public:
 			inline Image(
 				const Size&				width_,
@@ -127,31 +209,30 @@ namespace GreatVEngine
 				const ComponentType&	componentType_,
 				const Size&				bytesPerPixel_,
 				const Size&				bitsPerPixel_,
-				const Size&				mipmapsCount_,
 				const Origin&			originMode_,
-				const Data&				data_
+				Data&&					data_
+			);
+			inline Image(
+				const Size&				width_,
+				const Size&				height_,
+				const Size&				depth_,
+				const Format&			format_,
+				const ComponentType&	componentType_,
+				const Size&				bytesPerPixel_,
+				const Size&				bitsPerPixel_,
+				const Origin&			originMode_,
+				Mipmaps&&				mipmaps_
 			);
 			inline ~Image() = default;
 		public:
+			inline Image& operator = (const Image&) = delete;
+		public:
 			inline void Flip()
 			{
-				auto p = data.data();
-				auto d = bytesPerPixel * width;
-				auto t = malloc(d);
-
-				for(Size z = 0; z < depth; ++z)
+				for(auto &mipmap : mipmaps)
 				{
-					for(Size y = 0; y < height / 2; ++y)
-					{
-						auto m1 = (std::uint8_t*)p + ((y + z*height)*width) * bytesPerPixel;
-						auto m2 = (std::uint8_t*)p + (((height - 1 - y) + z*height)*width) * bytesPerPixel;
-						memcpy(t, m1, d);
-						memcpy(m1, m2, d);
-						memcpy(m2, t, d);
-					}
+					mipmap.Flip();
 				}
-
-				free(t);
 			}
 		public:
 			inline void Save2D(const Filename & filename) const;
@@ -184,21 +265,28 @@ namespace GreatVEngine
 			{
 				return bitsPerPixel;
 			}
-			inline Size GetMipmapsCount() const
-			{
-				return mipmapsCount;
-			}
 			inline Origin GetOriginMode() const
 			{
 				return originMode;
 			}
 			inline const Data& GetData() const
 			{
-				return data;
+				return mipmaps[0].GetData();
+				// return data;
 			}
 			inline RawData GetRawData() const
 			{
-				return (RawData)data.data();
+				return mipmaps[0].GetRawData();
+				// return (RawData)data.data();
+			}
+			inline const Mipmaps& GetMipmaps() const
+			{
+				return mipmaps;
+			}
+		public:
+			inline const Mipmap& operator [] (const Size& i)
+			{
+				return mipmaps[i];
 			}
 		};
 
@@ -375,7 +463,7 @@ inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL
 			componentType,
 			bytesPerPixel,
 			bitsPerPixel,
-			mipmapsCount,
+			// mipmapsCount,
 			originMode,
 			Data(data, data + dataSize)
 		);
@@ -400,7 +488,8 @@ inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL
 
 	ilDeleteImage(handle); ErrorTest();
 
-	return nullptr;
+	throw Exception("Failet to load image: " + filename);
+	// return nullptr;
 }
 inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::LoadCube(const Filename& filename)
 {
@@ -420,7 +509,6 @@ inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::Load
 			ilActiveMipmap(0); ErrorTest();
 
 			auto ilFace = ilGetInteger(IL_IMAGE_CUBEFLAGS);
-
 			auto ilWidth = ilGetInteger(IL_IMAGE_WIDTH); ErrorTest();
 			auto ilHeight = ilGetInteger(IL_IMAGE_HEIGHT); ErrorTest();
 			auto ilDepth = ilGetInteger(IL_IMAGE_DEPTH); ErrorTest();
@@ -430,8 +518,6 @@ inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::Load
 			auto ilBits = ilGetInteger(IL_IMAGE_BITS_PER_PIXEL); ErrorTest();
 			auto ilMipmap = ilGetInteger(IL_NUM_MIPMAPS); ErrorTest();
 			auto ilOriginMode = ilGetInteger(IL_IMAGE_ORIGIN); ErrorTest();	// IL_ORIGIN_LOWER_LEFT, IL_ORIGIN_UPPER_LEFT
-			auto ilDataSize = ilGetInteger(IL_IMAGE_SIZE_OF_DATA); ErrorTest();
-			auto ilData = ilGetData(); ErrorTest();
 
 			Face face = (Face)ilFace;
 			{
@@ -448,16 +534,12 @@ inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::Load
 						throw Exception("Invalid face: " + std::to_string(ilFace));
 				}
 			}
-
 			Size width = ilWidth > 0 ? ilWidth :
 				throw Exception("Invalid width: " + std::to_string(ilWidth));
-
 			Size height = ilHeight > 0 ? ilHeight :
 				throw Exception("Invalid height: " + std::to_string(ilHeight));
-
 			Size depth = ilDepth > 0 ? ilDepth :
 				throw Exception("Invalid depth: " + std::to_string(ilDepth));
-
 			Format format = (Format)ilFormat;
 			{
 				switch(format)
@@ -471,7 +553,6 @@ inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::Load
 						throw Exception("Invalid component format: " + (decltype(ilFormat))format);
 				}
 			}
-
 			ComponentType componentType = (ComponentType)ilType;
 			{
 				switch(componentType)
@@ -492,26 +573,53 @@ inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::Load
 						throw Exception("Invalid component type: " + (decltype(ilType))componentType);
 				}
 			}
-
 			Size bytesPerPixel = ilBytes >= 1 ? ilBytes :
 				throw Exception("Invalid bytes per pixel: " + std::to_string(ilBytes));
-
 			Size bitsPerPixel = ilBits >= 1 ? ilBits :
 				throw Exception("Invalid bits per pixel: " + std::to_string(ilBits));
-
 			Size mipmapsCount = ilMipmap >= 0 ? ilMipmap :
 				throw Exception("Invalid mipmaps count: " + std::to_string(ilMipmap));
-
 			Origin originMode = ilOriginMode == IL_ORIGIN_LOWER_LEFT ? Origin::LowerLeft :
 				ilOriginMode == IL_ORIGIN_UPPER_LEFT ? Origin::UpperLeft :
 				throw Exception("Invalid origin mode: " + std::to_string(ilOriginMode));
 
-			Size dataSize = ilDataSize >= 0 ?
-				(Size)ilDataSize :
-				throw Exception("Data size is invalid");
 
-			RawData data = ilData != nullptr ? ilData :
-				throw Exception("Invalid data(null)");
+			Mipmaps mipmaps;
+			{
+				mipmaps.reserve(mipmapsCount);
+			}
+
+			for(Size mipmap = 0; mipmap < mipmapsCount; ++mipmap)
+			{
+				ilBindImage(handle); ErrorTest();
+				ilActiveFace(i); ErrorTest();
+				ilActiveMipmap(mipmap); ErrorTest();
+
+				auto ilWidth = ilGetInteger(IL_IMAGE_WIDTH); ErrorTest();
+				auto ilHeight = ilGetInteger(IL_IMAGE_HEIGHT); ErrorTest();
+				auto ilDepth = ilGetInteger(IL_IMAGE_DEPTH); ErrorTest();
+				auto ilDataSize = ilGetInteger(IL_IMAGE_SIZE_OF_DATA); ErrorTest();
+				auto ilData = ilGetData(); ErrorTest();
+
+				Size width = ilWidth > 0 ? ilWidth :
+					throw Exception("Invalid width: " + std::to_string(ilWidth));
+				Size height = ilHeight > 0 ? ilHeight :
+					throw Exception("Invalid height: " + std::to_string(ilHeight));
+				Size depth = ilDepth > 0 ? ilDepth :
+					throw Exception("Invalid depth: " + std::to_string(ilDepth));
+				Size dataSize = ilDataSize >= 0 ?
+					(Size)ilDataSize :
+					throw Exception("Data size is invalid");
+				RawData data = ilData != nullptr ? ilData :
+					throw Exception("Invalid data(null)");
+
+				mipmaps.push_back(Mipmap(
+					width,
+					height,
+					depth,
+					bytesPerPixel,
+					Data(data, data + dataSize)));
+			}
 
 			auto image = new Image(
 				width,
@@ -521,9 +629,8 @@ inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::Load
 				componentType,
 				bytesPerPixel,
 				bitsPerPixel,
-				mipmapsCount,
 				originMode,
-				Data(data, data + dataSize));
+				std::move(mipmaps));
 
 			cubeImages[face] = MakeReference(image);
 		}
@@ -539,7 +646,8 @@ inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::Load
 
 	ilDeleteImage(handle); ErrorTest();
 
-	return CubeImages();
+	throw Exception("Failet to load image: " + filename);
+	// return CubeImages();
 }
 inline GreatVEngine::OpenIL::Image::Image(
 	const Size& width_,
@@ -549,9 +657,8 @@ inline GreatVEngine::OpenIL::Image::Image(
 	const ComponentType& componentType_,
 	const Size& bytesPerPixel_,
 	const Size& bitsPerPixel_,
-	const Size& mipmapsCount_,
 	const Origin& originMode_,
-	const Data& data_
+	Data&& data_
 ):
 	width(width_),
 	height(height_),
@@ -560,11 +667,32 @@ inline GreatVEngine::OpenIL::Image::Image(
 	componentType(componentType_),
 	bytesPerPixel(bytesPerPixel_),
 	bitsPerPixel(bitsPerPixel_),
-	mipmapsCount(mipmapsCount_),
 	originMode(originMode_),
-	data(data_) // data(malloc(bytesPerPixel*width*height*depth))
+	mipmaps()
 {
-	// memcpy(data, data_, bytesPerPixel*width*height*depth);
+	mipmaps.push_back(Mipmap(width, height, depth, bytesPerPixel, std::move(data_)));
+}
+inline GreatVEngine::OpenIL::Image::Image(
+	const Size& width_,
+	const Size& height_,
+	const Size& depth_,
+	const Format& format_,
+	const ComponentType& componentType_,
+	const Size& bytesPerPixel_,
+	const Size& bitsPerPixel_,
+	const Origin& originMode_,
+	Mipmaps&& mipmaps_
+):
+	width(width_),
+	height(height_),
+	depth(depth_),
+	format(format_),
+	componentType(componentType_),
+	bytesPerPixel(bytesPerPixel_),
+	bitsPerPixel(bitsPerPixel_),
+	originMode(originMode_),
+	mipmaps(std::move(mipmaps_))
+{
 }
 
 inline void GreatVEngine::OpenIL::Image::Save2D(const Filename & filename) const
@@ -582,7 +710,7 @@ inline void GreatVEngine::OpenIL::Image::Save2D(const Filename & filename) const
 		}
 	}
 
-	ilTexImage(width, height, depth, ilComponentCount, (ILenum)format, (ILenum)componentType, (void*)data.data()); ErrorTest();
+	ilTexImage(width, height, depth, ilComponentCount, (ILenum)format, (ILenum)componentType, (void*)mipmaps[0].GetRawData()); ErrorTest();
 
 	// ilSetInteger(IL_IMAGE_WIDTH, (ILint)width); ErrorTest();
 	// ilSetInteger(IL_IMAGE_HEIGHT, (ILint)height); ErrorTest();

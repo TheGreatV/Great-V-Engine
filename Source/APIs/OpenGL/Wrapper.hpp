@@ -496,6 +496,15 @@ namespace GreatVEngine
 				static const Filter			Linear;
 				static const Filter			Mipmap;
 			};
+		public:
+			struct Mipmap
+			{
+			public:
+				const Size width, height, depth;
+				const Data data;
+			};
+			using Mipmaps = Vector<Mipmap>;
+			using CubeMipmaps = Array<Mipmaps, 6>;
 		protected:
 			const Size width, height, depth;
 			const Type type;
@@ -600,6 +609,45 @@ namespace GreatVEngine
 				if(generateMipmaps_) // filter.min != Filter::Min::Off && filter.min != Filter::Min::Linear)
 				{
 					glGenerateMipmap((GLenum)type); DebugTest();
+				}
+			}
+			inline Texture( // Cubemap with mipmaps
+				Context* context_,
+				const InternalFormat& internalFormat_, const Format& format_, const ComponentType& componentType_,
+				const Wrap& wrap_, const Filter& filter_, CubeMipmaps cubeMipmaps_):
+				Context::Dependent(context_),
+				width(cubeMipmaps_[0].size()), height(cubeMipmaps_[0].size()), depth(cubeMipmaps_[0].size()),
+				type(Type::Cube), internalFormat(internalFormat_), componentType(componentType_),
+				wrap(wrap_), filter(filter_),
+				handle([]()
+			{
+				Handle handle_;
+				glGenTextures(1, &handle_); DebugTest();
+				return handle_;
+			}())
+			{
+				context->SetTexture(0, this);
+
+				glTexParameteri((GLenum)type, GL_TEXTURE_MIN_FILTER, (GLint)filter.min); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_MAG_FILTER, (GLint)filter.mag); DebugTest();
+
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_S, (GLint)wrap); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_T, (GLint)wrap); DebugTest();
+				glTexParameteri((GLenum)type, GL_TEXTURE_WRAP_R, (GLint)wrap); DebugTest();
+
+				glTexParameteri((GLenum)type, GL_TEXTURE_BASE_LEVEL, 0);
+				glTexParameteri((GLenum)type, GL_TEXTURE_MAX_LEVEL, cubeMipmaps_[0].size() - 1);
+
+				// glTexParameterfv((GLenum)type, GL_TEXTURE_BORDER_COLOR, );
+
+				for(Size i = 0; i < cubeMipmaps_[0].size(); ++i)
+				{
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, i, (GLint)internalFormat, cubeMipmaps_[0][i].width, cubeMipmaps_[0][i].width, 0, (GLenum)format_, (GLenum)componentType, cubeMipmaps_[0][i].data ? cubeMipmaps_[0][i].data : NULL); DebugTest();
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, i, (GLint)internalFormat, cubeMipmaps_[1][i].width, cubeMipmaps_[1][i].width, 0, (GLenum)format_, (GLenum)componentType, cubeMipmaps_[1][i].data ? cubeMipmaps_[1][i].data : NULL); DebugTest();
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, i, (GLint)internalFormat, cubeMipmaps_[2][i].width, cubeMipmaps_[2][i].width, 0, (GLenum)format_, (GLenum)componentType, cubeMipmaps_[2][i].data ? cubeMipmaps_[2][i].data : NULL); DebugTest();
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, i, (GLint)internalFormat, cubeMipmaps_[3][i].width, cubeMipmaps_[3][i].width, 0, (GLenum)format_, (GLenum)componentType, cubeMipmaps_[3][i].data ? cubeMipmaps_[3][i].data : NULL); DebugTest();
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, i, (GLint)internalFormat, cubeMipmaps_[4][i].width, cubeMipmaps_[4][i].width, 0, (GLenum)format_, (GLenum)componentType, cubeMipmaps_[4][i].data ? cubeMipmaps_[4][i].data : NULL); DebugTest();
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, i, (GLint)internalFormat, cubeMipmaps_[5][i].width, cubeMipmaps_[5][i].width, 0, (GLenum)format_, (GLenum)componentType, cubeMipmaps_[5][i].data ? cubeMipmaps_[5][i].data : NULL); DebugTest();
 				}
 			}
 			inline ~Texture();
@@ -1075,8 +1123,8 @@ namespace GreatVEngine
 					colors([&](){
 						Vector<Texture*> textures(
 							colors_.size() <= context->GetMaxFramebufferAttachments() ?
-							colors_.size() :
-							throw Exception("Too many color attachments"),
+								colors_.size() :
+								throw Exception("Too many color attachments"),
 							nullptr);
 
 						for(Size i = 0; i < colors_.size(); ++i)
