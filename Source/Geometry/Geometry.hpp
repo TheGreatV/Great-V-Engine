@@ -5,6 +5,7 @@
 #include "Header.hpp"
 
 
+#include <System/System.hpp>
 #include <Logic/Mathematics.hpp>
 #pragma endregion
 
@@ -40,6 +41,8 @@ namespace GreatVEngine
 			Vec2 tex;
 		};
 	public:
+		inline static Reference<Geometry> LoadMesh(const Reference<System::BinaryFileReader>& reader_);
+		inline static Reference<Geometry> LoadMesh(const Filename& filename_);
 		inline static Reference<Geometry> CreateBox(const Vec3& size_, const Vec3& tex_, const UVec3& seg_);
 		inline static Reference<Geometry> CreateSphere(const Float32& radius_, const Vec2& tex_, const UVec2& seg_);
 		inline static Reference<Geometry> CreateTorus(const Float32 radius_, const Float32 width_, const Vec2& tex_, const UVec2& seg_);
@@ -147,11 +150,121 @@ namespace GreatVEngine
 				default: throw Exception("nknown index packing mode");
 			}
 		}
+	public:
+		inline void	GenTangentSpace(bool flip_t, bool flip_b)
+		{
+			Size id0, id1, id2;
+			for(Size i = 0; i < indices.size(); i += 3)
+			{
+				id0 = indices[i + 0];
+				id1 = indices[i + 1];
+				id2 = indices[i + 2];
+
+				Vec3 e0 = vertices[id1].pos - vertices[id0].pos;
+				Vec3 e1 = vertices[id2].pos - vertices[id0].pos;
+				Vec2 e0uv = vertices[id1].tex - vertices[id0].tex;
+				Vec2 e1uv = vertices[id2].tex - vertices[id0].tex;
+				Float32 cp = e0uv.y * e1uv.x - e0uv.x * e1uv.y;
+				if(cp != 0.0f)
+				{
+					float32 k = 1.0f / cp;
+					vertices[id0].tan = Normalize((e0 * -e1uv.y + e1 * e0uv.y) * k);
+					vertices[id0].bin = Normalize((e0 * -e1uv.x + e1 * e0uv.x) * k);
+				}
+
+				vertices[id2].tan = vertices[id1].tan = vertices[id0].tan;
+				vertices[id2].bin = vertices[id1].bin = vertices[id0].bin;
+
+				if(flip_t)
+				{
+					vertices[id0].tan = -vertices[id0].tan;
+					vertices[id1].tan = -vertices[id1].tan;
+					vertices[id2].tan = -vertices[id2].tan;
+				}
+				if(flip_b)
+				{
+					vertices[id0].bin = -vertices[id0].bin;
+					vertices[id1].bin = -vertices[id1].bin;
+					vertices[id2].bin = -vertices[id2].bin;
+				}
+			}
+		}
 	};
 }
 
 
 #pragma region Geometry
+inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::LoadMesh(const Reference<System::BinaryFileReader>& reader_)
+{
+	enum class Type
+	{
+		Undefined = 0,
+		UnsignedDiscrete = 1,	// integer
+		SignedDiscrete = 2,		// integer
+		UnsignedIntegral = 3,	// floating
+		SignedIntegral = 4,		// floating
+	};
+
+	struct VerticesAttributes
+	{
+		UInt8	Bits;
+		UInt8	Type;
+		UInt8	Count;
+		UInt8	Layers;
+	};
+	struct IndicesAttributes
+	{
+		UInt8	Bits;
+		UInt8	Type;
+	};
+
+	auto verticesCount = (Size)reader_->Read<UInt32>();
+	auto positionAttributes = *(VerticesAttributes*)(reader_->ReadRaw<UInt8>(4));
+	auto tangentSpaceAttributes = *(VerticesAttributes*)(reader_->ReadRaw<UInt8>(4));
+	auto texCoordAttributes = *(VerticesAttributes*)(reader_->ReadRaw<UInt8>(4));
+	// TODO: add other attributes
+	
+	Size positionSize = (positionAttributes.Bits / BITS_IN_BYTE) * positionAttributes.Count * positionAttributes.Layers;
+	Size tangentSpaceSize = (tangentSpaceAttributes.Bits / BITS_IN_BYTE) * tangentSpaceAttributes.Count * tangentSpaceAttributes.Layers;
+	Size texCoordSize = (texCoordAttributes.Bits / BITS_IN_BYTE) * texCoordAttributes.Count * texCoordAttributes.Layers;
+	Size vertexSize = positionSize + tangentSpaceSize + texCoordSize;
+	Size verticesDataSize = vertexSize * verticesCount;
+
+	auto verticesData = reader_->Read<UInt8>(verticesDataSize);
+
+	Size indicesCount = (Size)reader_->Read<UInt32>();
+	auto indicesAttributes = *(IndicesAttributes*)(reader_->ReadRaw<UInt8>(2));
+	Size indexSize = (indicesAttributes.Bits / BITS_IN_BYTE);
+	Size indicesDataSize = indexSize * indicesCount;
+
+	auto indicesData = reader_->Read<UInt8>(indicesDataSize);
+
+	auto mesh = new Geometry(verticesCount, indicesCount);
+	{
+		// TODO: vertices conversion
+		for(Size i = 0; i < verticesCount; ++i)
+		{
+			mesh->vertices[i].pos = *(Vec3*)(verticesData.data() + vertexSize*i + 0);
+			mesh->vertices[i].tan = *(Vec3*)(verticesData.data() + vertexSize*i + positionSize + 0);
+			mesh->vertices[i].bin = *(Vec3*)(verticesData.data() + vertexSize*i + positionSize + 12);
+			mesh->vertices[i].nor = *(Vec3*)(verticesData.data() + vertexSize*i + positionSize + 24);
+			mesh->vertices[i].tex = *(Vec2*)(verticesData.data() + vertexSize*i + positionSize + tangentSpaceSize + 0);
+		}
+
+		// TODO: indices conversion
+		memcpy(mesh->indices.data(), indicesData.data(), indicesDataSize);
+
+		mesh->GenTangentSpace(false, false);
+	}
+
+	return MakeReference(mesh);
+}
+inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::LoadMesh(const Filename& filename_)
+{
+	auto reader = System::BinaryFileReader::LoadFile(filename_);
+
+	return LoadMesh(reader);
+}
 inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateBox(const Vec3& size_, const Vec3& tex_, const UVec3& seg_)
 {
 	if(seg_.x == 0 || seg_.y == 0 || seg_.z == 0)

@@ -351,6 +351,17 @@ namespace GreatVEngine
 
 		return result;
 	}
+	inline Vec3 GetAngle(const Mat4& mat)
+	{
+		// return GetAngle(transpose(Mat3(
+		// 	mat[0][0], mat[0][1], mat[0][2],
+		// 	mat[1][0], mat[1][1], mat[1][2],
+		// 	mat[2][0], mat[2][1], mat[2][2])));
+		return GetAngle(transpose(Mat3(
+			mat[0][0], mat[1][0], mat[2][0],
+			mat[0][1], mat[1][1], mat[2][1],
+			mat[0][2], mat[1][2], mat[2][2])));
+	}
 }
 
 

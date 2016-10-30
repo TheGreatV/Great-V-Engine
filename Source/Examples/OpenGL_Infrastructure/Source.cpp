@@ -9,6 +9,7 @@ using namespace GVE;
 using namespace GVE::Graphics;
 namespace UI = UserInterface;
 
+
 void func()
 {
 	WinAPI::Window::Size resolution(800, 600);
@@ -25,15 +26,16 @@ void func()
 
 	auto uiItem = new UI::Item();
 	{
-		uiItem->SetPosition(Vec2(200.0f, 0.0f));
-		uiItem->SetSize(Vec2(400.0f, 100.0f));
+		uiItem->SetSize(Vec2(100.0f, 200.0f));
+		uiItem->Add(MakeReference(new UI::Item()));
 	}
 
 	auto camera = MakeReference(new Graphics::Camera());
 	{
 		camera->SetPosition(Vec3(0.0f, 8.0f, -20.0f));
 		camera->SetAngle(Vec3(20.0f, 0.0f, 0.0f));
-		camera->SetProjection(Helper::Transformation::Dimension3::Projection::Params::Perspective(60.0f, window->GetAspect(), 0.1f, 1000.0f));
+		camera->SetProjection(Helper::Transformation::Dimension3::Projection::Params::Perspective(60.0f, window->GetAspect(), 0.1f, 10000.0f));
+		// camera->SetProjection(Helper::Transformation::Dimension3::Projection::Params::Orthogonal(-40.0f, +40.0f, -30.0f, +30.0f, 0.0f, 1000.0f));
 	}
 
 	auto geometry1 = Geometry::CreateTorus(8.0f, 2.0f, Vec2(8.0f, 2.0f), UVec2(128, 24));
@@ -58,10 +60,12 @@ void func()
 
 	auto object1 = MakeReference(new OpenGL::Object());
 	{
+		object1->Hide();
 		object1->SetModel(model1);
 	}
 	auto object2 = MakeReference(new OpenGL::Object());
 	{
+		object2->Hide();
 		object2->SetLocalPosition(Vec3(0.0f, -5.0f, 0.0f));
 		object2->SetModel(model2);
 	}
@@ -70,8 +74,8 @@ void func()
 	{
 		// lightDirection1->Hide();
 		lightDirection1->SetLocalAngle(Vec3(80.0f, 0.0f, 0.0f));
-		lightDirection1->SetColor(Vec4(Vec3(1.0f), 1.0f));
-		lightDirection1->SetAmbient(0.4f);
+		lightDirection1->SetColor(Vec4(Vec3(1.0f), 0.8f));
+		lightDirection1->SetAmbient(0.5f);
 	}
 	auto lightPoint1 = MakeReference(new OpenGL::Lights::Point());
 	{
@@ -79,6 +83,13 @@ void func()
 		lightPoint1->SetLocalPosition(Vec3(20.0f, 0.0f, 0.0f));
 		lightPoint1->SetColor(Vec4(normalize(Rnd3()), 1.0f));
 		lightPoint1->SetRangeFar(50.0f);
+	}
+	auto lightPoint2 = MakeReference(new OpenGL::Lights::Point());
+	{
+		// lightPoint2->Hide();
+		lightPoint2->SetLocalPosition(Vec3(-20.0f, 30.0f, -10.0f));
+		lightPoint2->SetColor(Vec4(normalize(Rnd3()), 1.0f));
+		lightPoint2->SetRangeFar(50.0f);
 	}
 	auto lightSpot1 = MakeReference(new OpenGL::Lights::Spot());
 	{
@@ -88,21 +99,35 @@ void func()
 
 	auto environmentCubemap1 = OpenGL::Environments::Cubemap::LoadCube(engine, Filepath("Media/Images/Rocks.dds"));
 	{
+		environmentCubemap1->SetLocalPosition(Vec3(-80.0f, 0.0f, 0.0f));
 		// environmentCubemap1->Hide();
-		environmentCubemap1->SetLocalScale(Vec3(100.0f));
-		environmentCubemap1->SetLocalPosition(Vec3(0.0f, 50.0f, 0.0f));
-		environmentCubemap1->SetColor(Vec4(Vec3(1.0f), 1.0f));
+		environmentCubemap1->SetRange(Vec3(100.0f));
+	}
+	auto environmentCubemap2 = OpenGL::Environments::Cubemap::LoadCube(engine, Filepath("Media/Images/Cubemap1.dds"));
+	{
+		environmentCubemap2->SetLocalPosition(Vec3(+80.0f, 0.0f, 0.0f));
+		// environmentCubemap2->Hide();
+		// environmentCubemap2->SetRangeNear(Vec3(99.8f));
+		// environmentCubemap2->SetRangeMiddle(Vec3(99.9f));
+		// environmentCubemap2->SetRangeFar(Vec3(100.0f));
+		environmentCubemap2->SetRange(Vec3(100.0f));
+	}
+	auto environmentGlobalmap1 = OpenGL::Environments::Globalmap::LoadCube(engine, Filepath("Media/Images/Cubemap2.dds"));
+	{
+		// environmentGlobalmap1->Hide();
 	}
 
 	auto decal1 = MakeReference(new OpenGL::Decal());
 	{
-		decal1->SetLocalPosition(Vec3(0.0f, 0.0f, 0.0f));
+		decal1->Hide();
+		decal1->SetLocalPosition(Vec3(0.0f, 0.0f, 10.0f));
 		decal1->SetLocalAngle(Vec3(90.0f, 0.0f, 0.0f));
 		decal1->SetLocalScale(Vec3(10.0f, 10.0f, 10.0f));
 	}
 	auto decal2 = MakeReference(new OpenGL::Decal());
 	{
-		decal2->SetLocalPosition(Vec3(10.0f, 0.0f, 0.0f));
+		decal2->Hide();
+		decal2->SetLocalPosition(Vec3(10.0f, 0.0f, 10.0f));
 		decal2->SetLocalAngle(Vec3(90.0f, 30.0f, 0.0f));
 		decal2->SetLocalScale(Vec3(15.0f, 15.0f, 10.0f));
 		decal2->SetPriority(5);
@@ -116,19 +141,78 @@ void func()
 			Filepath("Media/Images/Decals/GlassHole_Topology.png"),
 			Filepath("Media/Images/Decals/GlassHole_Material.png"));
 
-		// scene->Add(object1);
+		scene->Add(object1);
 		scene->Add(object2);
 		scene->Add(lightDirection1);
 		scene->Add(lightPoint1);
+		scene->Add(lightPoint2);
 		scene->Add(lightSpot1);
 		scene->Add(environmentCubemap1);
+		scene->Add(environmentCubemap2);
+		scene->Add(environmentGlobalmap1);
 		scene->Add(decal1);
 		scene->Add(decal2);
 	}
 
+	auto materialFlat = MakeReference(new OpenGL::Material(engine));
+	{
+		materialFlat->Technique(Material::TechniqueType::Basic) = OpenGL::Technique::Load(engine, Filepath("Media/Shaders/Materials/Blank/Basic/1."), "vs", "", "", "", "fs");
+		materialFlat->SetValue("materialColor", Vec3(1.0f));
+		materialFlat->SetValue("materialSpecular", Vec3(1.0f)*1.0f);
+		materialFlat->SetValue("materialGloss", 0.6f);
+		materialFlat->SetValue("materialRoughness", 0.15f);
+	}
+	auto bunny = OpenGL::Object::Load(Filepath("Media/Models/Bunny.gvs"), materialFlat);
+	{
+		bunny->SetLocalPosition(Vec3(-15.0f, 0.0f, 0.0f));
+		scene->Add(bunny);
+	}
+	auto buddha = OpenGL::Object::Load(Filepath("Media/Models/Buddha.gvs"), materialFlat);
+	{
+		buddha->SetLocalPosition(Vec3(-5.0f, 0.0f, 0.0f));
+		scene->Add(buddha);
+	}
+	auto dragon = OpenGL::Object::Load(Filepath("Media/Models/Dragon.gvs"), materialFlat);
+	{
+		dragon->SetLocalPosition(Vec3(+5.0f, 0.0f, 0.0f));
+		scene->Add(dragon);
+	}
+	auto greece = OpenGL::Object::Load(Filepath("Media/Models/Greece.gvs"), materialFlat);
+	{
+		greece->SetLocalPosition(Vec3(+15.0f, 0.0f, 0.0f));
+		scene->Add(greece);
+	}
+	auto mitsuba = OpenGL::Object::Load(Filepath("Media/Models/Mitsuba.gvs"), materialFlat);
+	{
+		mitsuba->SetLocalPosition(Vec3(+25.0f, 0.0f, 0.0f));
+		mitsuba->SetLocalScale(Vec3(4.0f));
+		scene->Add(mitsuba);
+	}
+	auto sportsCar = OpenGL::Object::Load(Filepath("Media/Models/SportsCar.gvs"), materialFlat);
+	{
+		sportsCar->SetLocalPosition(Vec3(-25.0f, 0.0f, 0.0f));
+		sportsCar->SetLocalScale(Vec3(5.0f));
+		scene->Add(sportsCar);
+	}
+	auto head = OpenGL::Object::Load(Filepath("Media/Models/Head.gvs"), materialFlat);
+	{
+		head->SetLocalPosition(Vec3(+35.0f, 0.0f, 0.0f));
+		scene->Add(head);
+	}
+	/*auto sibenik = OpenGL::Object::Load(Filepath("Media/Models/Sibenik.gvs"), materialFlat);
+	{
+		sibenik->SetLocalPosition(Vec3(0.0f, 0.0f, 500.0f));
+		sibenik->SetLocalScale(Vec3(10.0f));
+		scene->Add(sibenik);
+	}*/
+	auto sponza = OpenGL::Object::Load(Filepath("Media/Models/Sponza.gvs"), materialFlat);
+	{
+		scene->Add(sponza);
+	}
 
 	// auto geometryBlank = Geometry::CreateTorus(3.0f, 1.0f, Vec2(4, 1), UVec2(128, 24));
-	auto geometryBlank = Geometry::CreateSphere(5.0f, Vec2(2.0f), UVec2(24));
+	auto geometryBlank = Geometry::CreateSphere(2.0f, Vec2(2.0f), UVec2(24));
+	// auto geometryBlank = Geometry::LoadMesh(Filepath("Media/Models/Teapot01-lib.gvm"));
 	{
 		for(Size x = 0; x <= 5; ++x)
 		for(Size y = 0; y <= 5; ++y)
@@ -148,7 +232,8 @@ void func()
 
 			auto object = MakeReference(new OpenGL::Object());
 			{
-				object->SetLocalPosition(Vec3(x*20.0f - 50.0f, y*20.0f, z*20.0f - 50.0f));
+				object->SetLocalPosition(Vec3(x*10.0f - 25.0f, 40.0f + y*10.0f, z*5.0f - 12.5f));
+				// object->SetLocalScale(Vec3(5.0f));
 				object->SetModel(model);
 				if(x%2 == 0) 
 					object->SetGroup(0);
@@ -187,7 +272,7 @@ void func()
 			nextPos[i] = prevPos[i];
 		}
 	}
-
+	
 	float ang = 0.0f;
 
 	while(!KeyState(Keys::ESC))
@@ -195,6 +280,7 @@ void func()
 		Input::Keyboard::Loop();
 		window->Loop();
 
+		/*
 		if(KeyState(Keys::ENTER))
 		{
 			if(KeyState(Keys::NUM_DIGIT1)) uiItem->SetCenter(UI::Item::Homogeneous::Side::LeftBottom);
@@ -255,10 +341,7 @@ void func()
 			scene->DrawLine(leftBottom, leftTop);
 			scene->DrawLine(rightBottom, rightTop);
 		}, transformation, canvas);
-		// if(KeyState(Keys::ENTER))
-		// {
-		// 	scene->DrawLine(Vec2(400.0f, 300.0f), Vec2(800.0f, 600.0f));
-		// }
+		*/
 
 		for(Size i = 0; i < stage.size(); ++i)
 		{
@@ -273,6 +356,7 @@ void func()
 			light[i]->SetLocalPosition(Mix(prevPos[i], nextPos[i], stage[i]));
 		}
 
+		Float32 angle = 2.0f;
 		Float32 speed = 0.2f;
 		if(KeyState(Keys::L_SHIFT))
 		{
@@ -284,27 +368,27 @@ void func()
 		}
 		if(KeyState(Keys::UP))
 		{
-			camera->Rotate(Vec3(+1, 0, 0)*1.0f);
+			camera->Rotate(Vec3(+1, 0, 0)*angle);
 		}
 		if(KeyState(Keys::DOWN))
 		{
-			camera->Rotate(Vec3(-1, 0, 0)*1.0f);
+			camera->Rotate(Vec3(-1, 0, 0)*angle);
 		}
 		if(KeyState(Keys::RIGHT))
 		{
-			camera->Rotate(Vec3(0, +1, 0)*1.0f);
+			camera->Rotate(Vec3(0, +1, 0)*angle);
 		}
 		if(KeyState(Keys::LEFT))
 		{
-			camera->Rotate(Vec3(0, -1, 0)*1.0f);
+			camera->Rotate(Vec3(0, -1, 0)*angle);
 		}
 		if(KeyState(Keys::E))
 		{
-			camera->Rotate(Vec3(0, 0, +1)*1.0f);
+			camera->Rotate(Vec3(0, 0, +1)*angle);
 		}
 		if(KeyState(Keys::Q))
 		{
-			camera->Rotate(Vec3(0, 0, -1)*1.0f);
+			camera->Rotate(Vec3(0, 0, -1)*angle);
 		}
 		if(KeyState(Keys::W))
 		{

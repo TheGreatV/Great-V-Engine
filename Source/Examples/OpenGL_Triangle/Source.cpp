@@ -21,13 +21,16 @@ void func()
 		graphicContext->Set();
 	}
 
+	auto source1 = "#version 330\n in vec2 vPos; void main(){ gl_Position = vec4(vPos,0,1); }";
+	auto source2 = "#version 330\n out vec4 oColor; void main(){ oColor = vec4(0,1,0,1); }";
+
 	auto shader1 = MakeReference(new OpenGL::Shader(
 		OpenGL::Shader::Type::Vertex,
-		"#version 330\n in vec2 vPos; void main(){ gl_Position = vec4(vPos,0,1); }"));
+		Vector<UInt8>(source1, source1 + strlen(source1) + 1)));
 
 	auto shader2 = MakeReference(new OpenGL::Shader(
 		OpenGL::Shader::Type::Fragment,
-		"#version 330\n out vec4 oColor; void main(){ oColor = vec4(0,1,0,1); }"));
+		Vector<UInt8>(source2, source2 + strlen(source2) + 1)));
 
 	auto program = MakeReference(new OpenGL::Program(
 		graphicContext.get(), {

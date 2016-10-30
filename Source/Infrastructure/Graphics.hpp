@@ -3,6 +3,9 @@
 
 
 #include "Header.hpp"
+
+
+#include <System/System.hpp>
 #pragma endregion
 
 
@@ -137,7 +140,8 @@ namespace GreatVEngine
 			public Helper::Subscrption::OnDestructionAction
 		{
 		public:
-			using OnModelChange =  Helper::Subscrption::OnAction<Reference<Model>>;
+			using OnModelChange = Helper::Subscrption::OnAction<Reference<Model>>;
+			using Name = String;
 		public:
 			inline Object():
 				Visible(true),
@@ -150,6 +154,7 @@ namespace GreatVEngine
 			inline ~Object() = default;
 		protected:
 			OnModelChange onModelChange;
+			Name name;
 		public:
 			inline void Subscribe_OnModelChange(void* data_, OnModelChange::Subscriber subscriber_)
 			{
@@ -158,6 +163,15 @@ namespace GreatVEngine
 			inline void Unsubscribe_OnModelChange(void* data_, OnModelChange::Subscriber subscriber_)
 			{
 				onModelChange -= {data_, subscriber_};
+			}
+		public:
+			inline Name GetName() const
+			{
+				return name;
+			}
+			inline void SetName(const Name& name_)
+			{
+				name = name_;
 			}
 		};
 
@@ -302,16 +316,65 @@ namespace GreatVEngine
 			class Cubemap:
 				public Helper::Transformation::Dimension3::HierarchyMatrix,
 				public Helper::Logic::Visible,
+				public Helper::Logic::Priority,
 				public Helper::Logic::Color
 			{
+			protected:
+				Vec3 rangeNear = Vec3(5.0f);
+				Vec3 rangeMiddle = Vec3(8.0f);
+				Vec3 rangeFar = Vec3(10.0f);
 			public:
 				inline Cubemap():
 					HierarchyMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f), nullptr),
 					Visible(true),
+					Priority(0),
 					Color(Vec4(1.0f))
 				{
 				}
 				inline ~Cubemap() = default;
+			public:
+				inline Vec3 GetRangeNear() const
+				{
+					return rangeNear;
+				}
+				inline void SetRangeNear(const Vec3& range_)
+				{
+					rangeNear = range_;
+				}
+				inline Vec3 GetRangeMiddle() const
+				{
+					return rangeMiddle;
+				}
+				inline void SetRangeMiddle(const Vec3& range_)
+				{
+					rangeMiddle = range_;
+				}
+				inline Vec3 GetRangeFar() const
+				{
+					return rangeFar;
+				}
+				inline void SetRangeFar(const Vec3& range_)
+				{
+					rangeFar = range_;
+				}
+				inline void SetRange(const Vec3& range_)
+				{
+					SetRangeNear(range_ * 0.1f);
+					SetRangeMiddle(range_ * 0.2f);
+					SetRangeFar(range_);
+				}
+			};
+			class Globalmap:
+				public Helper::Logic::Visible,
+				public Helper::Logic::Color
+			{
+			public:
+				inline Globalmap():
+					Visible(true),
+					Color(Vec4(1.0f))
+				{
+				}
+				inline ~Globalmap() = default;
 			};
 		}
 
@@ -397,6 +460,14 @@ namespace GreatVEngine
 				{
 					return docking.GetValue();
 				}
+				inline void Add(Reference<Item> item_)
+				{
+					items.push_back(item_);
+				}
+				inline void Remove(Reference<Item> item_)
+				{
+					items.erase(std::find(items.begin(), items.end(), item_));
+				}
 			public:
 				template<class DrawFunction>
 				inline void Draw(DrawFunction drawFunction_, const Mat3& transformation_, const Vec2& canvas_)
@@ -414,16 +485,14 @@ namespace GreatVEngine
 						Move3(Vec2(0.0f))
 						;
 					
-					// Vec2 canvas = GetSize();
-
 					drawFunction_(this, transformation);
 
-					// std::sort(items.begin(), items.end(), [](Reference<Item> a, Reference<Item> b) {return a->GetPriority() < b->GetPriority(); });
-					// 
-					// for(auto &item : items)
-					// {
-					// 	item->Draw(drawFunction_, canvas);
-					// }
+					std::sort(items.begin(), items.end(), [](Reference<Item> a, Reference<Item> b) {return a->GetPriority() < b->GetPriority(); });
+					
+					for(auto &item : items)
+					{
+						item->Draw(drawFunction_, transformation, GetSize());
+					}
 				}
 			};
 		}

@@ -15,28 +15,6 @@ namespace GreatVEngine
 {
 	namespace OpenGL
 	{
-		String LoadFileAsString(const Filename& filename_)
-		{
-			FILE* file = nullptr;
-			if(fopen_s(&file, filename_.c_str(), "rb") != 0)
-			{
-				throw Exception("failed to load file: " + filename_);
-			}
-			fseek(file, 0, FILE_END);
-			auto size = ftell(file);
-
-			rewind(file);
-
-			String result;
-			result.resize(size);
-			fread((void*)result.data(), 1, size, file);
-
-			fclose(file);
-
-			return std::move(result);
-		}
-
-
 		class Engine;
 		class Technique;
 		class Map;
@@ -55,6 +33,7 @@ namespace GreatVEngine
 		namespace Environments
 		{
 			class Cubemap;
+			class Globalmap;
 		};
 		class Decal;
 
@@ -172,11 +151,11 @@ namespace GreatVEngine
 			{
 				return MakeReference(new Technique(
 					engine_,
-					vertex_.size() > 0 ? LoadFileAsString(base_ + vertex_) : Shader::Source(),
-					tessellationControl_.size() > 0 ? LoadFileAsString(base_ + tessellationControl_) : Shader::Source(),
-					tessellationEvaluation_.size() > 0 ? LoadFileAsString(base_ + tessellationEvaluation_) : Shader::Source(),
-					geometry_.size() > 0 ? LoadFileAsString(base_ + geometry_) : Shader::Source(),
-					fragment_.size() > 0 ? LoadFileAsString(base_ + fragment_) : Shader::Source()));
+					vertex_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + vertex_) : Shader::Source(),
+					tessellationControl_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + tessellationControl_) : Shader::Source(),
+					tessellationEvaluation_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + tessellationEvaluation_) : Shader::Source(),
+					geometry_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + geometry_) : Shader::Source(),
+					fragment_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + fragment_) : Shader::Source()));
 			}
 		};
 		class Map:
@@ -445,6 +424,7 @@ namespace GreatVEngine
 		};
 
 		class Object:
+			public Shared<Object>,
 			public Graphics::Object
 		{
 			friend Scene;
@@ -454,8 +434,59 @@ namespace GreatVEngine
 			friend Model;
 			friend Shape;
 		protected:
-			Reference<Model> model = nullptr;
+			inline static Reference<Object> Load(Reference<System::BinaryFileReader> reader_, Vector<Reference<Geometry>>& meshes_, Reference<Material> material_);
 		public:
+			inline static Reference<Object> Load(const Filename& filename_, Reference<Material> material_);
+		protected:
+			Reference<Model> model = nullptr;
+			Reference<Object> parent;
+			Vector<Reference<Object>> childs;
+		protected:
+			inline void AddChild(Reference<Object> object_)
+			{
+				childs.push_back(object_);
+			}
+			inline void RemoveChild(Reference<Object> object_)
+			{
+				childs.erase(std::find(childs.begin(), childs.end(), object_));
+			}
+		public:
+			inline Reference<Object> operator [] (const Name& name_)
+			{
+				for(auto &child : childs)
+				{
+					if(child->GetName() == name_)
+					{
+						return child;
+					}
+				}
+
+				return nullptr;
+			}
+			inline Reference<Object> GetParentObject() const
+			{
+				return parent;
+			}
+			inline void SetParent(HierarchyMatrix::Parent parent_)
+			{
+				if(parent)
+				{
+					parent->RemoveChild(shared_from_this());
+				}
+
+				HierarchyMatrix::SetParent(parent_);
+			}
+			inline void SetParent(Reference<Object> parent_)
+			{
+				SetParent((HierarchyMatrix::Parent)parent_.get());
+
+				parent = parent_;
+
+				if(parent)
+				{
+					parent->AddChild(shared_from_this());
+				}
+			}
 			inline Reference<Model> GetModel() const
 			{
 				return model;
@@ -504,11 +535,11 @@ namespace GreatVEngine
 				Buffers::Frame*const frameSpecular;
 			public:
 				inline Target(Context* context_, const Viewport& viewport_):
-					diffuse(new Texture(
+					diffuse(new Texture( // RGB - diffuse total color, A - diffuse intensity (for environment calculation)
 						context_, viewport_.x, viewport_.y, 1, Texture::Type::D2,
 						Texture::InternalFormat::RGBA16F, Texture::Format::RGBA, Texture::ComponentType::SFloat16,
 						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
-					specular(new Texture(
+					specular(new Texture( // RGB - specular total color, A - environment intensity (for composition)
 						context_, viewport_.x, viewport_.y, 1, Texture::Type::D2,
 						Texture::InternalFormat::RGBA16F, Texture::Format::RGBA, Texture::ComponentType::SFloat16,
 						Texture::Wrap::Clamp, Texture::Filter::Off, nullptr)),
@@ -527,9 +558,9 @@ namespace GreatVEngine
 				inline Presenter(Context* context_):
 					program([&](){
 						auto program_ = new Program(context_, {
-							new Shader(Shader::Type::Vertex, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.vs"))),
-							new Shader(Shader::Type::Geometry, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.gs"))),
-							new Shader(Shader::Type::Fragment, LoadFileAsString(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.fs"))),
+							new Shader(Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.vs"))),
+							new Shader(Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.gs"))),
+							new Shader(Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.fs"))),
 						});
 
 						program_->Set();
@@ -608,9 +639,9 @@ namespace GreatVEngine
 				inline DecalPass(Context* context_, GeometyPass* geometyPass_):
 					program([&](){
 						auto program_ = new Program(context_, {
-							new Shader(Shader::Type::Vertex,	LoadFileAsString(Filepath("Media/Shaders/Decals/1.glsl.vs"))),
-							new Shader(Shader::Type::Geometry,	LoadFileAsString(Filepath("Media/Shaders/Decals/1.glsl.gs"))),
-							new Shader(Shader::Type::Fragment,	LoadFileAsString(Filepath("Media/Shaders/Decals/1.glsl.fs"))),
+							new Shader(Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.vs"))),
+							new Shader(Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.gs"))),
+							new Shader(Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.fs"))),
 					});
 
 					program_->Set();
@@ -654,9 +685,9 @@ namespace GreatVEngine
 					inline Direction(Context* context_):
 						program([&](){
 							auto program_ = new Program(context_, {
-								new Shader(Shader::Type::Vertex, LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.vs"))),
-								new Shader(Shader::Type::Geometry, LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.gs"))),
-								new Shader(Shader::Type::Fragment, LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.fs"))),
+								new Shader(Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.vs"))),
+								new Shader(Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.gs"))),
+								new Shader(Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.fs"))),
 							});
 
 							program_->Set();
@@ -683,9 +714,9 @@ namespace GreatVEngine
 					inline Point(Context* context_):
 						program([&](){
 						auto program_ = new Program(context_, {
-							new Shader(Shader::Type::Vertex,	LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.vs"))),
-							new Shader(Shader::Type::Geometry,	LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.gs"))),
-							new Shader(Shader::Type::Fragment,	LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.fs"))),
+							new Shader(Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.vs"))),
+							new Shader(Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.gs"))),
+							new Shader(Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.fs"))),
 						});
 
 						program_->Set();
@@ -719,6 +750,39 @@ namespace GreatVEngine
 			struct EnvironmentPass
 			{
 			public:
+				struct Globalmap
+				{
+				public:
+					Sampler* sampler;
+					Program*const program;
+					Buffers::Array* vertices;
+					Buffers::Attribute* attributes;
+				public:
+					inline Globalmap(Context* context_):
+						sampler(new Sampler(context_, Sampler::Wrap::Clamp, Sampler::Filter::Mipmap)),
+						program([&](){
+							auto program_ = new Program(context_, {
+								new Shader(Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.vs"))),
+								new Shader(Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.gs"))),
+								new Shader(Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.fs"))),
+							});
+
+							program_->Set();
+
+							return program_;
+						}()),
+						vertices(new Buffers::Array(context_, 1, nullptr)),
+						attributes(new Buffers::Attribute(context_, program, vertices, nullptr, {}))
+					{
+						program->SetInt("textureColor", 0);
+						program->SetInt("textureSpecular", 1);
+						program->SetInt("textureNormal", 2);
+						program->SetInt("textureMaterial", 3);
+						program->SetInt("textureDepth", 4);
+						program->SetInt("textureDiffuse", 5);
+						program->SetInt("textureEnvironment", 8);
+					}
+				};
 				struct Cubemap
 				{
 				public:
@@ -728,12 +792,12 @@ namespace GreatVEngine
 					Buffers::Attribute* attributes;
 				public:
 					inline Cubemap(Context* context_):
-						sampler(new Sampler(context_, Sampler::Wrap::Repeat, Sampler::Filter::Mipmap)),
+						sampler(new Sampler(context_, Sampler::Wrap::Clamp, Sampler::Filter::Mipmap)),
 						program([&](){
 							auto program_ = new Program(context_, {
-								new Shader(Shader::Type::Vertex,	LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.vs"))),
-								new Shader(Shader::Type::Geometry,	LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.gs"))),
-								new Shader(Shader::Type::Fragment,	LoadFileAsString(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.fs"))),
+								new Shader(Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.vs"))),
+								new Shader(Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.gs"))),
+								new Shader(Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.fs"))),
 							});
 
 							program_->Set();
@@ -754,14 +818,18 @@ namespace GreatVEngine
 				};
 			public:
 				Cubemap*const cubemap;
+				Globalmap*const globalmap;
+				bool isEnabled_ScreenSpaceLocalReflections = true;
 			public:
 				inline EnvironmentPass(Context* context_):
-					cubemap(new Cubemap(context_))
+					cubemap(new Cubemap(context_)),
+					globalmap(new Globalmap(context_))
 				{
 				}
 				inline ~EnvironmentPass()
 				{
 					delete cubemap;
+					delete globalmap;
 				}
 			};
 			struct Drawer
@@ -782,9 +850,9 @@ namespace GreatVEngine
 				inline Drawer(Context* context_):
 					program([&](){
 						auto program_ = new Program(context_, {
-							new Shader(Shader::Type::Vertex,	LoadFileAsString(Filepath("Media/Shaders/Drawer/2D/1.glsl.vs"))),
-							new Shader(Shader::Type::Geometry,	LoadFileAsString(Filepath("Media/Shaders/Drawer/2D/1.glsl.gs"))),
-							new Shader(Shader::Type::Fragment,	LoadFileAsString(Filepath("Media/Shaders/Drawer/2D/1.glsl.fs"))),
+							new Shader(Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/1.glsl.vs"))),
+							new Shader(Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/1.glsl.gs"))),
+							new Shader(Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/1.glsl.fs"))),
 						});
 
 						program_->Set();
@@ -811,6 +879,7 @@ namespace GreatVEngine
 			Vector<Reference<Lights::Point>> lightsPoint;
 			Vector<Reference<Lights::Spot>> lightsSpot;
 			Vector<Reference<Environments::Cubemap>> environmentsCubemap;
+			Vector<Reference<Environments::Globalmap>> environmentsGlobalmap;
 			Dictionary<Graphics::Decal::BitGroup::Value, Vector<Reference<Decal>>> decals;
 		public:
 			inline Scene(Reference<Engine> engine_, const Viewport& viewport_):
@@ -844,12 +913,14 @@ namespace GreatVEngine
 			inline void Add(Reference<Lights::Point> light_);
 			inline void Add(Reference<Lights::Spot> light_);
 			inline void Add(Reference<Environments::Cubemap> environment_);
+			inline void Add(Reference<Environments::Globalmap> environment_);
 			inline void Add(Reference<Decal> decal_);
 			inline void Remove(Reference<Object> object_);
 			inline void Remove(Reference<Lights::Direction> light_);
 			inline void Remove(Reference<Lights::Point> light_);
 			inline void Remove(Reference<Lights::Spot> light_);
 			inline void Remove(Reference<Environments::Cubemap> environment_);
+			inline void Remove(Reference<Environments::Globalmap> environment_);
 			inline void Remove(Reference<Decal> decal_);
 			inline void Render(Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_ = Material::TechniqueType::Basic);
 		public:
@@ -944,6 +1015,47 @@ namespace GreatVEngine
 					return MakeReference(new Cubemap(texture));
 				}
 			};
+			class Globalmap:
+				public Graphics::Environments::Globalmap
+			{
+			public:
+				Texture*const texture;
+			public:
+				inline Globalmap(Texture* texture_):
+					texture(texture_)
+				{
+				}
+				inline ~Globalmap()
+				{
+					delete texture;
+				}
+			public:
+				inline static Reference<Globalmap> LoadCube(Reference<Engine> engine_, const Filename& filename_)
+				{
+					auto cubeImages = OpenIL::Image::LoadCube(filename_);
+					auto image = cubeImages[OpenIL::Image::Face::NegativeX];
+
+					OpenGL::Texture::CubeMipmaps data;
+					for(Size i = 0; i < image->GetMipmaps().size(); ++i)
+					{
+						data[0].push_back(OpenGL::Texture::Mipmap{(*cubeImages[OpenIL::Image::Face::NegativeX])[i].GetWidth(), (*cubeImages[OpenIL::Image::Face::NegativeX])[i].GetWidth(), 0, (*cubeImages[OpenIL::Image::Face::NegativeX])[i].GetRawData()});
+						data[1].push_back(OpenGL::Texture::Mipmap{(*cubeImages[OpenIL::Image::Face::PositiveX])[i].GetWidth(), (*cubeImages[OpenIL::Image::Face::PositiveX])[i].GetWidth(), 0, (*cubeImages[OpenIL::Image::Face::PositiveX])[i].GetRawData()});
+						data[2].push_back(OpenGL::Texture::Mipmap{(*cubeImages[OpenIL::Image::Face::NegativeY])[i].GetWidth(), (*cubeImages[OpenIL::Image::Face::NegativeY])[i].GetWidth(), 0, (*cubeImages[OpenIL::Image::Face::NegativeY])[i].GetRawData()});
+						data[3].push_back(OpenGL::Texture::Mipmap{(*cubeImages[OpenIL::Image::Face::PositiveY])[i].GetWidth(), (*cubeImages[OpenIL::Image::Face::PositiveY])[i].GetWidth(), 0, (*cubeImages[OpenIL::Image::Face::PositiveY])[i].GetRawData()});
+						data[4].push_back(OpenGL::Texture::Mipmap{(*cubeImages[OpenIL::Image::Face::NegativeZ])[i].GetWidth(), (*cubeImages[OpenIL::Image::Face::NegativeZ])[i].GetWidth(), 0, (*cubeImages[OpenIL::Image::Face::NegativeZ])[i].GetRawData()});
+						data[5].push_back(OpenGL::Texture::Mipmap{(*cubeImages[OpenIL::Image::Face::PositiveZ])[i].GetWidth(), (*cubeImages[OpenIL::Image::Face::PositiveZ])[i].GetWidth(), 0, (*cubeImages[OpenIL::Image::Face::PositiveZ])[i].GetRawData()});
+					}
+
+					auto texture = new OpenGL::Texture(
+						engine_->context,
+						OpenGL::Texture::InternalFormat::RGBA8,
+						OpenGL::GetFormat(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
+						OpenGL::GetComponentType(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
+						OpenGL::Texture::Wrap::Repeat, OpenGL::Texture::Filter::Off, data);
+
+					return MakeReference(new Globalmap(texture));
+				}
+			};
 		}
 
 		class Decal:
@@ -957,6 +1069,81 @@ namespace GreatVEngine
 }
 
 
+#pragma region Object
+inline GreatVEngine::Reference<GreatVEngine::OpenGL::Object> GreatVEngine::OpenGL::Object::Load(Reference<System::BinaryFileReader> reader_, Vector<Reference<Geometry>>& meshes_, Reference<Material> material_)
+{
+	auto nameLength = (Size)reader_->Read<UInt32>();
+	auto nameData = reader_->Read<char>(nameLength);
+	Name name;
+	{
+		for(auto &glyph : nameData)
+		{
+			name.push_back(glyph);
+		}
+	}
+
+	auto meshId = (Size)reader_->Read<UInt32>();
+
+	auto matrixData = reader_->Read<Float32>(16);
+
+	auto matrix = transpose(Mat4(
+		matrixData[0],	matrixData[1],	matrixData[2],	matrixData[3],
+		matrixData[4],	matrixData[5],	matrixData[6],	matrixData[7],
+		matrixData[8],	matrixData[9],	matrixData[10],	matrixData[11],
+		matrixData[12],	matrixData[13],	matrixData[14],	matrixData[15]));
+
+	auto object = MakeReference(new Object());
+	{
+		object->SetName(name);
+
+		auto position = VecXYZ(matrix * Vec4(Vec3(0.0f), 1.0f));
+		auto angle = GreatVEngine::GetAngle(Move4(-position) * matrix);
+		auto scale = VecXYZ((RotateYXZ4(-angle) * Move4(-position) * matrix) * Vec4(1.0f));
+
+		object->SetLocalPosition(position);
+		object->SetLocalAngle(angle);
+		object->SetLocalScale(scale);
+
+		auto shape = MakeReference(new Shape(material_->engine, meshes_[meshId]));
+		auto model = MakeReference(new Model(material_->engine, shape, material_));
+
+		object->SetModel(model);
+	}
+
+	auto subobjectsCount = (Size)reader_->Read<UInt32>();
+	for(Size i = 0; i < subobjectsCount; ++i)
+	{
+		auto subobject = Load(reader_, meshes_, material_);
+		subobject->SetParent(object);
+	}
+
+	return object;
+}
+inline GreatVEngine::Reference<GreatVEngine::OpenGL::Object> GreatVEngine::OpenGL::Object::Load(const Filename& filename_, Reference<Material> material_)
+{
+	auto reader = System::BinaryFileReader::LoadFile(filename_);
+	auto root = MakeReference(new Object());
+
+
+	auto meshesCount = (Size)reader->Read<UInt32>();
+	Vector<Reference<Geometry>> meshes(meshesCount);
+	{
+		for(auto &mesh : meshes)
+		{
+			mesh = Geometry::LoadMesh(reader);
+		}
+	}
+	
+	auto objectsCount = (Size)reader->Read<UInt32>();
+	for(Size i = 0; i < objectsCount; ++i)
+	{
+		auto object = Load(reader, meshes, material_);
+		object->SetParent(root);
+	}
+
+	return root;
+}
+#pragma endregion
 #pragma region Scene
 inline void GreatVEngine::OpenGL::Scene::Add(Reference<OpenGL::Object> object_)
 {
@@ -966,17 +1153,25 @@ inline void GreatVEngine::OpenGL::Scene::Add(Reference<OpenGL::Object> object_)
 		Reference<OpenGL::Object> object;
 	};
 
-	object_->Subscribe_OnModelChange(new T{this, object_}, [](void* data, Reference<Graphics::Model> model_){
-		auto t = (T*)data;
-		auto $this = t->scene;
+	if(std::find(objects.begin(), objects.end(), object_) == objects.end())
+	{
+		object_->Subscribe_OnModelChange(new T{this, object_}, [](void* data, Reference<Graphics::Model> model_){
+			auto t = (T*)data;
+			auto $this = t->scene;
 
-		$this->Remove(t->object);
-		$this->Add(t->object);
+			$this->Remove(t->object);
+			$this->Add(t->object);
 
-		return true;
-	});
+			return true;
+		});
 
-	objects.push_back(object_);
+		objects.push_back(object_);
+	}
+
+	for(auto &child : object_->childs)
+	{
+		Add(child);
+	}
 }
 inline void GreatVEngine::OpenGL::Scene::Add(Reference<Lights::Direction> light_)
 {
@@ -993,6 +1188,10 @@ inline void GreatVEngine::OpenGL::Scene::Add(Reference<Lights::Spot> light_)
 inline void GreatVEngine::OpenGL::Scene::Add(Reference<Environments::Cubemap> environment_)
 {
 	environmentsCubemap.push_back(environment_);
+}
+inline void GreatVEngine::OpenGL::Scene::Add(Reference<Environments::Globalmap> environment_)
+{
+	environmentsGlobalmap.push_back(environment_);
 }
 inline void GreatVEngine::OpenGL::Scene::Add(Reference<Decal> decal_)
 {
@@ -1016,6 +1215,11 @@ inline void GreatVEngine::OpenGL::Scene::Add(Reference<Decal> decal_)
 }
 inline void GreatVEngine::OpenGL::Scene::Remove(Reference<OpenGL::Object> object_)
 {
+	for(auto &child : object_->childs)
+	{
+		Remove(child);
+	}
+
 	objects.erase(std::find(objects.begin(), objects.end(), object_));
 }
 inline void GreatVEngine::OpenGL::Scene::Remove(Reference<Lights::Direction> light_)
@@ -1034,6 +1238,10 @@ inline void GreatVEngine::OpenGL::Scene::Remove(Reference<Environments::Cubemap>
 {
 	environmentsCubemap.erase(std::find(environmentsCubemap.begin(), environmentsCubemap.end(), environment_));
 }
+inline void GreatVEngine::OpenGL::Scene::Remove(Reference<Environments::Globalmap> environment_)
+{
+	environmentsGlobalmap.erase(std::find(environmentsGlobalmap.begin(), environmentsGlobalmap.end(), environment_));
+}
 inline void GreatVEngine::OpenGL::Scene::Remove(Reference<OpenGL::Decal> decal_)
 {
 	auto &container = decals[decal_->GetGroups()];
@@ -1044,14 +1252,14 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 	auto previousFrame = engine->context->GetBufferFrame();
 
 
-	// sort by material/shape
-	std::sort(objects.begin(), objects.end(), [](Reference<Object> a, Reference<Object> b){
-		return *a.get() < *b.get();
-	});
-
 	// render to geometry buffer
 	geometyPass->frame->Set();
 	{
+		// sort by material/shape
+		std::sort(objects.begin(), objects.end(), [](Reference<Object> a, Reference<Object> b){
+			return *a.get() < *b.get();
+		});
+
 		glEnable(GL_CULL_FACE); glCullFace(GL_BACK); glFrontFace(GL_CCW); DebugTest();
 		glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LESS); DebugTest();
 
@@ -1070,25 +1278,31 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 
 		for(auto &object : objects)
 		{
-			glStencilFunc(GL_ALWAYS, object->GetGroups(), 0xFF);
+			if(object->IsVisible())
+			{
+				glStencilFunc(GL_ALWAYS, object->GetGroups(), 0xFF);
 
-			auto &model = object->model;
+				auto &model = object->model;
 
-			auto shape = model->shape;
-			auto material = model->material;
-			auto program = model->material->techniques[(Size)techniqueType_]->program;
+				if(model)
+				{
+					auto shape = model->shape;
+					auto material = model->material;
+					auto program = model->material->techniques[(Size)techniqueType_]->program;
 
-			model->Set(techniqueType_);
+					model->Set(techniqueType_);
 
-			program->SetInt("textureColor", 0);
-			program->SetInt("textureNormals", 1);
-			program->SetInt("textureSpecular", 2);
+					program->SetInt("textureColor", 0);
+					program->SetInt("textureNormals", 1);
+					program->SetInt("textureSpecular", 2);
 
-			program->SetMat4("modelViewProjectionMatrix", camera_->GetVPMat() * object->GetMMat());
-			program->SetMat4("modelMatrix", Move4(-camera_->GetPosition()) * object->GetMMat());
-			program->SetMat3("rotateMatrix", object->GetRMat());
+					program->SetMat4("modelViewProjectionMatrix", camera_->GetVPMat() * object->GetMMat());
+					program->SetMat4("modelMatrix", Move4(-camera_->GetPosition()) * object->GetMMat());
+					program->SetMat3("rotateMatrix", object->GetRMat());
 
-			model->DrawIndexed();
+					model->DrawIndexed();
+				}
+			}
 		}
 	}
 
@@ -1125,6 +1339,7 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 
 			glStencilFunc(GL_NOTEQUAL, 0, decalsGroup);
 
+			// sort decals by priority
 			std::sort(decalsContainer.begin(), decalsContainer.end(), [](Reference<Decal> a, Reference<Decal> b){ return *a.get() < *b.get(); }); // bigger priority goes first
 
 			for(auto &decal : decalsContainer)
@@ -1156,9 +1371,10 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 
 		lightPass->direction;
 		{
-			glDisable(GL_CULL_FACE);
-			glDisable(GL_DEPTH_TEST);
-			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE);
+			glDisable(GL_CULL_FACE); DebugTest();
+			glDisable(GL_DEPTH_TEST); DebugTest();
+			glDisable(GL_STENCIL_TEST); DebugTest();
+			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE); DebugTest();
 
 			lightPass->direction->attributes->Set();
 			lightPass->direction->vertices->Set();
@@ -1196,8 +1412,9 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 			lightPass->point->program->SetFloat("camFar", camera_->GetPerspective().zFar);
 			lightPass->point->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
 			lightPass->point->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
-			lightPass->point->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
+			lightPass->point->program->SetMat4("viewProjectionMatrix", camera_->GetVPMat() * Move4(camera_->GetPosition()));
 			lightPass->point->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+			
 			for(auto &light : lightsPoint)
 			{
 				if(light->IsVisible())
@@ -1218,15 +1435,30 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 	// render environment (specular only)
 	target->frameSpecular->Set();
 	{
+		// Clear value of environment coverage
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+		// Set textures
+		geometyPass->color->Set(0);
+		geometyPass->specular->Set(1);
+		geometyPass->normals->Set(2);
+		geometyPass->material->Set(3);
+		geometyPass->depthStencil->Set(4);
 		target->diffuse->Set(5);
 
 		environmentPass->cubemap;
 		{
+			std::sort(environmentsCubemap.begin(), environmentsCubemap.end(), [](Reference<Environments::Cubemap> a, Reference<Environments::Cubemap> b){ return a->GetPriority() < b->GetPriority(); }); // bigger priority goes first
+
 			environmentPass->cubemap->sampler->Set(8);
 
 			glEnable(GL_CULL_FACE); glCullFace(GL_FRONT);
 			glDisable(GL_DEPTH_TEST);
-			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE);
+			glDisable(GL_STENCIL_TEST);
+			glEnable(GL_BLEND); glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
 			environmentPass->cubemap->attributes->Set();
 			environmentPass->cubemap->vertices->Set();
@@ -1244,7 +1476,17 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 				{
 					environment->texture->Set(8);
 
-					environmentPass->cubemap->program->SetMat4("environmentMatrix", camera_->GetVPMat() * environment->GetMMat());
+					environmentPass->cubemap->program->SetVec3("environmentRangeNear", environment->GetRangeNear());
+					environmentPass->cubemap->program->SetVec3("environmentRangeFar", environment->GetRangeFar());
+					{
+						auto t = (environment->GetRangeMiddle() - environment->GetRangeNear()) / (environment->GetRangeFar() - environment->GetRangeNear());
+						auto a = Vec3(4.0f) * (Vec3(0.5f) - t);
+						auto b = Vec3(1.0f) - a;
+
+						environmentPass->cubemap->program->SetVec3("environmentRangeA", a);
+						environmentPass->cubemap->program->SetVec3("environmentRangeB", b);
+					}
+					environmentPass->cubemap->program->SetMat4("environmentMatrix", camera_->GetVPMat() * environment->GetMMat() * Scale4(environment->GetRangeFar()));
 					environmentPass->cubemap->program->SetMat4("environmentInverseMatrix", environment->GetMIMat() * Move4(camera_->GetPosition()));
 					environmentPass->cubemap->program->SetVec3("environmentColor", VecXYZ(environment->GetColor()) * environment->GetColor().w);
 					environmentPass->cubemap->program->SetFloat("environmentMipmapsCount", glm::log2((Float32)environment->texture->GetWidth()));
@@ -1254,6 +1496,41 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 			}
 
 			environmentPass->cubemap->sampler->Reset(8);
+		}
+
+		environmentPass->globalmap;
+		{
+			environmentPass->globalmap->sampler->Set(8);
+
+			glDisable(GL_CULL_FACE);
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_STENCIL_TEST);
+			glEnable(GL_BLEND); glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+
+			environmentPass->globalmap->attributes->Set();
+			environmentPass->globalmap->vertices->Set();
+			environmentPass->globalmap->program->Set();
+			environmentPass->globalmap->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
+			environmentPass->globalmap->program->SetFloat("camFar", camera_->GetPerspective().zFar);
+			environmentPass->globalmap->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+			environmentPass->globalmap->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+			environmentPass->globalmap->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
+			environmentPass->globalmap->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+
+			for(auto &environment : environmentsGlobalmap)
+			{
+				if(environment->IsVisible())
+				{
+					environment->texture->Set(8);
+
+					environmentPass->globalmap->program->SetVec4("environmentColor", environment->GetColor());
+					environmentPass->globalmap->program->SetFloat("environmentMipmapsCount", glm::log2((Float32)environment->texture->GetWidth()));
+
+					glDrawArrays(GL_POINTS, 0, 1);
+				}
+			}
+
+			environmentPass->globalmap->sampler->Reset(8);
 		}
 	}
 
@@ -1269,10 +1546,6 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 
 	auto draw = [&](Texture* texture)
 	{
-		// glDisable(GL_CULL_FACE);
-		// glDisable(GL_DEPTH_TEST);
-		// glDisable(GL_BLEND);
-
 		texture->Set(0);
 
 		presenter->program->Set();
@@ -1287,6 +1560,7 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_STENCIL_TEST);
 	glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE);
 
 	draw(target->diffuse);
@@ -1294,6 +1568,7 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_STENCIL_TEST);
 	glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	drawer;
@@ -1316,6 +1591,11 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 	}
 	// draw(target->specular);
 
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_STENCIL_TEST);
+	glDisable(GL_BLEND);
+
 	if(GetAsyncKeyState(VK_F1)) draw(geometyPass->color);
 	if(GetAsyncKeyState(VK_F2)) draw(geometyPass->specular);
 	if(GetAsyncKeyState(VK_F3)) draw(geometyPass->normals);
@@ -1327,6 +1607,7 @@ inline void GreatVEngine::OpenGL::Scene::Render(Reference<Graphics::Camera> came
 	glFlush();
 }
 #pragma endregion
+
 
 #pragma region
 #pragma endregion

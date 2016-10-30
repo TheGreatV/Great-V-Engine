@@ -1800,7 +1800,7 @@ namespace GreatVEngine
 						vk_shaderModuleCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 						vk_shaderModuleCreateInfo.pNext = nullptr;
 						vk_shaderModuleCreateInfo.flags = 0;
-						vk_shaderModuleCreateInfo.codeSize = source_.size();
+						vk_shaderModuleCreateInfo.codeSize = sizeof(Source::value_type) * source_.size();
 						vk_shaderModuleCreateInfo.pCode = source_.data();
 					}
 

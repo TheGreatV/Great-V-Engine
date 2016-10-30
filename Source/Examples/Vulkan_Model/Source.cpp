@@ -2,6 +2,7 @@
 #include <mutex>
 using namespace std;
 
+#include <System/System.hpp>
 #include <APIs/Vulkan/Vulkan.hpp>
 #include <APIs/WinAPI/Window.hpp>
 #include <Geometry/Geometry.hpp>
@@ -297,8 +298,13 @@ void func()
 		return std::move(result);
 	};
 
-	auto shaderVertex = new Vulkan::Shader(vkDevice, loadShader("../../../../../Media/Shaders/1.vert.spv"));
-	auto shaderFragment = new Vulkan::Shader(vkDevice, loadShader("../../../../../Media/Shaders/1.frag.spv"));
+	auto sourceShaderVertex = System::LoadFileContent<UInt32>(Filepath("Media/Shaders/Vulkan_Model/1.spir-v.vs"));
+	auto sourceShaderFragment = System::LoadFileContent<UInt32>(Filepath("Media/Shaders/Vulkan_Model/1.spir-v.fs"));
+
+	auto shaderVertex = new Vulkan::Shader(vkDevice, sourceShaderVertex);
+	auto shaderFragment = new Vulkan::Shader(vkDevice, sourceShaderFragment);
+	// auto shaderVertex = new Vulkan::Shader(vkDevice, loadShader("../../../../../Media/Shaders/1.vert.spv"));
+	// auto shaderFragment = new Vulkan::Shader(vkDevice, loadShader("../../../../../Media/Shaders/1.frag.spv"));
 
 	Vector<Vulkan::ImageView*> swapchainImageViews(swapchainImages.size());
 	Vector<Vulkan::Framebuffer*> framebuffers(swapchainImages.size());
@@ -387,8 +393,9 @@ void func()
 		nullptr,
 		shaderFragment),
 		{Vulkan::GraphicPipeline::Binding(0, geometry->GetVertexSize(), Vulkan::GraphicPipeline::Binding::Rate::VK_VERTEX_INPUT_RATE_VERTEX)},
-		{Vulkan::GraphicPipeline::Attribute(0, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32B32_SFLOAT, 0),
-		Vulkan::GraphicPipeline::Attribute(1, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32_SFLOAT, sizeof(Float32)*3*4)},
+		{
+			Vulkan::GraphicPipeline::Attribute(0, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32B32_SFLOAT, 0),
+			Vulkan::GraphicPipeline::Attribute(1, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32_SFLOAT, sizeof(Float32)*3*4)},
 		{VkViewport{0, 0, (Float32)surface->GetCapabilities().currentExtent.width, (Float32)surface->GetCapabilities().currentExtent.height, 1.0f, 0.0f}},
 		{VkRect2D{{0, 0}, {surface->GetCapabilities().currentExtent.width, surface->GetCapabilities().currentExtent.height}}},
 		Vulkan::GraphicPipeline::Topology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,

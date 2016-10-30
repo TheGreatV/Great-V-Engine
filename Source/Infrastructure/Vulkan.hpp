@@ -27,12 +27,12 @@ namespace Log
 	}
 	void Write(const GreatVEngine::String& message)
 	{
-		m.lock();
-		FILE* file;
-		fopen_s(&file, filename.c_str(), "a");
-		fwrite(message.data(), message.size(), 1, file);
-		fclose(file);
-		m.unlock();
+		// m.lock();
+		// FILE* file;
+		// fopen_s(&file, filename.c_str(), "a");
+		// fwrite(message.data(), message.size(), 1, file);
+		// fclose(file);
+		// m.unlock();
 	}
 }
 
@@ -134,40 +134,13 @@ namespace GreatVEngine
 				const Filename& geometry_,
 				const Filename& fragment_)
 			{
-				auto LoadFile = [](const Filename& filename_)
-				{
-					FILE* file = nullptr;
-					if(fopen_s(&file, filename_.c_str(), "rb") != 0)
-					{
-						throw Exception("failed to load file");
-					}
-					fseek(file, 0, FILE_END);
-					auto size = ftell(file);
-					if(size % 4 != 0) throw Exception("Shader source size is not % 4");
-
-					rewind(file);
-
-					Shader::Source result;
-					result.resize(size);
-					fread((void*)result.data(), 1, size, file);
-
-					fclose(file);
-
-					return std::move(result);
-				};
-
-				if(vertex_.size() > 0)
-				{
-					auto source = LoadFile(base_ + vertex_);
-				}
-
 				return MakeReference(new Technique(
 					engine_,
-					vertex_.size() > 0 ? LoadFile(base_ + vertex_) : Shader::Source(),
-					tessellationControl_.size() > 0 ? LoadFile(base_ + tessellationControl_) : Shader::Source(),
-					tessellationEvaluation_.size() > 0 ? LoadFile(base_ + tessellationEvaluation_) : Shader::Source(),
-					geometry_.size() > 0 ? LoadFile(base_ + geometry_) : Shader::Source(),
-					fragment_.size() > 0 ? LoadFile(base_ + fragment_) : Shader::Source()));
+					vertex_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + vertex_) : Shader::Source(),
+					tessellationControl_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + tessellationControl_) : Shader::Source(),
+					tessellationEvaluation_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + tessellationEvaluation_) : Shader::Source(),
+					geometry_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + geometry_) : Shader::Source(),
+					fragment_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + fragment_) : Shader::Source()));
 			}
 		};
 		class Map:
@@ -390,7 +363,7 @@ namespace GreatVEngine
 								Vulkan::GraphicPipeline::Attribute(2, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32B32_SFLOAT, sizeof(Float32)* 3 * 2),
 								Vulkan::GraphicPipeline::Attribute(3, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32B32_SFLOAT, sizeof(Float32)* 3 * 3),
 								Vulkan::GraphicPipeline::Attribute(4, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32_SFLOAT, sizeof(Float32)* 3 * 4)},
-							{VkViewport{0, 0, (Float32)engine->surface->GetCapabilities().currentExtent.width, (Float32)engine->surface->GetCapabilities().currentExtent.height, 1.0f, 0.0f}},
+							{VkViewport{0, 0, (Float32)engine->surface->GetCapabilities().currentExtent.width, (Float32)engine->surface->GetCapabilities().currentExtent.height, 0.0f, 1.0f}},
 							{VkRect2D{{0, 0}, {engine->surface->GetCapabilities().currentExtent.width, engine->surface->GetCapabilities().currentExtent.height}}},
 							Vulkan::GraphicPipeline::Topology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 							Vulkan::GraphicPipeline::Fill::VK_POLYGON_MODE_FILL,
@@ -398,7 +371,7 @@ namespace GreatVEngine
 							Vulkan::GraphicPipeline::Face::VK_FRONT_FACE_COUNTER_CLOCKWISE,
 							Vulkan::GraphicPipeline::DepthState(true, true, false, Vulkan::GraphicPipeline::DepthState::Operation::VK_COMPARE_OP_LESS),
 							Vulkan::GraphicPipeline::BlendState(
-								false, Vulkan::GraphicPipeline::BlendState::Logic::VK_LOGIC_OP_AND,
+								false, Vulkan::GraphicPipeline::BlendState::Logic::VK_LOGIC_OP_CLEAR,
 								Vec4(1.0f, 1.0f, 1.0f, 1.0f), {
 									Vulkan::GraphicPipeline::BlendState::Attachment(
 										false,
@@ -497,12 +470,7 @@ inline GreatVEngine::Vulkan::Engine::Engine(HINSTANCE winInstance_, HWND winWind
 			{};
 #endif
 
-		Extension::CNames instanceExtensionsNames =
-#if GVE_DEBUG
-			Instance::GetExtensionsCNames(extensionProperties);
-#else
-			{};
-#endif
+		Extension::CNames instanceExtensionsNames = Instance::GetExtensionsCNames(extensionProperties);
 
 		instance = new Instance(instanceLayersNames, instanceExtensionsNames);
 
@@ -531,12 +499,7 @@ inline GreatVEngine::Vulkan::Engine::Engine(HINSTANCE winInstance_, HWND winWind
 #else
 			{};
 #endif
-		Extension::CNames deviceExtensionsNames =
-#if GVE_DEBUG
-			Vulkan::Device::GetExtensionsCNames(extensionProperties);
-#else
-			{};
-#endif
+		Extension::CNames deviceExtensionsNames = Vulkan::Device::GetExtensionsCNames(extensionProperties);
 
 		device = new Device(physicalDevice, deviceLayersNames, deviceExtensionsNames);
 	}
@@ -550,7 +513,7 @@ inline GreatVEngine::Vulkan::Engine::Engine(HINSTANCE winInstance_, HWND winWind
 
 	swapchainImageDepth = new Vulkan::Image(
 		device, {surface->GetCapabilities().currentExtent.width, surface->GetCapabilities().currentExtent.height, 1}, Vulkan::Image::Type::VK_IMAGE_TYPE_2D,
-		Vulkan::Image::Format::VK_FORMAT_D32_SFLOAT, Vulkan::Image::UsageBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		Vulkan::Image::Format::VK_FORMAT_D16_UNORM, Vulkan::Image::UsageBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		Vulkan::Image::Tiling::VK_IMAGE_TILING_OPTIMAL, Vulkan::Image::Layout::VK_IMAGE_LAYOUT_UNDEFINED);
 	{
 		auto memory = new Vulkan::DeviceMemory(swapchainImageDepth);
@@ -812,7 +775,7 @@ inline void GreatVEngine::Vulkan::Scene::Render(Reference<Graphics::Camera> came
 
 	engine->queue->Wait();
 
-	const Size uniformDataSize = sizeof(Float32)* (16 + 16 + 9);
+	const Size uniformDataSize = sizeof(Float32)* (16 + 16 + 4*3);
 	auto uniformBuffer = new Buffer(engine->device, uniformDataSize, Buffer::Usages::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, Buffer::Sharing::VK_SHARING_MODE_EXCLUSIVE);
 	{
 		auto memory = new Vulkan::DeviceMemory(uniformBuffer);
@@ -840,9 +803,15 @@ inline void GreatVEngine::Vulkan::Scene::Render(Reference<Graphics::Camera> came
 
 		auto uniformData = uniformBuffer->GetDeviceMemory()->Map<Float32>();
 		{
-			*(Mat4*)(uniformData + 0) = camera_->GetVPMat() * object->GetMMat();
-			*(Mat4*)(uniformData + 16) = object->GetMMat();
-			*(Mat3*)(uniformData + 16 + 9) = object->GetRMat();
+			auto rMat = object->GetRMat();
+			auto mMat = Move4(-camera_->GetPosition()) * object->GetMMat();
+			auto mvpMat = camera_->GetVPMat() * object->GetMMat();
+
+			*(Mat4*)(uniformData + 0)	= mvpMat;
+			*(Mat4*)(uniformData + 16)	= mMat;
+			((Vec4*)(uniformData + 32))[0]	= Vec4(rMat[0][0], rMat[0][1], rMat[0][2], 0.0f);
+			((Vec4*)(uniformData + 32))[1]	= Vec4(rMat[1][0], rMat[1][1], rMat[1][2], 0.0f);
+			((Vec4*)(uniformData + 32))[2]	= Vec4(rMat[2][0], rMat[2][1], rMat[2][2], 0.0f);
 		}
 		uniformBuffer->GetDeviceMemory()->Unmap();
 

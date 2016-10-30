@@ -138,7 +138,7 @@ namespace GreatVEngine
 		{
 		public:
 			using Handle = GLuint;
-			using Source = String;
+			using Source = Vector<UInt8>; // String;
 		public:
 			enum class Type: GLenum
 			{
@@ -167,7 +167,7 @@ namespace GreatVEngine
 
 				auto data = source_.data();
 				GLint length = source_.size();
-				glShaderSource(handle, 1, &data, &length); DebugTest();
+				glShaderSource(handle, 1, (const GLchar* const*)&data, &length); DebugTest();
 
 				glCompileShader(handle);
 

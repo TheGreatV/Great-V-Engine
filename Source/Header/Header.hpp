@@ -35,6 +35,7 @@ namespace GreatVEngine
 
 	template<class T> using Reference = std::shared_ptr<T>;
 	template<class T> using Link = std::weak_ptr<T>;
+	template<class T> using Shared = std::enable_shared_from_this<T>;
 
 	template<class T, size_t S> using Array = std::array<T, S>;
 	template<class T> using Vector = std::vector<T>;
@@ -64,13 +65,13 @@ namespace GreatVEngine
 	{
 		return Reference<T>(t);
 	}
-	template<class T> inline Link<T> MakeLink(T* t)
+	template<class T> inline Link<T> MakeLink(T t)
 	{
 		return Link<T>(t);
 	}
 	template<class T> inline Reference<T> Share(Link<T> t)
 	{
-		return std::make_shared(t);
+		return std::make_shared<T>(t);
 	}
 
 	const Size BITS_IN_BYTE = 8;

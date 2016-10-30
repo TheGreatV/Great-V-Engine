@@ -47,8 +47,7 @@ void func()
 		texture->Set(0);
 	}
 
-	auto shader1 = MakeReference(new OpenGL::Shader(
-		OpenGL::Shader::Type::Vertex,
+	auto source1 =
 		"#version 330\n\
 		uniform mat4 modelViewProjectionMatrix;\
 		in vec3 vPos;\
@@ -56,15 +55,21 @@ void func()
 		out vec2 pTex;\
 		void main(){\
 		pTex = vTex;\
-		gl_Position = modelViewProjectionMatrix * vec4(vPos,1); }"));
-
-	auto shader2 = MakeReference(new OpenGL::Shader(
-		OpenGL::Shader::Type::Fragment,
+		gl_Position = modelViewProjectionMatrix * vec4(vPos,1); }";
+	auto source2 =
 		"#version 330\n\
 		uniform sampler2D textureColor;\
 		in vec2 pTex;\
 		out vec4 oColor;\
-		void main(){ oColor = texture(textureColor, pTex); }"));
+		void main(){ oColor = texture(textureColor, pTex); }";
+
+	auto shader1 = MakeReference(new OpenGL::Shader(
+		OpenGL::Shader::Type::Vertex,
+		Vector<UInt8>(source1, source1 + strlen(source1) + 1)));
+
+	auto shader2 = MakeReference(new OpenGL::Shader(
+		OpenGL::Shader::Type::Fragment,
+		Vector<UInt8>(source2, source2 + strlen(source2) + 1)));
 
 	auto program = MakeReference(new OpenGL::Program(
 		graphicContext.get(), {

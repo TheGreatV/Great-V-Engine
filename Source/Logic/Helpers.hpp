@@ -1389,6 +1389,7 @@ namespace GreatVEngine
 					{
 						if(perspective != perspective_)
 						{
+							type = Type::Perspective;
 							perspective = perspective_;
 							updateFlags &= ~(
 								(UpdateFlags)UpdateFlagBits::DirectProjectionMatrixUpdated |
@@ -1401,6 +1402,7 @@ namespace GreatVEngine
 					{
 						if(orthogonal != orthogonal_)
 						{
+							type = Type::Orthogonal;
 							orthogonal = orthogonal_;
 							updateFlags &= ~(
 								(UpdateFlags)UpdateFlagBits::DirectProjectionMatrixUpdated |
@@ -1426,7 +1428,7 @@ namespace GreatVEngine
 						if((updateFlags & (UpdateFlags)UpdateFlagBits::DirectProjectionMatrixUpdated) == 0)
 						{
 							updateFlags |= (UpdateFlags)UpdateFlagBits::DirectProjectionMatrixUpdated;
-							directProjectionMatrix = type == Type::Perspective ?
+							directProjectionMatrix = (type == Type::Perspective) ?
 								Perspective(perspective.fov, perspective.aspect, perspective.zNear, perspective.zFar) :
 								Orthogonal(orthogonal.left, orthogonal.right, orthogonal.bottom, orthogonal.top, orthogonal.back, orthogonal.front);
 						}
@@ -1438,7 +1440,7 @@ namespace GreatVEngine
 						if((updateFlags & (UpdateFlags)UpdateFlagBits::InverseProjectionMatrixUpdated) == 0)
 						{
 							updateFlags |= (UpdateFlags)UpdateFlagBits::InverseProjectionMatrixUpdated;
-							inverseProjectionMatrix = type == Type::Perspective ?
+							inverseProjectionMatrix = (type == Type::Perspective) ?
 								PerspectiveInverse(perspective.fov, perspective.aspect, perspective.zNear, perspective.zFar) :
 								OrthogonalInverse(orthogonal.left, orthogonal.right, orthogonal.bottom, orthogonal.top, orthogonal.back, orthogonal.front);
 						}
@@ -1675,6 +1677,15 @@ namespace GreatVEngine
 						ModelMatrix(position_, angle_, scale_),
 						parent(parent_)
 					{
+					}
+				public:
+					inline void SetParent(Parent parent_)
+					{
+						parent = parent_;
+					}
+					inline Parent GetParent() const
+					{
+						return parent;
 					}
 				public:
 					inline void SetLocalAngle(const Angle::Value& angle_)

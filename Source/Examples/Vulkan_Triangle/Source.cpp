@@ -2,6 +2,7 @@
 #include <mutex>
 using namespace std;
 
+#include <System/System.hpp>
 #include <APIs/Vulkan/Vulkan.hpp>
 #include <APIs/WinAPI/Window.hpp>
 namespace GVE = GreatVEngine;
@@ -150,29 +151,14 @@ void func()
 		vertexBuffer->SetDeviceMemory(memory);
 	}
 
-	auto loadShader = [](const std::string& filename)
-	{
-		FILE* file = nullptr;
-		if(fopen_s(&file, filename.c_str(), "rb") != 0)
-		{
-			throw std::exception("failed to load file");
-		}
-		fseek(file, 0, FILE_END);
-		auto size = ftell(file);
-		if(size % 4 != 0) throw std::exception("");
+	auto sourceShaderVertex = System::LoadFileContent<UInt32>(Filepath("Media/Shaders/Vulkan_Triangle/1.spir-v.vs"));
+	auto sourceShaderFragment = System::LoadFileContent<UInt32>(Filepath("Media/Shaders/Vulkan_Triangle/1.spir-v.fs"));
 
-		rewind(file);
+	auto shaderVertex = new Vulkan::Shader(vkDevice, sourceShaderVertex);
+	auto shaderFragment = new Vulkan::Shader(vkDevice, sourceShaderFragment);
 
-		std::vector<uint32_t> result(size);
-		fread((void*)result.data(), 1, size, file);
-
-		fclose(file);
-
-		return std::move(result);
-	};
-
-	auto shaderVertex = new Vulkan::Shader(vkDevice, loadShader("../../../../../Media/Shaders/1.vert.spv"));
-	auto shaderFragment = new Vulkan::Shader(vkDevice, loadShader("../../../../../Media/Shaders/1.frag.spv"));
+	// auto shaderVertex = new Vulkan::Shader(vkDevice, loadShader("../../../../../Media/Shaders/1.vert.spv"));
+	// auto shaderFragment = new Vulkan::Shader(vkDevice, loadShader("../../../../../Media/Shaders/1.frag.spv"));
 
 	Vector<Vulkan::ImageView*> swapchainImageViews(swapchainImages.size());
 	Vector<Vulkan::Framebuffer*> framebuffers(swapchainImages.size());
@@ -202,12 +188,12 @@ void func()
 		{VkViewport{0, 0, (Float32)surface->GetCapabilities().currentExtent.width, (Float32)surface->GetCapabilities().currentExtent.height, 0.0f, 1.0f}},
 		{VkRect2D{{0, 0}, surface->GetCapabilities().currentExtent}},
 		Vulkan::GraphicPipeline::Topology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		Vulkan::GraphicPipeline::Fill::VK_POLYGON_MODE_LINE,
+		Vulkan::GraphicPipeline::Fill::VK_POLYGON_MODE_FILL,
 		Vulkan::GraphicPipeline::Culls::VK_CULL_MODE_NONE,
 		Vulkan::GraphicPipeline::Face::VK_FRONT_FACE_COUNTER_CLOCKWISE,
 		Vulkan::GraphicPipeline::DepthState(false, false, false),
 		Vulkan::GraphicPipeline::BlendState(
-			true, Vulkan::GraphicPipeline::BlendState::Logic::VK_LOGIC_OP_CLEAR,
+			false, Vulkan::GraphicPipeline::BlendState::Logic::VK_LOGIC_OP_CLEAR,
 			Vec4(1.0f, 1.0f, 1.0f, 1.0f),
 			{
 				Vulkan::GraphicPipeline::BlendState::Attachment(
