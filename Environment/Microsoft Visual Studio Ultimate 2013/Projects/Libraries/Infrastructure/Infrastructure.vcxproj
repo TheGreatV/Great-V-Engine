@@ -33,31 +33,13 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\Properties\Great V Project.props" />
-    <Import Project="..\..\..\Properties\Great V External User - Half.props" />
-    <Import Project="..\..\..\Properties\Great V External User - GLM.props" />
-    <Import Project="..\..\..\Properties\Great V Library User - Header.props" />
-    <Import Project="..\..\..\Properties\Great V External User - OpenIL.props" />
-    <Import Project="..\..\..\Properties\Great V External User - OpenGL.props" />
-    <Import Project="..\..\..\Properties\Great V Utility User - OpenIL.props" />
-    <Import Project="..\..\..\Properties\Great V API User - OpenGL.props" />
-    <Import Project="..\..\..\Properties\Great V External User - Vulkan.props" />
-    <Import Project="..\..\..\Properties\Great V API User - Vulkan.props" />
-    <Import Project="..\..\..\Properties\Great V Library User - System.props" />
+    <Import Project="..\..\..\Properties\Great V Project (Debug).props" />
+    <Import Project="..\..\..\Properties\Great V - Infrastructure.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\Properties\Great V Project.props" />
-    <Import Project="..\..\..\Properties\Great V External User - Half.props" />
-    <Import Project="..\..\..\Properties\Great V External User - GLM.props" />
-    <Import Project="..\..\..\Properties\Great V Library User - Header.props" />
-    <Import Project="..\..\..\Properties\Great V External User - OpenIL.props" />
-    <Import Project="..\..\..\Properties\Great V External User - OpenGL.props" />
-    <Import Project="..\..\..\Properties\Great V Utility User - OpenIL.props" />
-    <Import Project="..\..\..\Properties\Great V API User - OpenGL.props" />
-    <Import Project="..\..\..\Properties\Great V External User - Vulkan.props" />
-    <Import Project="..\..\..\Properties\Great V API User - Vulkan.props" />
-    <Import Project="..\..\..\Properties\Great V Library User - System.props" />
+    <Import Project="..\..\..\Properties\Great V - Infrastructure.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
@@ -86,17 +68,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\Source\Infrastructure\BulletPhysics.hpp" />
     <ClInclude Include="..\..\..\..\..\Source\Infrastructure\Graphics.hpp" />
     <ClInclude Include="..\..\..\..\..\Source\Infrastructure\Header.hpp" />
     <ClInclude Include="..\..\..\..\..\Source\Infrastructure\Infrastructure.hpp" />
     <ClInclude Include="..\..\..\..\..\Source\Infrastructure\OpenGL.hpp" />
+    <ClInclude Include="..\..\..\..\..\Source\Infrastructure\Physics.hpp" />
     <ClInclude Include="..\..\..\..\..\Source\Infrastructure\Vulkan.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\Source\Infrastructure\BulletPhysics.cpp" />
     <ClCompile Include="..\..\..\..\..\Source\Infrastructure\Graphics.cpp" />
     <ClCompile Include="..\..\..\..\..\Source\Infrastructure\Header.cpp" />
     <ClCompile Include="..\..\..\..\..\Source\Infrastructure\Infrastructure.cpp" />
     <ClCompile Include="..\..\..\..\..\Source\Infrastructure\OpenGL.cpp" />
+    <ClCompile Include="..\..\..\..\..\Source\Infrastructure\Physics.cpp" />
     <ClCompile Include="..\..\..\..\..\Source\Infrastructure\Vulkan.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

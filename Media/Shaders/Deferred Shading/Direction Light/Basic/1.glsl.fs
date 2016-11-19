@@ -44,7 +44,7 @@ void main() {
 
 	vec3	color = dataColor.xyz;
 	vec3	specular = dataSpecular.xyz;
-	vec3	normal = dataNormal.xyz;
+	vec3	normal = normalize(dataNormal.xyz);
 	float	roughness = dataMaterial.x;
 	float	depth = dataDepth.x; if(depth >= 1.0f) return;
 	float	distance = camFarXNear / (camFar - depth * camFarMNear); 

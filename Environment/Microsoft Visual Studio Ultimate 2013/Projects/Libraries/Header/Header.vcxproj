@@ -33,7 +33,7 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\Properties\Great V Project.props" />
+    <Import Project="..\..\..\Properties\Great V Project (Debug).props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -67,10 +67,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\Source\Header\ErrorHandling.hpp" />
+    <ClInclude Include="..\..\..\..\..\Source\Header\Function.hpp" />
     <ClInclude Include="..\..\..\..\..\Source\Header\Header.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\Source\Header\ErrorHandling.cpp" />
+    <ClCompile Include="..\..\..\..\..\Source\Header\Function.cpp" />
     <ClCompile Include="..\..\..\..\..\Source\Header\Header.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

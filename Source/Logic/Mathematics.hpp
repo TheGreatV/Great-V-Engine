@@ -11,6 +11,7 @@
 
 #include <half.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #pragma endregion
 
 
@@ -41,12 +42,18 @@ namespace GreatVEngine
 	using HVec2			= glm::tvec2<Float16, glm::highp>;
 	using HVec3			= glm::tvec3<Float16, glm::highp>;
 	using HVec4			= glm::tvec4<Float16, glm::highp>;
+	using DVec2			= glm::tvec2<Float64, glm::highp>;
+	using DVec3			= glm::tvec3<Float64, glm::highp>;
+	using DVec4			= glm::tvec4<Float64, glm::highp>;
 	using BVec2			= glm::bvec2;
 	using BVec3			= glm::bvec3;
 	using BVec4			= glm::bvec4;
 	using IVec2			= glm::ivec2;
 	using IVec3			= glm::ivec3;
 	using IVec4			= glm::ivec4;
+	using LVec2			= glm::tvec2<SInt64, glm::highp>;
+	using LVec3			= glm::tvec3<SInt64, glm::highp>;
+	using LVec4			= glm::tvec4<SInt64, glm::highp>;
 	using UVec2			= glm::uvec2;
 	using UVec3			= glm::uvec3;
 	using UVec4			= glm::uvec4;
@@ -54,6 +61,117 @@ namespace GreatVEngine
 	using Mat2			= glm::mat2;
 	using Mat3			= glm::mat3;
 	using Mat4			= glm::mat4;
+
+
+	const Float32		PI = 3.1415926535897932384626433832795f;
+
+
+	class Quaternion:
+		Vec4
+	{
+	public:
+		inline Quaternion() = default;
+		inline explicit Quaternion(const Vec4& value_):
+			Vec4(value_)
+		{
+		}
+		inline Quaternion(const Vec3& dir_, const Float32& angle_):
+			Vec4([&dir_, &angle_](){
+				auto a = radians(angle_);
+				return Vec4(
+					sin(a*0.5f)*dir_.x, // -sin(a*0.5f)*dir_.x,
+					sin(a*0.5f)*dir_.y, // -sin(a*0.5f)*dir_.y,
+					sin(a*0.5f)*dir_.z, // -sin(a*0.5f)*dir_.z,
+					cos(a*0.5f));				//+aX +aY -aZ
+			}())
+		{
+		}
+		inline explicit Quaternion(const Mat3& source_):
+			Vec4([&source_](){
+				auto m = transpose(source_);
+
+				/*typedef float mtx_elm[3][3];
+				const mtx_elm& m = mtx.m;
+				float tr = m[0][0] + m[1][1] + m[2][2]; // trace of martix
+				if (tr > 0.0f){     // if trace positive than "w" is biggest component
+					set( m[1][2] - m[2][1], m[2][0] - m[0][2], m[0][1] - m[1][0], tr + 1.0f );
+				}else                 // Some of vector components is bigger
+				if( (m[0][0] > m[1][1] ) && ( m[0][0] > m[2][2]) ) {
+					set( 1.0f + m[0][0] - m[1][1] - m[2][2], m[1][0] + m[0][1],
+						 m[2][0] + m[0][2], m[1][2] - m[2][1] );
+				}else 
+				if ( m[1][1] > m[2][2] ){
+					set( m[1][0] + m[0][1], 1.0f + m[1][1] - m[0][0] - m[2][2],
+						 m[2][1] + m[1][2], m[2][0] - m[0][2] ); 
+				}else{
+					set( m[2][0] + m[0][2], m[2][1] + m[1][2],
+						 1.0f + m[2][2] - m[0][0] - m[1][1], m[0][1] - m[1][0] );
+				}*/
+
+				float tr = m[0][0] + m[1][1] + m[2][2]; // trace of martix
+
+				if (tr > 0.0f)
+				{     // if trace positive than "w" is biggest component
+					return Vec4(m[1][2] - m[2][1], m[2][0] - m[0][2], m[0][1] - m[1][0], tr + 1.0f);
+				}
+				else
+				{	// Some of vector components is bigger
+					if((m[0][0] > m[1][1]) && (m[0][0] > m[2][2]))
+					{
+						return Vec4(1.0f + m[0][0] - m[1][1] - m[2][2], m[1][0] + m[0][1], m[2][0] + m[0][2], m[1][2] - m[2][1]);
+					}
+					else
+					{
+						if(m[1][1] > m[2][2])
+						{
+							return Vec4(m[1][0] + m[0][1], 1.0f + m[1][1] - m[0][0] - m[2][2], m[2][1] + m[1][2], m[2][0] - m[0][2]);
+						}
+						else
+						{
+							return Vec4(m[2][0] + m[0][2], m[2][1] + m[1][2], 1.0f + m[2][2] - m[0][0] - m[1][1], m[0][1] - m[1][0]);
+						}
+					}
+				}
+			}())
+		{
+		}
+	public:
+		/*inline static Quaternion operator * (const Quaternion& a, const Quaternion& b)
+		{
+			// Vec4(cross(v,v') + w*v' + w'*v, w*w' - dot(v,v'))
+			auto v = cross(VecXYZ(a), VecXYZ(b)) + a.w*VecXYZ(b) + b.w * VecXYZ(a);
+			auto w = a.w * b.w - dot(VecXYZ(a), VecXYZ(b));
+			return Quaternion(Vec4(v, w));
+		}
+		inline Quaternion operator - () const
+		{
+			return Quaternion(Vec4(-x, -y, -z, w) / dot((Vec4)*this, (Vec4)*this));
+		}
+		inline Vec3 operator * (const Vec3& v)
+		{
+			auto t = (*this) * Quaternion(Vec4(v, 0.0f)) * -(*this);
+			return Vec3(t.x, t.y, t.z);
+		}*/
+	public:
+		operator Mat3() const
+		{
+			/*
+			|       2     2                                |
+			| 1 - 2Y  - 2Z    2XY - 2ZW      2XZ + 2YW     |
+			|                                              |
+			|                       2     2                |
+		M = | 2XY + 2ZW       1 - 2X  - 2Z   2YZ - 2XW     |
+			|                                              |
+			|                                      2     2 |
+			| 2XZ - 2YW       2YZ + 2XW      1 - 2X  - 2Y  |
+			|                                              |
+			*/
+			return transpose(Mat3(
+				1.0f - 2.0*y*y - 2.0f*z*z,		2.0f*x*y - 2.0f*z*w,		2.0f*x*z + 2.0f*y*w,
+				2.0f*x*y + 2.0f*z*w,			1.0f - 2.0f*x*x - 2.0f*z*z,	2.0f*y*z - 2.0f*x*w,
+				2.0f*x*z - 2.0f*y*w,			2.0f*y*z + 2.0f*x*w,		1.0f - 2.0f*x*x - 2.0f*y*y));
+		}
+	};
 
 
 	inline Vec2 VecXY(const Vec3& vec_)
@@ -193,6 +311,14 @@ namespace GreatVEngine
 		return RotateZ3(angle_.z) * RotateX3(angle_.x) * RotateY3(angle_.y);
 	}
 
+	inline Mat4 One4()
+	{
+		return glm::transpose(Mat4(
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f));
+	}
 	inline Mat4 Move4(const Vec3& position_)
 	{
 		return glm::transpose(Mat4(
@@ -357,10 +483,10 @@ namespace GreatVEngine
 		// 	mat[0][0], mat[0][1], mat[0][2],
 		// 	mat[1][0], mat[1][1], mat[1][2],
 		// 	mat[2][0], mat[2][1], mat[2][2])));
-		return GetAngle(transpose(Mat3(
+		return GetAngle(Mat3(
 			mat[0][0], mat[1][0], mat[2][0],
 			mat[0][1], mat[1][1], mat[2][1],
-			mat[0][2], mat[1][2], mat[2][2])));
+			mat[0][2], mat[1][2], mat[2][2]));
 	}
 }
 

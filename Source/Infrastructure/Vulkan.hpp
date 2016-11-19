@@ -417,7 +417,7 @@ namespace GreatVEngine
 			}
 			inline void SetModel(Reference<Model> model_)
 			{
-				onModelChange(model_);
+				// onModelChange(model_);
 				model = model_;
 			}
 		};
@@ -475,11 +475,11 @@ inline GreatVEngine::Vulkan::Engine::Engine(HINSTANCE winInstance_, HWND winWind
 		instance = new Instance(instanceLayersNames, instanceExtensionsNames);
 
 #if GVE_DEBUG
-		instance->Subscribe_OnDebug([](String message)
-		{
-			// cout << message << endl;
-			Log::Write(message + "\n");
-		});
+		// instance->Subscribe_OnDebug([](String message)
+		// {
+		// 	// cout << message << endl;
+		// 	Log::Write(message + "\n");
+		// });
 #endif
 	}
 
@@ -727,7 +727,7 @@ inline GreatVEngine::Vulkan::Engine::~Engine()
 #pragma region Scene
 inline void GreatVEngine::Vulkan::Scene::Add(Reference<Object> object_)
 {
-	struct T
+	/*struct T
 	{
 		Scene* scene;
 		Reference<Object> object;
@@ -743,7 +743,7 @@ inline void GreatVEngine::Vulkan::Scene::Add(Reference<Object> object_)
 		return true;
 	});
 
-	objects.push_back(object_);
+	objects.push_back(object_);*/
 }
 inline void GreatVEngine::Vulkan::Scene::Remove(Reference<Object> object_)
 {

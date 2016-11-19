@@ -1,8 +1,6 @@
 #pragma region Include
 #pragma once
 
-#define NOMINMAX 1
-
 #include <cstdint>
 #include <string>
 #include <locale>
@@ -13,6 +11,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <bitset>
 #include <functional>
 #pragma endregion
 
@@ -33,6 +32,7 @@ namespace GreatVEngine
 {
 	using Size = std::size_t;
 
+	template<class T> using Pointer = std::unique_ptr<T>;
 	template<class T> using Reference = std::shared_ptr<T>;
 	template<class T> using Link = std::weak_ptr<T>;
 	template<class T> using Shared = std::enable_shared_from_this<T>;
@@ -61,13 +61,29 @@ namespace GreatVEngine
 		return "../../../../../" + filename_;
 	}
 
+	template<class T> inline Pointer<T> MakePointer(T* t)
+	{
+		return Pointer<T>(t);
+	}
+	// template<class T> inline Pointer<T> MakePointer(std::shared_ptr<T> t)
+	// {
+	// 	return Pointer<T>(t);
+	// }
 	template<class T> inline Reference<T> MakeReference(T* t)
 	{
 		return Reference<T>(t);
 	}
+	// template<class T> inline Reference<T> MakeReference(std::unique_ptr<T> t)
+	// {
+	// 	return Reference<T>(t);
+	// }
 	template<class T> inline Link<T> MakeLink(T t)
 	{
 		return Link<T>(t);
+	}
+	template<class T> inline Reference<T> Share(Pointer<T> t)
+	{
+		return std::make_shared<T>(t);
 	}
 	template<class T> inline Reference<T> Share(Link<T> t)
 	{

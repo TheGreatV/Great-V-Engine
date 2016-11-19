@@ -10,6 +10,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\Source\$(ProjectName)\;$(SolutionDir)..\..\Source\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />

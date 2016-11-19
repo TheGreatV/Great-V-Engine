@@ -25,6 +25,7 @@ namespace GreatVEngine
 		{
 			class Array;
 			class Index;
+			class Uniform;
 			class Attribute;
 			class Frame;
 		}
@@ -51,6 +52,7 @@ namespace GreatVEngine
 		protected:
 			Buffers::Array* currentBufferArray = nullptr;
 			Buffers::Index* currentBufferIndex = nullptr;
+			Buffers::Uniform* currentBufferUniform = nullptr;
 			Buffers::Attribute* currentBufferAttribute = nullptr;
 			Buffers::Frame* currentBufferFrame = nullptr;
 			Vector<Texture*> currentTexture;
@@ -89,6 +91,13 @@ namespace GreatVEngine
 			inline Buffers::Index* GetBufferIndex() const
 			{
 				return currentBufferIndex;
+			}
+		public:
+			inline void SetBufferUniform(Buffers::Uniform* buffer_);
+			inline void ResetBufferUniform(Buffers::Uniform* buffer_);
+			inline Buffers::Uniform* GetBufferUniform() const
+			{
+				return currentBufferUniform;
 			}
 		public:
 			inline void SetProgram(Program* buffer_);
@@ -285,6 +294,26 @@ namespace GreatVEngine
 				auto uniform = glGetUniformLocation(handle, uniformName_.c_str());
 				DebugTest();
 				return uniform;
+			}
+			inline Uniform GetBlock(const UniformName& blockName_)
+			{
+				DebugIsActiveTest();
+
+				auto block = glGetUniformBlockIndex(handle, blockName_.c_str()); ErrorTest();
+
+				return block;
+			}
+			inline void SetBlock(const Uniform& slot_, const Size& val_)
+			{
+				glUniformBlockBinding(handle, slot_, val_); ErrorTest();
+			}
+			inline void SetBlock(const UniformName& uniformName_, const Size& val_)
+			{
+				auto uniform = GetBlock(uniformName_);
+				if(uniform != -1)
+				{
+					SetBlock(uniform, val_);
+				}
 			}
 			inline void SetInt(const Uniform& uniform_, const SInt32& val_)
 			{
@@ -660,6 +689,16 @@ namespace GreatVEngine
 			{
 				context->ResetTexture(slot_, this);
 			}
+			inline void GenerateMipmaps()
+			{
+#if GVE_DEBUG
+				if(context->GetTexture(0) != this)
+				{
+					throw Exception("Texture is not set to 0-slot");
+				}
+#endif
+				glGenerateMipmap((GLenum)type); DebugTest();
+			}
 		public:
 			inline Handle GetHandle() const
 			{
@@ -835,7 +874,7 @@ namespace GreatVEngine
 				using Handle = GLuint;
 			protected:
 				friend Context;
-				static const GLenum target = GL_ARRAY_BUFFER;
+				static const GLenum TARGET = GL_ARRAY_BUFFER;
 			public:
 				const Handle handle;
 			public:
@@ -849,7 +888,7 @@ namespace GreatVEngine
 					}())
 				{
 					context->SetBufferArray(this);
-					glBufferData(target, size, input_, (GLenum)usage); DebugTest();
+					glBufferData(TARGET, size, input_, (GLenum)usage); DebugTest();
 				}
 				template<class Container>
 				inline Array(Context* context_, const Container& container_, const Usage& usage_ = Usage::Static):
@@ -888,7 +927,7 @@ namespace GreatVEngine
 				{
 					DebugIsActiveTest();
 				
-					Data data = glMapBuffer(target, GL_READ_WRITE); DebugTest();
+					Data data = glMapBuffer(TARGET, GL_READ_WRITE); DebugTest();
 
 					return data;
 				}
@@ -896,7 +935,7 @@ namespace GreatVEngine
 				{
 					DebugIsActiveTest();
 
-					glUnmapBuffer(target);
+					glUnmapBuffer(TARGET);
 				}
 			};
 			class Index:
@@ -907,7 +946,7 @@ namespace GreatVEngine
 				using Handle = GLuint;
 			protected:
 				friend Context;
-				static const GLenum target = GL_ELEMENT_ARRAY_BUFFER;
+				static const GLenum TARGET = GL_ELEMENT_ARRAY_BUFFER;
 			public:
 				const Handle handle;
 			public:
@@ -921,7 +960,7 @@ namespace GreatVEngine
 					}())
 				{
 					context->SetBufferIndex(this);
-					glBufferData(target, size, input_, (GLenum)usage); DebugTest();
+					glBufferData(TARGET, size, input_, (GLenum)usage); DebugTest();
 				}
 				template<class Container>
 				inline Index(Context* context_, const Container& container_, const Usage& usage_ = Usage::Static):
@@ -960,7 +999,7 @@ namespace GreatVEngine
 				{
 					DebugIsActiveTest();
 				
-					Data data = glMapBuffer(target, GL_READ_WRITE); DebugTest();
+					Data data = glMapBuffer(TARGET, GL_READ_WRITE); DebugTest();
 
 					return data;
 				}
@@ -968,12 +1007,88 @@ namespace GreatVEngine
 				{
 					DebugIsActiveTest();
 
-					glUnmapBuffer(target);
+					glUnmapBuffer(TARGET);
 				}
 			};
 			class Uniform:
+				public Context::Dependent,
 				public Buffer
 			{
+			protected:
+				using Handle = GLuint;
+			protected:
+				friend Context;
+				static const GLenum TARGET = GL_UNIFORM_BUFFER;
+			public:
+				const Handle handle;
+			public:
+				inline Uniform(Context* context_, const Size& size_, Input input_, const Usage& usage_ = Usage::Static):
+					Context::Dependent(context_),
+					Buffer(size_, usage_),
+					handle([](){
+						Handle handle_;
+						glGenBuffers(1, &handle_); DebugTest();
+						return handle_;
+					}())
+				{
+					context->SetBufferUniform(this);
+					glBufferData(TARGET, size, input_, (GLenum)usage); DebugTest();
+				}
+				template<class Container>
+				inline Uniform(Context* context_, const Container& container_, const Usage& usage_ = Usage::Static):
+					Uniform(context_, container_.size() * sizeof(Container::value_type), container_.data(), usage_)
+				{
+				}
+				inline Uniform(Context* context_, const Size& size_, const Usage& usage_ = Usage::Static) :
+					Uniform(context_, size_, nullptr, usage_)
+				{
+				}
+				inline ~Uniform()
+				{
+					context->ResetBufferUniform(this);
+					glDeleteBuffers(1, &handle); DebugTest();
+				}
+			protected:
+				inline void DebugIsActiveTest() const
+				{
+#if GVE_DEBUG
+					if(context->GetBufferUniform() != this)
+					{
+						throw Exception("Uniform buffer is not set");
+					}
+#endif
+				}
+			public:
+				inline void Set()
+				{
+					context->SetBufferUniform(this);
+				}
+				inline void Reset()
+				{
+					context->ResetBufferUniform(this);
+				}
+				inline void BindBase(const Size& slot_)
+				{
+					glBindBufferBase(TARGET, slot_, handle);
+				}
+				inline void BindRange(const Size& slot_, const Size& begin_, const Size& size_)
+				{
+					glBindBufferRange(TARGET, slot_, handle, begin_, size_);
+				}
+				inline Data Map()
+				{
+					DebugIsActiveTest();
+				
+					Data data = glMapBuffer(TARGET, GL_READ_WRITE); DebugTest();
+
+					return data;
+				}
+				inline void Unmap()
+				{
+					DebugIsActiveTest();
+
+					glUnmapBuffer(TARGET);
+				}
 			};
 			class Attribute:
 				public Context::Dependent
@@ -1289,7 +1404,7 @@ inline void GreatVEngine::OpenGL::Context::SetBufferArray(Buffers::Array* buffer
 	if(currentBufferArray != buffer_)
 	{
 		currentBufferArray = buffer_;
-		glBindBuffer(Buffers::Array::target, buffer_ ? buffer_->handle : NULL); DebugTest();
+		glBindBuffer(Buffers::Array::TARGET, buffer_ ? buffer_->handle : NULL); DebugTest();
 	}
 }
 inline void GreatVEngine::OpenGL::Context::ResetBufferArray(Buffers::Array* buffer_)
@@ -1297,7 +1412,7 @@ inline void GreatVEngine::OpenGL::Context::ResetBufferArray(Buffers::Array* buff
 	if(currentBufferArray == buffer_)
 	{
 		currentBufferArray = nullptr;
-		glBindBuffer(Buffers::Array::target, NULL); DebugTest();
+		glBindBuffer(Buffers::Array::TARGET, NULL); DebugTest();
 	}
 }
 inline void GreatVEngine::OpenGL::Context::SetBufferIndex(Buffers::Index* buffer_)
@@ -1305,7 +1420,7 @@ inline void GreatVEngine::OpenGL::Context::SetBufferIndex(Buffers::Index* buffer
 	if(currentBufferIndex != buffer_)
 	{
 		currentBufferIndex = buffer_;
-		glBindBuffer(Buffers::Index::target, buffer_ ? buffer_->handle : NULL); DebugTest();
+		glBindBuffer(Buffers::Index::TARGET, buffer_ ? buffer_->handle : NULL); DebugTest();
 	}
 }
 inline void GreatVEngine::OpenGL::Context::ResetBufferIndex(Buffers::Index* buffer_)
@@ -1313,7 +1428,23 @@ inline void GreatVEngine::OpenGL::Context::ResetBufferIndex(Buffers::Index* buff
 	if(currentBufferIndex == buffer_)
 	{
 		currentBufferIndex = nullptr;
-		glBindBuffer(Buffers::Index::target, NULL); DebugTest();
+		glBindBuffer(Buffers::Index::TARGET, NULL); DebugTest();
+	}
+}
+inline void GreatVEngine::OpenGL::Context::SetBufferUniform(Buffers::Uniform* buffer_)
+{
+	if(currentBufferUniform != buffer_)
+	{
+		currentBufferUniform = buffer_;
+		glBindBuffer(Buffers::Uniform::TARGET, buffer_ ? buffer_->handle : NULL); DebugTest();
+	}
+}
+inline void GreatVEngine::OpenGL::Context::ResetBufferUniform(Buffers::Uniform* buffer_)
+{
+	if(currentBufferUniform == buffer_)
+	{
+		currentBufferUniform = nullptr;
+		glBindBuffer(Buffers::Uniform::TARGET, NULL); DebugTest();
 	}
 }
 inline void GreatVEngine::OpenGL::Context::SetBufferAttribute(Buffers::Attribute* buffer_)

@@ -100,10 +100,15 @@ namespace GreatVEngine
 			// virtual Reference<Map>& Map(const TechniqueType& techniqueType_) = 0;
 		};
 
-		class Shape
+		class Shape:
+			public Helper::Transformation::Dimension3::BoundBox
 		{
 		public:
 			inline Shape() = default;
+			inline Shape(const BoundBox::Value min_, const BoundBox::Value max_):
+				BoundBox(min_, max_)
+			{
+			}
 			inline ~Shape() = default;
 		};
 		//	Connect shape with material
@@ -131,47 +136,57 @@ namespace GreatVEngine
 			inline Camera& operator = (const Camera&) = default;
 		};
 
+		class Bone:
+			public Helper::Logic::Named,
+			public Helper::Transformation::Dimension3::HierarchyMatrix
+		{
+		public:
+			ModelMatrix origin = ModelMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f));
+		public:
+			inline Bone():
+				HierarchyMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f), nullptr)
+			{
+			}
+			inline Bone(const Bone&) = delete;
+			inline ~Bone() = default;
+		};
 		//	Contain model & properties for it
 		class Object:
+			public Bone,
 			public Helper::Logic::Visible,
 			public Helper::Logic::Color,
 			public Helper::Logic::BitGroup<UInt8>,
-			public Helper::Transformation::Dimension3::HierarchyMatrix,
 			public Helper::Subscrption::OnDestructionAction
 		{
-		public:
-			using OnModelChange = Helper::Subscrption::OnAction<Reference<Model>>;
-			using Name = String;
+		protected:
+			bool isBonesEnabled = false;
 		public:
 			inline Object():
+				Bone(),
 				Visible(true),
 				Color(Vec4(1.0f)),
 				BitGroup(0),
-				HierarchyMatrix(Vec3(0.0f), Vec3(0.0f), Vec3(1.0f), nullptr),
 				OnDestructionAction()
 			{
 			}
+			inline Object(const Object&) = delete;
 			inline ~Object() = default;
-		protected:
-			OnModelChange onModelChange;
-			Name name;
 		public:
-			inline void Subscribe_OnModelChange(void* data_, OnModelChange::Subscriber subscriber_)
+			inline void EnableLocalBones()
 			{
-				onModelChange += {data_, subscriber_};
+				isBonesEnabled = true;
 			}
-			inline void Unsubscribe_OnModelChange(void* data_, OnModelChange::Subscriber subscriber_)
+			inline void DisableLocalBones()
 			{
-				onModelChange -= {data_, subscriber_};
+				isBonesEnabled = false;
 			}
-		public:
-			inline Name GetName() const
+			inline void EnableBones()
 			{
-				return name;
+				EnableLocalBones();
 			}
-			inline void SetName(const Name& name_)
+			inline void DisableBones()
 			{
-				name = name_;
+				DisableLocalBones();
 			}
 		};
 

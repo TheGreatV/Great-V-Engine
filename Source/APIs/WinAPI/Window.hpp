@@ -31,11 +31,13 @@ namespace GreatVEngine
 		{
 		public:
 			using Name = String;
+			using Dispatcher = WNDPROC;
 		protected:
 			const Reference<Instance> instance;
 			const Name name;
 		public:
 			WindowClass(Reference<Instance> instance_, const Name& name_);
+			WindowClass(Reference<Instance> instance_, const Name& name_, Dispatcher dispatcher_);
 			~WindowClass();
 		public:
 			Reference<Instance> GetInstance() const;
@@ -49,8 +51,9 @@ namespace GreatVEngine
 			using Name = String;
 			using Style = DWORD;
 			using Size = Size2;
-		protected:
+		public:
 			const static Style styleDefault = WS_SYSMENU | WS_VISIBLE;
+			const static Style styleHidden = 0 & ~WS_VISIBLE;
 		protected:
 			const Reference<const WindowClass> windowClass;
 			const Name name;

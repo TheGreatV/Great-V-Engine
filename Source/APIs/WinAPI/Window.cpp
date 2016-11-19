@@ -16,6 +16,10 @@ GreatVEngine::WinAPI::Instance::Handle GreatVEngine::WinAPI::Instance::GetHangle
 
 
 GreatVEngine::WinAPI::WindowClass::WindowClass(Reference<Instance> instance_, const Name& name_):
+	WindowClass(instance_, name_, DefWindowProcA)
+{
+}
+GreatVEngine::WinAPI::WindowClass::WindowClass(Reference<Instance> instance_, const Name& name_, Dispatcher dispatcher_):
 	instance(instance_),
 	name(name_)
 {
@@ -25,7 +29,7 @@ GreatVEngine::WinAPI::WindowClass::WindowClass(Reference<Instance> instance_, co
 
 		windowClass.lpszClassName = name.c_str();
 		windowClass.hInstance = instance->GetHangle();
-		windowClass.lpfnWndProc = DefWindowProcA;
+		windowClass.lpfnWndProc = dispatcher_;
 		windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 
 		if(!RegisterClassA(&windowClass))

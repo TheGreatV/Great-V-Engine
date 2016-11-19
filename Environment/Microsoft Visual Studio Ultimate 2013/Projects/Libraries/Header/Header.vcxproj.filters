@@ -21,12 +21,18 @@
     <ClInclude Include="..\..\..\..\..\Source\Header\ErrorHandling.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Source\Header\Function.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\Source\Header\Header.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Source\Header\ErrorHandling.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Source\Header\Function.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

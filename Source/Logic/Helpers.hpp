@@ -4,6 +4,7 @@
 #include "Header.hpp"
 #include "Mathematics.hpp"
 #include <Header/ErrorHandling.hpp>
+#include <Header/Function.hpp>
 
 
 namespace GreatVEngine
@@ -12,10 +13,11 @@ namespace GreatVEngine
 	{
 		namespace Subscrption
 		{
-			template<class Arguments> class OnEvent
+			template<class ... Arguments> class OnEvent
 			{
 			public:
-				using Subscriber = void(*)(Arguments);
+				// using Subscriber = void(*)(Arguments);
+				using Subscriber = Function<void, Arguments...>;
 			protected:
 				Vector<Subscriber> subscribers;
 			public:
@@ -32,18 +34,19 @@ namespace GreatVEngine
 				{
 					subscribers.erase(std::find(subscribers.begin(), subscribers.end(), subscriber));
 				}
-				inline void operator () (Arguments arguments) const
+				inline void operator () (Arguments... arguments) const
 				{
 					for(auto &subscriber : subscribers)
 					{
-						subscriber(arguments);
+						subscriber(arguments...);
 					}
 				}
 			};
 			template<> class OnEvent<void>
 			{
 			public:
-				using Subscriber = void(*)();
+				// using Subscriber = void(*)();
+				using Subscriber = Function<void, void>;
 			protected:
 				Vector<Subscriber> subscribers;
 			public:
@@ -95,7 +98,15 @@ namespace GreatVEngine
 				}
 				inline void operator -= (Subscription s)
 				{
-					subscribers.erase(std::find(subscribers.begin(), subscribers.end(), s));
+					auto it = std::find(subscribers.begin(), subscribers.end(), s);
+					if(it != subscribers.end())
+					{
+						subscribers.erase(it);
+					}
+					else
+					{
+						throw Exception("Unsibscribe of unexisting subscribe");
+					}
 				}
 				inline void operator () (Arguments arguments) const
 				{
@@ -201,6 +212,22 @@ namespace GreatVEngine
 		}
 		namespace Logic
 		{
+			class Named
+			{
+			public:
+				using Name = String;
+			protected:
+				Name name;
+			public:
+				inline Name GetName() const
+				{
+					return name;
+				}
+				inline void SetName(const Name& name_)
+				{
+					name = name_;
+				}
+			};
 			class Life
 			{
 			public:
@@ -483,7 +510,7 @@ namespace GreatVEngine
 				class Angle;
 				class Scale;
 				class Velocity;
-				class Omega;
+				class Torque;
 
 				class Position
 				{
@@ -610,27 +637,27 @@ namespace GreatVEngine
 						velocity = velocity_;
 					}
 				};
-				class Omega
+				class Torque
 				{
 				public:
 					using Value = Float32;
 				protected:
 					Value omega;
 				public:
-					inline Omega() = default;
-					inline Omega(const Value& omega_):
+					inline Torque() = default;
+					inline Torque(const Value& omega_):
 						omega(omega_)
 					{
 					}
-					inline Omega(const Omega&) = default;
+					inline Torque(const Torque&) = default;
 				public:
-					inline Omega& operator = (const Omega& source) = default;
+					inline Torque& operator = (const Torque& source) = default;
 				public:
-					inline Value GetOmega() const
+					inline Value GetTorque() const
 					{
 						return omega;
 					}
-					inline void SetOmega(const Value& omega_)
+					inline void SetTorque(const Value& omega_)
 					{
 						omega = omega_;
 					}
@@ -644,7 +671,7 @@ namespace GreatVEngine
 				class Angle;
 				class Scale;
 				class Velocity;
-				class Omega;
+				class Torque;
 
 				class Homogeneous
 				{
@@ -838,27 +865,27 @@ namespace GreatVEngine
 						velocity = velocity_;
 					}
 				};
-				class Omega
+				class Torque
 				{
 				public:
 					using Value = Vec2;
 				protected:
 					Value omega;
 				public:
-					inline Omega() = default;
-					inline Omega(const Value& omega_):
+					inline Torque() = default;
+					inline Torque(const Value& omega_):
 						omega(omega_)
 					{
 					}
-					inline Omega(const Omega&) = default;
+					inline Torque(const Torque&) = default;
 				public:
-					inline Omega& operator = (const Omega& source) = default;
+					inline Torque& operator = (const Torque& source) = default;
 				public:
-					inline Value GetOmega() const
+					inline Value GetTorque() const
 					{
 						return omega;
 					}
-					inline void SetOmega(const Value& omega_)
+					inline void SetTorque(const Value& omega_)
 					{
 						omega = omega_;
 					}
@@ -938,6 +965,104 @@ namespace GreatVEngine
 					};
 				}
 
+				class BoundBox
+				{
+				public:
+					using Value = Vec3;
+				protected:
+					Value minimal;
+					Value maximal;
+				public:
+					inline BoundBox() = default;
+					inline BoundBox(const Value& minimal_, const Value& maximal_):
+						minimal(minimal_),
+						maximal(maximal_)
+					{
+					}
+					inline BoundBox(const BoundBox& source_) = default;
+					inline BoundBox(BoundBox&& source_):
+						minimal(source_.minimal),
+						maximal(source_.maximal)
+					{
+					}
+				public:
+					inline BoundBox& operator = (const BoundBox&) = default;
+					inline BoundBox& operator = (BoundBox&& source_)
+					{
+						minimal = source_.minimal;
+						maximal = source_.maximal;
+					}
+				public:
+					inline Value GetMinimal() const
+					{
+						return minimal;
+					}
+					inline void SetMinimal(const Value& value_)
+					{
+						minimal = value_;
+					}
+					inline Value GetMaximal() const
+					{
+						return maximal;
+					}
+					inline void SetMaximal(const Value& value_)
+					{
+						maximal = value_;
+					}
+					inline Value GetMin() const
+					{
+						return GetMinimal();
+					}
+					inline void SetMin(const Value& value_)
+					{
+						SetMinimal(value_);
+					}
+					inline Value GetMax() const
+					{
+						return GetMaximal();
+					}
+					inline void SetMax(const Value& value_)
+					{
+						SetMaximal(value_);
+					}
+				};
+				class ConstantBoundBox
+				{
+				public:
+					using Value = Vec3;
+				protected:
+					const Value minimal;
+					const Value maximal;
+				public:
+					inline ConstantBoundBox(const Value& minimal_, const Value& maximal_):
+						minimal(minimal_),
+						maximal(maximal_)
+					{
+					}
+					inline ConstantBoundBox(const ConstantBoundBox& source_) = default;
+					inline ConstantBoundBox(ConstantBoundBox&& source_) :
+						minimal(source_.minimal),
+						maximal(source_.maximal)
+					{
+					}
+				public:
+					inline Value GetMinimal() const
+					{
+						return minimal;
+					}
+					inline Value GetMaximal() const
+					{
+						return maximal;
+					}
+					inline Value GetMin() const
+					{
+						return GetMinimal();
+					}
+					inline Value GetMax() const
+					{
+						return GetMaximal();
+					}
+				};
 				class Position
 				{
 				public:
@@ -1063,27 +1188,27 @@ namespace GreatVEngine
 						velocity = velocity_;
 					}
 				};
-				class Omega
+				class Torque
 				{
 				public:
 					using Value = Vec3;
 				protected:
 					Value omega;
 				public:
-					inline Omega() = default;
-					inline Omega(const Value& omega_):
+					inline Torque() = default;
+					inline Torque(const Value& omega_):
 						omega(omega_)
 					{
 					}
-					inline Omega(const Omega&) = default;
+					inline Torque(const Torque&) = default;
 				public:
-					inline Omega& operator = (const Omega& source) = default;
+					inline Torque& operator = (const Torque& source) = default;
 				public:
-					inline Value GetOmega() const
+					inline Value GetTorque() const
 					{
 						return omega;
 					}
-					inline void SetOmega(const Value& omega_)
+					inline void SetTorque(const Value& omega_)
 					{
 						omega = omega_;
 					}

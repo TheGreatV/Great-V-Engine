@@ -7,18 +7,22 @@
 
 #include <System/System.hpp>
 #include <Logic/Mathematics.hpp>
+#include <Logic/Helpers.hpp>
 #pragma endregion
 
 
 namespace GreatVEngine
 {
-	class Geometry
+	class Geometry:
+		public Helper::Transformation::Dimension3::BoundBox
 	{
 	public:
 		enum class VertexPackMode
 		{
-			Pos32F_TBN32F_Tex32F,	//4*3 + 4*3*3 + 4*2 = 56 bytes
-			Pos32F_TN16F_Tex32F,	//4*3 + 2*3*2 + 2*2 = 32 bytes
+			Pos32F,
+			Pos32F_TBN32F_Tex32F,				// 4*3 + 4*3*3 + 4*2 = 56 bytes
+			Pos32F_TN16F_Tex32F,				// 4*3 + 2*3*2 + 2*2 = 32 bytes
+			Pos32F_TBN32F_Tex32F_Ind32U_Wei32F,	// 4*3 + 4*4*4 + 4*2 + 4*4*2 = 88 bytes
 			Default = Pos32F_TBN32F_Tex32F
 		};
 		enum class IndexPackMode
@@ -31,6 +35,10 @@ namespace GreatVEngine
 	public:
 		using Index = UInt32;
 		using Bytes = Vector<UInt8>;
+		using BoneIndex = UInt32;
+		using BoneWeight = Float32;
+	public:
+		static const Size BONE_WEIGHT_COUNT = 4;
 	public:
 		struct Vertex
 		{
@@ -39,12 +47,15 @@ namespace GreatVEngine
 			Vec3 bin;
 			Vec3 nor;
 			Vec2 tex;
+			Array<BoneIndex,	BONE_WEIGHT_COUNT> boneIndices;
+			Array<BoneWeight,	BONE_WEIGHT_COUNT> boneWeights;
 		};
 	public:
 		inline static Reference<Geometry> LoadMesh(const Reference<System::BinaryFileReader>& reader_);
 		inline static Reference<Geometry> LoadMesh(const Filename& filename_);
 		inline static Reference<Geometry> CreateBox(const Vec3& size_, const Vec3& tex_, const UVec3& seg_);
 		inline static Reference<Geometry> CreateSphere(const Float32& radius_, const Vec2& tex_, const UVec2& seg_);
+		inline static Reference<Geometry> CreateCapsule(const Float32& radius_, const Float32& height_, const Vec2& tex_, const UVec2& seg_);
 		inline static Reference<Geometry> CreateTorus(const Float32 radius_, const Float32 width_, const Vec2& tex_, const UVec2& seg_);
 	public:
 		Vector<Vertex> vertices;
@@ -53,13 +64,15 @@ namespace GreatVEngine
 		inline Geometry() = default;
 		inline Geometry(const Size& verticesCount, const Size& indicesCount):
 			vertices(verticesCount),
-			indices(indicesCount)
+			indices(indicesCount),
+			BoundBox()
 		{
 		}
 		inline Geometry(const Geometry&) = default;
 		inline Geometry(Geometry&& source):
 			vertices(std::move(source.vertices)),
-			indices(std::move(source.indices))
+			indices(std::move(source.indices)),
+			BoundBox(std::move(source))
 		{
 		}
 		inline ~Geometry() = default;
@@ -69,19 +82,54 @@ namespace GreatVEngine
 		{
 			vertices = std::move(source.vertices);
 			indices = std::move(source.indices);
+			(BoundBox)*this = source;
 
 			return *this;
 		}
 	public:
-		inline Reference<Bytes> GetVertices(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
+		inline static Size GetVertexSize(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default)
 		{
 			switch(vertexPackMode_)
 			{
+				case VertexPackMode::Pos32F:
+					return sizeof(Float32)*3;
+				case VertexPackMode::Pos32F_TBN32F_Tex32F:
+					return sizeof(Float32) * (4 + 3*3 + 2);
+				case VertexPackMode::Pos32F_TN16F_Tex32F:
+					return  sizeof(Float32)* (3 + 2) + sizeof(Float16)* (3 * 2);
+				case VertexPackMode::Pos32F_TBN32F_Tex32F_Ind32U_Wei32F:
+					return sizeof(Float32) * (3 + 3 * 3 + 2) + BONE_WEIGHT_COUNT*(sizeof(UInt32)+sizeof(Float32));
+				default:
+					throw Exception("Unknown vertex packing mode");
+			}
+		}
+		inline Size GetVerticesCount() const
+		{
+			return vertices.size();
+		}
+		inline Reference<Bytes> GetVertices(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
+		{
+			Size vertexSize = GetVertexSize(vertexPackMode_);
+			auto bytes = MakeReference(new Bytes(vertices.size() * vertexSize, 0x00));
+
+			switch(vertexPackMode_)
+			{
+				case VertexPackMode::Pos32F:
+				{
+					Size i = 0;
+					for(auto &vertex : vertices)
+					{
+						auto byte = bytes->data() + i;
+					
+						*(Vec3*)(byte +(sizeof(Float32)* 3 * 0)) = vertex.pos;
+					
+						i += vertexSize;
+					}
+
+					return bytes;
+				} break;
 				case VertexPackMode::Pos32F_TBN32F_Tex32F:
 				{
-					Size vertexSize = sizeof(Float32)*3 + sizeof(Float32)*3*3 + sizeof(Float32)*2;
-					auto bytes = MakeReference(new Bytes(vertices.size() * vertexSize));
-
 					Size i = 0;
 					for(auto &vertex : vertices)
 					{
@@ -98,20 +146,140 @@ namespace GreatVEngine
 
 					return bytes;
 				} break;
+				case VertexPackMode::Pos32F_TBN32F_Tex32F_Ind32U_Wei32F:
+				{
+					Size i = 0;
+					for(auto &vertex : vertices)
+					{
+						auto data = bytes->data() + vertexSize * i;
+
+						*(Vec3*)data = vertex.pos; data += sizeof(Float32)* 3;
+						*(Vec3*)data = vertex.tan; data += sizeof(Float32) * 3;
+						*(Vec3*)data = vertex.bin; data += sizeof(Float32) * 3;
+						*(Vec3*)data = vertex.nor; data += sizeof(Float32) * 3;
+						*(Vec2*)data = vertex.tex; data += sizeof(Float32) * 2;
+
+						for(Size j = 0; j < vertex.boneIndices.size(); ++j)
+						{
+							*(Float32*)data = (Float32)vertex.boneIndices[j]; data += sizeof(Float32);
+						}
+						for(Size j = 0; j < vertex.boneWeights.size(); ++j)
+						{
+							*(Float32*)data = vertex.boneWeights[j]; data += sizeof(Float32);
+						}
+
+						++i;
+					}
+
+					return bytes;
+				} break;
 				default:
 				{
 					throw Exception("Not implemented");
 				} break;
 			}
 		}
-		inline static Size GetVertexSize(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default)
+		inline Reference<Bytes> GetVertices(const Mat4& transform_, const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
 		{
+			Size vertexSize = GetVertexSize(vertexPackMode_);
+			auto bytes = MakeReference(new Bytes(vertices.size() * vertexSize, 0x00));
+
+			auto rotate = Mat3(transform_);
+
 			switch(vertexPackMode_)
 			{
-				case VertexPackMode::Pos32F_TBN32F_Tex32F: return 4 * (3 + 3 * 3 + 2);
-				case VertexPackMode::Pos32F_TN16F_Tex32F: return  4 * (3 + 2) + 2 * (3 * 2);
-				default: throw Exception("nknown vertex packing mode");
+				case VertexPackMode::Pos32F:
+				{
+					Size i = 0;
+					for(auto &vertex : vertices)
+					{
+						auto byte = bytes->data() + i;
+					
+						auto pos = VecXYZ(transform_ * Vec4(vertex.pos, 1.0f));
+
+						*(Vec3*)(byte +(sizeof(Float32)* 3 * 0)) = pos;
+					
+						i += vertexSize;
+					}
+
+					return bytes;
+				} break;
+				case VertexPackMode::Pos32F_TBN32F_Tex32F:
+				{
+					Size i = 0;
+					for(auto &vertex : vertices)
+					{
+						auto byte = bytes->data() + i;
+					
+						auto &pos = VecXYZ(transform_ * Vec4(vertex.pos, 1.0f));
+						auto &tan = rotate * vertex.tan;
+						auto &bin = rotate * vertex.bin;
+						auto &nor = rotate * vertex.nor;
+						auto &tex = vertex.tex;
+
+						*(Vec3*)(byte + (sizeof(Float32)* 3 * 0)) = pos;
+						*(Vec3*)(byte +(sizeof(Float32)* 3 * 1)) = tan;
+						*(Vec3*)(byte +(sizeof(Float32)* 3 * 2)) = bin;
+						*(Vec3*)(byte +(sizeof(Float32)* 3 * 3)) = nor;
+						*(Vec2*)(byte +(sizeof(Float32)* 3 * 4)) = tex;
+					
+						i += vertexSize;
+					}
+
+					return bytes;
+				} break;
+				case VertexPackMode::Pos32F_TBN32F_Tex32F_Ind32U_Wei32F:
+				{
+					Size i = 0;
+					for(auto &vertex : vertices)
+					{
+						auto data = bytes->data() + vertexSize * i;
+
+						auto &pos = VecXYZ(transform_ * Vec4(vertex.pos, 1.0f));
+						auto &tan = rotate * vertex.tan;
+						auto &bin = rotate * vertex.bin;
+						auto &nor = rotate * vertex.nor;
+						auto &tex = vertex.tex;
+
+						*(Vec3*)data = pos; data += sizeof(Float32)* 3;
+						*(Vec3*)data = tan; data += sizeof(Float32) * 3;
+						*(Vec3*)data = bin; data += sizeof(Float32) * 3;
+						*(Vec3*)data = nor; data += sizeof(Float32) * 3;
+						*(Vec2*)data = tex; data += sizeof(Float32) * 2;
+
+						for(Size j = 0; j < vertex.boneIndices.size(); ++j)
+						{
+							*(Float32*)data = (Float32)vertex.boneIndices[j]; data += sizeof(Float32);
+						}
+						for(Size j = 0; j < vertex.boneWeights.size(); ++j)
+						{
+							*(Float32*)data = vertex.boneWeights[j]; data += sizeof(Float32);
+						}
+
+						++i;
+					}
+
+					return bytes;
+				} break;
+				default:
+				{
+					throw Exception("Not implemented");
+				} break;
 			}
+		}
+		inline static Size GetIndexSize(const IndexPackMode& indexPackMode_ = IndexPackMode::Default)
+		{
+			switch(indexPackMode_)
+			{
+				case IndexPackMode::UInt32: return 4;
+				case IndexPackMode::UInt16: return 2;
+				case IndexPackMode::UInt8: return 1;
+				default: throw Exception("nknown index packing mode");
+			}
+		}
+		inline Size GetIndicesCount() const
+		{
+			return indices.size();
 		}
 		inline Reference<Bytes> GetIndices(const IndexPackMode& indexPackMode_ = IndexPackMode::Default) const
 		{
@@ -140,17 +308,43 @@ namespace GreatVEngine
 				} break;
 			}
 		}
-		inline static Size GetIndexSize(const IndexPackMode& indexPackMode_ = IndexPackMode::Default)
+	public:
+		inline void GenBoundBox()
 		{
-			switch(indexPackMode_)
+			if(!vertices.empty())
 			{
-				case IndexPackMode::UInt32: return 4;
-				case IndexPackMode::UInt16: return 2;
-				case IndexPackMode::UInt8: return 1;
-				default: throw Exception("nknown index packing mode");
+				minimal = maximal = vertices[0].pos;
+
+				for(auto &vertex : vertices)
+				{
+					if(vertex.pos.x < minimal.x)
+					{
+						minimal.x = vertex.pos.x;
+					}
+					if(vertex.pos.y < minimal.y)
+					{
+						minimal.y = vertex.pos.y;
+					}
+					if(vertex.pos.z < minimal.z)
+					{
+						minimal.z = vertex.pos.z;
+					}
+
+					if(vertex.pos.x > maximal.x)
+					{
+						maximal.x = vertex.pos.x;
+					}
+					if(vertex.pos.y > maximal.y)
+					{
+						maximal.y = vertex.pos.y;
+					}
+					if(vertex.pos.z > maximal.z)
+					{
+						maximal.z = vertex.pos.z;
+					}
+				}
 			}
 		}
-	public:
 		inline void	GenTangentSpace(bool flip_t, bool flip_b)
 		{
 			Size id0, id1, id2;
@@ -222,12 +416,16 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::L
 	auto positionAttributes = *(VerticesAttributes*)(reader_->ReadRaw<UInt8>(4));
 	auto tangentSpaceAttributes = *(VerticesAttributes*)(reader_->ReadRaw<UInt8>(4));
 	auto texCoordAttributes = *(VerticesAttributes*)(reader_->ReadRaw<UInt8>(4));
+	auto boneIndexAttributes = *(VerticesAttributes*)(reader_->ReadRaw<UInt8>(4));
+	auto boneweightAttributes = *(VerticesAttributes*)(reader_->ReadRaw<UInt8>(4));
 	// TODO: add other attributes
 	
 	Size positionSize = (positionAttributes.Bits / BITS_IN_BYTE) * positionAttributes.Count * positionAttributes.Layers;
 	Size tangentSpaceSize = (tangentSpaceAttributes.Bits / BITS_IN_BYTE) * tangentSpaceAttributes.Count * tangentSpaceAttributes.Layers;
 	Size texCoordSize = (texCoordAttributes.Bits / BITS_IN_BYTE) * texCoordAttributes.Count * texCoordAttributes.Layers;
-	Size vertexSize = positionSize + tangentSpaceSize + texCoordSize;
+	Size boneIndexSize = (boneIndexAttributes.Bits / BITS_IN_BYTE) * boneIndexAttributes.Count * boneIndexAttributes.Layers;
+	Size boneWeightSize = (boneweightAttributes.Bits / BITS_IN_BYTE) * boneweightAttributes.Count * boneweightAttributes.Layers;
+	Size vertexSize = positionSize + tangentSpaceSize + texCoordSize + boneIndexSize + boneWeightSize;
 	Size verticesDataSize = vertexSize * verticesCount;
 
 	auto verticesData = reader_->Read<UInt8>(verticesDataSize);
@@ -244,11 +442,26 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::L
 		// TODO: vertices conversion
 		for(Size i = 0; i < verticesCount; ++i)
 		{
-			mesh->vertices[i].pos = *(Vec3*)(verticesData.data() + vertexSize*i + 0);
-			mesh->vertices[i].tan = *(Vec3*)(verticesData.data() + vertexSize*i + positionSize + 0);
-			mesh->vertices[i].bin = *(Vec3*)(verticesData.data() + vertexSize*i + positionSize + 12);
-			mesh->vertices[i].nor = *(Vec3*)(verticesData.data() + vertexSize*i + positionSize + 24);
-			mesh->vertices[i].tex = *(Vec2*)(verticesData.data() + vertexSize*i + positionSize + tangentSpaceSize + 0);
+			auto data = verticesData.data() + vertexSize*i;
+
+			mesh->vertices[i].pos = *(Vec3*)data; data += sizeof(Float32)* 3;
+			mesh->vertices[i].tan = *(Vec3*)data; data += sizeof(Float32)* 3;
+			mesh->vertices[i].bin = *(Vec3*)data; data += sizeof(Float32)* 3;
+			mesh->vertices[i].nor = *(Vec3*)data; data += sizeof(Float32)* 3;
+			mesh->vertices[i].tex = *(Vec2*)data; data += sizeof(Float32)* 2;
+			for(Size j = 0; j < BONE_WEIGHT_COUNT; ++j)
+			{
+				mesh->vertices[i].boneIndices[j] = *(UInt32*)data;
+				if(mesh->vertices[i].boneIndices[j] == UINT32_MAX)
+				{
+					mesh->vertices[i].boneIndices[j] = 0;
+				}
+				data += sizeof(UInt32);
+			}
+			for(Size j = 0; j < BONE_WEIGHT_COUNT; ++j)
+			{
+				mesh->vertices[i].boneWeights[j] = *(Float32*)data; data += sizeof(Float32);
+			}
 		}
 
 		// TODO: indices conversion
@@ -256,6 +469,8 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::L
 
 		mesh->GenTangentSpace(false, false);
 	}
+
+	mesh->GenBoundBox();
 
 	return MakeReference(mesh);
 }
@@ -409,6 +624,8 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->indices[id+5] = offsetVertexTop + (x+1)*(seg_.z+1) + (z+1);
 	}
 
+	geometry->GenBoundBox();
+
 	return MakeReference(geometry);
 }
 inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateSphere(const Float32& radius_, const Vec2& tex_, const UVec2& seg_)
@@ -447,6 +664,96 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 		geometry->indices[id + 4] = (y + 1)*(seg_.x + 1) + (x + 1);
 		geometry->indices[id + 5] = geometry->indices[id + 2];
 	}
+
+	geometry->GenBoundBox();
+
+	return MakeReference(geometry);
+}
+inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateCapsule(const Float32& radius_, const Float32& height_, const Vec2& tex_, const UVec2& seg_)
+{
+	auto geometry = new Geometry(
+		(seg_.x + 1)*(seg_.y + 1) * 2,
+		(6 * ((seg_.y - 1) * 2 + 1) + 3 * 2) * seg_.x);
+
+	Float32	st = (radius_*PI*0.5f) / (2.0f*(radius_*PI*0.5f) + height_);
+	Mat3	tMat;
+
+	for(Size x = 0; x <= seg_.x; ++x)
+	{
+		Float32 dx = Float32(x) / Float32(seg_.x);
+
+		for(Size y = 0; y <= seg_.y; ++y)
+		{
+			Float32 dy = Float32(y) / Float32(seg_.y);
+			{
+				Size id = (seg_.y+1)*2*x + y;
+				tMat = RotateZXY3(Vec3(-90.0f + 90.0f*dy,360.0f*dx-180.0f,0.0f));
+				geometry->vertices[id].pos = (tMat * Vec3(0.0f, 0.0f, radius_)) + Vec3(0.0f, height_*0.5f, 0.0f);
+				geometry->vertices[id].tan = tMat*Vec3(-1.0f, 0.0f, 0.0f);
+				geometry->vertices[id].bin = tMat*Vec3(0.0f, -1.0f, 0.0f);
+				geometry->vertices[id].nor = tMat*Vec3(0.0f, 0.0f, 1.0f);
+				geometry->vertices[id].tex = Vec2(1.0f - dx, 1.0f - dy*st) * tex_;
+			}
+			{
+				Size id = (seg_.y+1)*2*x + (seg_.y+1) + y;
+				tMat = RotateZXY3(Vec3(90.0f*dy, 360.0f*dx - 180.0f, 0.0f));
+				geometry->vertices[id].pos = (tMat * Vec3(0.0f, 0.0f, radius_)) + Vec3(0.0f, -height_*0.5f, 0.0f);
+				geometry->vertices[id].tan = tMat*Vec3(-1.0f, 0.0f, 0.0f);
+				geometry->vertices[id].bin = tMat*Vec3(0.0f, -1.0f, 0.0f);
+				geometry->vertices[id].nor = tMat*Vec3(0.0f, 0.0f, 1.0f);
+				geometry->vertices[id].tex = Vec2(1.0f - dx, (1.0f - dy)*st) * tex_;
+			}
+		}
+	}
+
+	Size iR = 6*(1 + 2*(seg_.y-1)) + 3*2;
+	for(Size x = 0; x < seg_.x; ++x)
+	{
+		{
+			Size id = iR*x + 0;
+			geometry->indices[id + 0] = (seg_.y + 1) * 2 * (x + 0) + 0;
+			geometry->indices[id + 1] = (seg_.y + 1) * 2 * (x + 1) + 1;
+			geometry->indices[id + 2] = (seg_.y + 1) * 2 * (x + 0) + 1;
+		}
+		{
+			Size id = iR*x + (3 + 6*(2*(seg_.y-1) + 1)) + 0;
+			geometry->indices[id + 0] = (seg_.y + 1) * 2 * (x + 0) + (2 * seg_.y);
+			geometry->indices[id + 1] = (seg_.y + 1) * 2 * (x + 1) + (2 * seg_.y);
+			geometry->indices[id + 2] = (seg_.y + 1) * 2 * (x + 0) + (2 * seg_.y + 1);
+		}
+		{
+			Size id = iR*x + 3 + 6 * (seg_.y - 1);
+			geometry->indices[id + 0] = (seg_.y + 1) * 2 * (x + 0) + seg_.y + 0;
+			geometry->indices[id + 1] = (seg_.y + 1) * 2 * (x + 1) + seg_.y + 0;
+			geometry->indices[id + 2] = (seg_.y + 1) * 2 * (x + 0) + seg_.y + 1;
+			geometry->indices[id + 3] = geometry->indices[id + 2];
+			geometry->indices[id + 4] = geometry->indices[id + 1];
+			geometry->indices[id + 5] = (seg_.y + 1) * 2 * (x + 1) + seg_.y + 1;
+		}
+		for(Size y = 0; y < seg_.y - 1; ++y)
+		{
+			{
+				Size id = iR*x + 3 + 6 * y;
+				geometry->indices[id + 0] = (seg_.y + 1) * 2 * (x + 0) + 1 + (y + 0);
+				geometry->indices[id + 1] = (seg_.y + 1) * 2 * (x + 1) + 1 + (y + 0);
+				geometry->indices[id + 2] = (seg_.y + 1) * 2 * (x + 0) + 1 + (y + 1);
+				geometry->indices[id + 3] = geometry->indices[id + 2];
+				geometry->indices[id + 4] = geometry->indices[id + 1];
+				geometry->indices[id + 5] = (seg_.y + 1) * 2 * (x + 1) + 1 + (y + 1);
+			}
+			{
+				Size id = iR*x + 3 + 6*(seg_.y-1) + 6 + 6*y;
+				geometry->indices[id + 0] = (seg_.y + 1) * 2 * (x + 0) + (seg_.y + 1) + (y + 0);
+				geometry->indices[id + 1] = (seg_.y + 1) * 2 * (x + 1) + (seg_.y + 1) + (y + 0);
+				geometry->indices[id + 2] = (seg_.y + 1) * 2 * (x + 0) + (seg_.y + 1) + (y + 1);
+				geometry->indices[id + 3] = geometry->indices[id + 2];
+				geometry->indices[id + 4] = geometry->indices[id + 1];
+				geometry->indices[id + 5] = (seg_.y + 1) * 2 * (x + 1) + (seg_.y + 1) + (y + 1);
+			}
+		}
+	}
+
+	geometry->GenBoundBox();
 
 	return MakeReference(geometry);
 }
@@ -504,6 +811,8 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 			geometry->indices[id + 5] = geometry->indices[id + 2];
 		}
 	}
+
+	geometry->GenBoundBox();
 
 	return MakeReference(geometry);
 }
