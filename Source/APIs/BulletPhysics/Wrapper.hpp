@@ -264,14 +264,14 @@ inline void GreatVEngine::BulletPhysics::World::Render(const Float32& timeStep_)
 #pragma region Shape
 inline GreatVEngine::Reference<GreatVEngine::BulletPhysics::Shape> GreatVEngine::BulletPhysics::Shape::CreateBox(const Vec3& size_, const Mass& mass_)
 {
-	return MakeReference(new Shape(
-		std::move(MakePointer(new Handle_Box(ToBtVector3(size_ * 0.5f)))),
+	return WrapReference(new Shape(
+		std::move(WrapPointer(new Handle_Box(ToBtVector3(size_ * 0.5f)))),
 		mass_));
 }
 inline GreatVEngine::Reference<GreatVEngine::BulletPhysics::Shape> GreatVEngine::BulletPhysics::Shape::CreateCapsule(const Float32& radius_, const Float32& height_, const Mass& mass_)
 {
-	return MakeReference(new Shape(
-		std::move(MakePointer(new Handle_Capsule(radius_, height_))),
+	return WrapReference(new Shape(
+		std::move(WrapPointer(new Handle_Capsule(radius_, height_))),
 		mass_));
 }
 inline GreatVEngine::Reference<GreatVEngine::BulletPhysics::Shape> GreatVEngine::BulletPhysics::Shape::CreateGeometry(Reference<Geometry> geometry_, const Mass& mass_, const Mat4& transform_)
@@ -292,8 +292,8 @@ inline GreatVEngine::Reference<GreatVEngine::BulletPhysics::Shape> GreatVEngine:
 	// 
 	// World::data.dynamicsWorld->addRigidBody(body, (uint16)group_, (uint16)group_);
 
-	return MakeReference(new Shape(
-		std::move(MakePointer(handle)),
+	return WrapReference(new Shape(
+		std::move(WrapPointer(handle)),
 		mass_,
 		std::move(*vertices.get()),
 		std::move(*indices.get())));

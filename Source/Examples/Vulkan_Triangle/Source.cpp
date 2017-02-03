@@ -61,11 +61,11 @@ void func()
 
 		auto instance = new Vulkan::Instance(layersNames, extensionsNames);
 
-		instance->Subscribe_OnDebug([](String message)
+		instance->Subscribe_OnDebug(Function<void, String>([](String message)
 		{
 			cout << message << endl;
 			Log::Write(message + "\n");
-		});
+		}));
 
 		return instance;
 	}();

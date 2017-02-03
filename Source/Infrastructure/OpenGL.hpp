@@ -163,7 +163,7 @@ namespace GreatVEngine
 					const Filename& geometry_,
 					const Filename& fragment_)
 				{
-					return MakeReference(new Technique(
+					return WrapReference(new Technique(
 						engine_,
 						vertex_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + vertex_) : GreatVEngine::OpenGL::Shader::Source(),
 						tessellationControl_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + tessellationControl_) : GreatVEngine::OpenGL::Shader::Source(),
@@ -206,7 +206,7 @@ namespace GreatVEngine
 						OpenGL::GetComponentType(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
 						OpenGL::Texture::Wrap::Repeat, OpenGL::Texture::Filter::Linear, image->GetRawData());*/
 				
-					return MakeReference(new Map(engine_->LoadTexture(filename_))); // texture));
+					return WrapReference(new Map(engine_->LoadTexture(filename_))); // texture));
 				}
 			};
 			class Material:
@@ -296,6 +296,8 @@ namespace GreatVEngine
 			public:
 				static const Geometry::VertexPackMode vertexPackMode = Geometry::VertexPackMode::Pos32F_TBN32F_Tex32F_Ind32U_Wei32F;
 				static const Geometry::IndexPackMode indexPackMode = Geometry::IndexPackMode::UInt32;
+			public:
+				const Reference<Geometry> geometry;
 			protected:
 				const Reference<Engine> engine;
 				GreatVEngine::OpenGL::Buffers::Array* vertices;
@@ -306,6 +308,7 @@ namespace GreatVEngine
 				inline Shape(Reference<Engine> engine_, Reference<Geometry> geometry_):
 					Graphics::Shape(geometry_->GetMin(), geometry_->GetMax()),
 					engine(engine_),
+					geometry(geometry_),
 					vertices(new GreatVEngine::OpenGL::Buffers::Array(engine->context, *geometry_->GetVertices(vertexPackMode).get())),
 					indices(new GreatVEngine::OpenGL::Buffers::Index(engine->context, *geometry_->GetIndices(indexPackMode).get())),
 					verticesCount(geometry_->vertices.size()),
@@ -461,6 +464,7 @@ namespace GreatVEngine
 				inline ~Hierarchycal() = default;
 			public:
 				inline Reference<Object> operator [] (const Name& name_);
+				inline Reference<Object> operator [] (const Size& i_);
 				inline Reference<Bone> operator () (const Name& name_);
 			public: // call only inside SetParent(...), public for access from Bone/Object
 				inline void AddChild(Reference<Bone> bone_);
@@ -1250,6 +1254,11 @@ namespace GreatVEngine
 				inline void Remove(Reference<Bone> bone_); // recursively remove child objects of bone
 				inline void OnModelChanged(Reference<Object> object_, Reference<Model> model_);
 			public:
+				inline Reference<Engine> GetEngine() const
+				{
+					return engine;
+				}
+			public:
 				inline void Add(Reference<Object> object_);
 				inline void Add(Reference<Lights::Direction> light_);
 				inline void Add(Reference<Lights::Point> light_);
@@ -1354,7 +1363,7 @@ namespace GreatVEngine
 							GreatVEngine::OpenGL::GetComponentType(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
 							GreatVEngine::OpenGL::Texture::Wrap::Repeat, GreatVEngine::OpenGL::Texture::Filter::Off, data);
 
-						return MakeReference(new Cubemap(texture));
+						return WrapReference(new Cubemap(texture));
 					}
 				};
 				class Globalmap:
@@ -1395,7 +1404,7 @@ namespace GreatVEngine
 							GreatVEngine::OpenGL::GetComponentType(OpenIL::GetFormat(image->GetFormat(), image->GetComponentType())),
 							GreatVEngine::OpenGL::Texture::Wrap::Repeat, GreatVEngine::OpenGL::Texture::Filter::Off, data);
 
-						return MakeReference(new Globalmap(texture));
+						return WrapReference(new Globalmap(texture));
 					}
 				};
 			}
@@ -1424,6 +1433,10 @@ inline GreatVEngine::Reference<GreatVEngine::Graphics::OpenGL::Object> GreatVEng
 	}
 
 	return nullptr;
+}
+inline GreatVEngine::Reference<GreatVEngine::Graphics::OpenGL::Object> GreatVEngine::Graphics::OpenGL::Hierarchycal::operator [] (const Size& i_)
+{
+	return childObjects[i_];
 }
 inline GreatVEngine::Reference<GreatVEngine::Graphics::OpenGL::Bone> GreatVEngine::Graphics::OpenGL::Hierarchycal::operator () (const Name& name_)
 {
@@ -1481,7 +1494,7 @@ inline GreatVEngine::Reference<GreatVEngine::Graphics::OpenGL::Bone> GreatVEngin
 
 	auto index = (Size)reader_->Read<UInt32>();
 
-	auto root = MakeReference(new Bone());
+	auto root = WrapReference(new Bone());
 	{
 		root->SetName(name);
 
@@ -1660,7 +1673,7 @@ inline GreatVEngine::Reference<GreatVEngine::Graphics::OpenGL::Object> GreatVEng
 
 	auto meshId = (Size)reader_->Read<UInt32>();
 
-	auto object = MakeReference(new Object(engine_));
+	auto object = WrapReference(new Object(engine_));
 	{
 		object->SetName(name);
 
@@ -1674,8 +1687,8 @@ inline GreatVEngine::Reference<GreatVEngine::Graphics::OpenGL::Object> GreatVEng
 
 		if(meshId != UINT32_MAX)
 		{
-			auto shape = MakeReference(new Shape(material_->engine, meshes_[meshId]));
-			auto model = MakeReference(new Model(material_->engine, shape, material_));
+			auto shape = WrapReference(new Shape(material_->engine, meshes_[meshId]));
+			auto model = WrapReference(new Model(material_->engine, shape, material_));
 
 			object->SetModel(model);
 		}
@@ -1693,7 +1706,7 @@ inline GreatVEngine::Reference<GreatVEngine::Graphics::OpenGL::Object> GreatVEng
 inline GreatVEngine::Reference<GreatVEngine::Graphics::OpenGL::Object> GreatVEngine::Graphics::OpenGL::Object::Load(Reference<Engine> engine_, const Filename& filename_, Reference<Material> material_)
 {
 	auto reader = System::BinaryFileReader::LoadFile(filename_);
-	auto root = MakeReference(new Object(engine_));
+	auto root = WrapReference(new Object(engine_));
 
 
 	auto meshesCount = (Size)reader->Read<UInt32>();
@@ -2526,7 +2539,7 @@ inline void GreatVEngine::Graphics::OpenGL::Scene::Render(Reference<Graphics::Ca
 			glDrawArrays(GL_POINTS, 0, 1);
 		}
 
-		drawer->lines3D.clear();
+		drawer->circles2D.clear();
 
 
 		drawer->attributesCircles3D->Set();
@@ -2538,14 +2551,14 @@ inline void GreatVEngine::Graphics::OpenGL::Scene::Render(Reference<Graphics::Ca
 
 		for(auto &circle : drawer->circles3D)
 		{
-			drawer->programCircles3D->SetVec3("p", circle.p - camera_->GetPosition());
+			drawer->programCircles3D->SetVec3("p", circle.p);
 			drawer->programCircles3D->SetFloat("s", circle.s);
 			drawer->programCircles3D->SetVec4("c", circle.c);
 
 			glDrawArrays(GL_POINTS, 0, 1);
 		}
 
-		drawer->lines3D.clear();
+		drawer->circles3D.clear();
 	}
 	// draw(geometyPass->color);
 

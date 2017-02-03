@@ -58,6 +58,7 @@ namespace GreatVEngine
 			const Reference<const WindowClass> windowClass;
 			const Name name;
 			const Style style;
+			IVec2 position = IVec2(0);
 			Size size;
 			const Handle handle;
 		public:
@@ -66,6 +67,14 @@ namespace GreatVEngine
 			Window(Reference<const WindowClass> windowClass_, const Name& name_, const Size& size_, const Style& style_);
 			~Window();
 		public:
+			inline IVec2 GetPosition() const
+			{
+				return position;
+			}
+			inline IVec2 ToLocalPosition(const IVec2& position_)
+			{
+				return position_ - position;
+			}
 			inline Name GetName() const
 			{
 				return name;
@@ -86,7 +95,7 @@ namespace GreatVEngine
 			{
 				return (Float32)size.x / (Float32)size.y;
 			}
-			void Loop() const;
+			void Loop();
 		};
 
 		class DeviceContext
@@ -106,6 +115,13 @@ namespace GreatVEngine
 		public:
 			void SwapBuffers() const;
 		};
+
+		inline Size2 GetDesktopSize()
+		{
+			return Size2(
+				GetSystemMetrics(SM_CXSCREEN),
+				GetSystemMetrics(SM_CYSCREEN));
+		}
 	}
 }
 

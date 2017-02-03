@@ -3,6 +3,7 @@
 
 
 #include "Header.hpp"
+#include <APIs/WinAPI/Window.hpp>
 #pragma endregion
 
 
@@ -12,7 +13,7 @@ namespace GreatVEngine
 	{
 		class Keyboard
 		{
-		protected:
+		public:
 			struct Key
 			{
 				bool state, press;
@@ -263,27 +264,30 @@ namespace GreatVEngine
 			using RawPosition = POINT;
 			using Position = Vec2;
 			using PositionDelta = Vec2;
+		public:
+			enum class Button: Size
+			{
+				Left = 0,
+				Right = 1,
+				Middle = 2,
+				Count = 3
+			};
 		protected:
 			static Position position;
 			static PositionDelta positionDelta;
+			static Keyboard::Key button[(Size)Button::Count];
 		public:
-			inline static Size2 GetDesktopSize()
-			{
-				return Size2(
-					GetSystemMetrics(SM_CXSCREEN),
-					GetSystemMetrics(SM_CYSCREEN));
-			}
 			inline static Position PositionToNormal(const RawPosition& position_)
 			{
 				return Vec2(
 					(Float32)position_.x,
-					(Float32)((LONG)GetDesktopSize().y - position_.y));
+					(Float32)((LONG)WinAPI::GetDesktopSize().y - position_.y));
 			}
 			inline static RawPosition PositionToRaw(const Position& position_)
 			{
 				return RawPosition{
 					(LONG)position_.x,
-					(LONG)((Float32)GetDesktopSize().y - position_.y)};
+					(LONG)((Float32)WinAPI::GetDesktopSize().y - position_.y)};
 			}
 			inline static RawPosition GetRawPosition()
 			{
@@ -299,6 +303,14 @@ namespace GreatVEngine
 				positionDelta = newPosition - position;
 
 				position = newPosition;
+
+				button[(Size)Button::Left].state = GetAsyncKeyState(VK_LBUTTON) != 0;
+				button[(Size)Button::Middle].state = GetAsyncKeyState(VK_MBUTTON) != 0;
+				button[(Size)Button::Right].state = GetAsyncKeyState(VK_RBUTTON) != 0;
+			}
+			inline static bool GetButtonState(const Button& button_)
+			{
+				return button[(Size)button_].state;
 			}
 			inline static Position GetPosition()
 			{
@@ -323,8 +335,13 @@ namespace GreatVEngine
 		}
 	}
 
+	using Buttons = Input::Mouse::Button;
 	using Keys = Input::Keyboard::KeyCode;
 
+	inline bool ButtonState(const Buttons& button_)
+	{
+		return Input::Mouse::GetButtonState(button_);
+	}
 	inline bool KeyState(const Keys& key_)
 	{
 		return Input::Keyboard::GetKeyState(key_);

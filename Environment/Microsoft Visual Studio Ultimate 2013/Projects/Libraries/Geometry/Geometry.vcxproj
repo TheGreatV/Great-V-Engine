@@ -68,10 +68,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\Source\Geometry\Collision.cpp" />
     <ClCompile Include="..\..\..\..\..\Source\Geometry\Geometry.cpp" />
     <ClCompile Include="..\..\..\..\..\Source\Geometry\Header.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\Source\Geometry\Collision.hpp" />
     <ClInclude Include="..\..\..\..\..\Source\Geometry\Geometry.hpp" />
     <ClInclude Include="..\..\..\..\..\Source\Geometry\Header.hpp" />
   </ItemGroup>

@@ -61,17 +61,21 @@ namespace GreatVEngine
 		return "../../../../../" + filename_;
 	}
 
-	template<class T> inline Pointer<T> MakePointer(T* t)
+	template<class T> inline Pointer<T> WrapPointer(T* t)
 	{
 		return Pointer<T>(t);
 	}
-	// template<class T> inline Pointer<T> MakePointer(std::shared_ptr<T> t)
+	// template<class T> inline Pointer<T> WrapPointer(std::shared_ptr<T> t)
 	// {
 	// 	return Pointer<T>(t);
 	// }
-	template<class T> inline Reference<T> MakeReference(T* t)
+	template<class T> inline Reference<T> WrapReference(T* t)
 	{
 		return Reference<T>(t);
+	}
+	template<class T, class...A> inline Reference<T> MakeReference(A...a)
+	{
+		return std::make_shared<T>(a...);
 	}
 	// template<class T> inline Reference<T> MakeReference(std::unique_ptr<T> t)
 	// {
@@ -88,6 +92,15 @@ namespace GreatVEngine
 	template<class T> inline Reference<T> Share(Link<T> t)
 	{
 		return std::make_shared<T>(t);
+	}
+
+	template<class A, class B> inline Reference<A> Cast(Reference<B>& b_)
+	{
+		return std::static_pointer_cast<A>(b_);
+	}
+	template<class A, class B> inline Reference<A> UpCast(Reference<B>& b_)
+	{
+		return std::dynamic_pointer_cast<A>(b_);
 	}
 
 	const Size BITS_IN_BYTE = 8;

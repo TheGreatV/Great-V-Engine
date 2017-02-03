@@ -379,15 +379,15 @@ inline void GreatVEngine::Physics::BulletPhysics::World::Render(const Float32& t
 #pragma region Shape
 inline GreatVEngine::Reference<GreatVEngine::Physics::BulletPhysics::Shape> GreatVEngine::Physics::BulletPhysics::Shape::CreateBox(const Vec3& size_, const Mass& mass_)
 {
-	return MakeReference(new Shape(Handle::CreateBox(size_, mass_)));
+	return WrapReference(new Shape(Handle::CreateBox(size_, mass_)));
 }
 inline GreatVEngine::Reference<GreatVEngine::Physics::BulletPhysics::Shape> GreatVEngine::Physics::BulletPhysics::Shape::CreateCapsule(const Float32& radius_, const Float32& height_, const Mass& mass_)
 {
-	return MakeReference(new Shape(Handle::CreateCapsule(radius_, height_, mass_)));
+	return WrapReference(new Shape(Handle::CreateCapsule(radius_, height_, mass_)));
 }
 inline GreatVEngine::Reference<GreatVEngine::Physics::BulletPhysics::Shape> GreatVEngine::Physics::BulletPhysics::Shape::CreateGeometry(Reference<Geometry> geometry_, const Mass& mass_, const Mat4& transform_)
 {
-	return MakePointer(new Shape(Handle::CreateGeometry(geometry_, mass_, transform_)));
+	return WrapPointer(new Shape(Handle::CreateGeometry(geometry_, mass_, transform_)));
 }
 
 inline GreatVEngine::Physics::BulletPhysics::Shape::Shape(Reference<Handle> handle_):

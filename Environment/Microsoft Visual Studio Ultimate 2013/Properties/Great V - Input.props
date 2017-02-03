@@ -3,6 +3,7 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="Great V Library User - Header.props" />
     <Import Project="Great V Library User - Logic.props" />
+    <Import Project="Great V API User - WinAPI.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />

@@ -16,8 +16,9 @@ namespace GreatVEngine
 	public:
 		using Text = String;
 	protected:
-		const Text text;
+		const Text text = "Unknown exception";
 	public:
+		inline Exception() = default;
 		inline Exception(const Text& errorText_):
 			text(errorText_)
 		{

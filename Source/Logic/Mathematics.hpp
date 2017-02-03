@@ -178,6 +178,22 @@ namespace GreatVEngine
 	{
 		return Vec2(vec_.x, vec_.y);
 	}
+	inline Vec2 VecXZ(const Vec3& vec_)
+	{
+		return Vec2(vec_.x, vec_.z);
+	}
+	inline Vec2 VecZX(const Vec3& vec_)
+	{
+		return Vec2(vec_.z, vec_.x);
+	}
+	inline Vec2 VecYZ(const Vec3& vec_)
+	{
+		return Vec2(vec_.y, vec_.z);
+	}
+	inline Vec2 VecZY(const Vec3& vec_)
+	{
+		return Vec2(vec_.z, vec_.y);
+	}
 	inline Vec3 VecXYZ(const Vec4& vec_)
 	{
 		return Vec3(vec_.x, vec_.y, vec_.z);
@@ -232,6 +248,18 @@ namespace GreatVEngine
 		return Vec4(Rnd(min_, max_), Rnd(min_, max_), Rnd(min_, max_), Rnd(min_, max_));
 	}
 
+	template<typename T>
+	inline Float32 ProjectT(const T& a, const T& b)
+	{
+		auto l = length(b);
+		return dot(a, b) / (l*l);
+	}
+	template<typename T>
+	inline typename T Project(const T& a, const T& b)
+	{
+		return b * projT(a, b);
+	};
+
 	template <typename genTypeT, typename genTypeU>
 	inline genTypeT Mix(const genTypeT& a, const genTypeT& b, const genTypeU& t)
 	{
@@ -241,6 +269,11 @@ namespace GreatVEngine
 	inline T Normalize(const T& t)
 	{
 		return glm::normalize(t);
+	}
+	template <typename T>
+	inline Float32 Sqr(const T& a)
+	{
+		return glm::dot(a, a);
 	}
 
 	inline Mat3 Rotate3(const Float32& angle_)

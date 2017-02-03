@@ -134,7 +134,7 @@ namespace GreatVEngine
 				const Filename& geometry_,
 				const Filename& fragment_)
 			{
-				return MakeReference(new Technique(
+				return WrapReference(new Technique(
 					engine_,
 					vertex_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + vertex_) : Shader::Source(),
 					tessellationControl_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + tessellationControl_) : Shader::Source(),
@@ -218,7 +218,7 @@ namespace GreatVEngine
 				}
 				auto textureView = new Vulkan::ImageView(engine_->device, texture, Vulkan::ImageView::Type::VK_IMAGE_VIEW_TYPE_2D, Vulkan::ImageView::AspectBits::VK_IMAGE_ASPECT_COLOR_BIT);
 
-				return MakeReference(new Map(texture, textureView));
+				return WrapReference(new Map(texture, textureView));
 			}
 		};
 		class Material:

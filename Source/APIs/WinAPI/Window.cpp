@@ -3,7 +3,7 @@
 
 GreatVEngine::Reference<GreatVEngine::WinAPI::Instance> GreatVEngine::WinAPI::Instance::Get()
 {
-	return MakeReference(new Instance(GetModuleHandleA(NULL)));
+	return WrapReference(new Instance(GetModuleHandleA(NULL)));
 }
 GreatVEngine::WinAPI::Instance::Instance(HINSTANCE handle_):
 	handle(handle_)
@@ -91,8 +91,16 @@ GreatVEngine::WinAPI::Window::~Window()
 		ErrorTest();
 	}
 }
-void GreatVEngine::WinAPI::Window::Loop() const
+void GreatVEngine::WinAPI::Window::Loop()
 {
+	RECT rect;
+	POINT p;
+	GetClientRect(handle, &rect);
+	p.x = rect.left; p.y = rect.bottom;
+	ClientToScreen(handle, &p);
+	position.x = (GreatVEngine::Size)p.x;
+	position.y = GetDesktopSize().y - (GreatVEngine::Size)p.y;
+
 	MSG msg;
 	{
 		while(PeekMessageA(&msg, handle, 0, 0, PM_REMOVE))

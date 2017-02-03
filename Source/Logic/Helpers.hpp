@@ -1898,7 +1898,13 @@ namespace GreatVEngine
 					inline void SetAngle(const Angle::Value& angle_);
 					inline void SetPosition(const Position::Value& position_);
 					inline void SetScale(const Scale::Value& scale_);
-					inline Angle::Value GetAngle() const;
+					inline Angle::Value GetAngle() const
+					{
+						// TODO: ensure that this is OK
+						return GreatVEngine::GetAngle(parent ?
+							parent->GetRotateMatrix() * GetLocalRotateMatrix() :
+							GetLocalRotateMatrix());
+					}
 					inline Position::Value GetPosition() const
 					{
 						if(parent)
@@ -1974,6 +1980,8 @@ namespace GreatVEngine
 					}
 				};
 			}
+
+			using HMat3 = Dimension3::HierarchyMatrix;
 		}
 	}
 }

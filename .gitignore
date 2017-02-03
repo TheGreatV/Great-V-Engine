@@ -51,6 +51,7 @@ Temporary Items
 _Build
 _Intermediate
 _Tools
+Environment\Microsoft Visual Studio Ultimate 2013\ipch
 *.suo
 *.sdf
 *.opensdf

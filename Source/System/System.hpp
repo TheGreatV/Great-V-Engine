@@ -119,7 +119,7 @@ inline GreatVEngine::Reference<GreatVEngine::System::BinaryFileReader> GreatVEng
 	Handle handle;
 	if(fopen_s(&handle, filename_.c_str(), "rb") == 0)
 	{
-		return MakeReference(new BinaryFileReader(handle));
+		return WrapReference(new BinaryFileReader(handle));
 	}
 
 	throw Exception("Failed to load file: " + filename_);

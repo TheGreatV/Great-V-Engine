@@ -109,6 +109,7 @@ namespace GreatVEngine
 			};
 		public:
 			using Handle = VkInstance;
+			using OnDebug = Helper::Subscrption::OnEvent<String>;
 		public:
 			inline static Layer::Properties EnumerateLayersProperties()
 			{
@@ -207,7 +208,7 @@ namespace GreatVEngine
 		protected:
 			const Handle handle;
 			const Vector<PhysicalDevice*> physicalDevices;
-			Helper::Subscrption::OnEvent<String> onDebug;
+			OnDebug onDebug;
 #if GVE_DEBUG
 			VkDebugReportCallbackEXT vk_debugReportCallbackEXT;
 #endif
@@ -225,11 +226,11 @@ namespace GreatVEngine
 				return physicalDevices;
 			}
 		public:
-			inline void Subscribe_OnDebug(Helper::Subscrption::OnEvent<String>::Subscriber subscriber_)
+			inline void Subscribe_OnDebug(OnDebug::Subscriber subscriber_)
 			{
 				onDebug += subscriber_;
 			}
-			inline void Unsubscribe_OnDebug(Helper::Subscrption::OnEvent<String>::Subscriber subscriber_)
+			inline void Unsubscribe_OnDebug(OnDebug::Subscriber subscriber_)
 			{
 				onDebug -= subscriber_;
 			}

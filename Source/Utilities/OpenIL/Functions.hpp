@@ -367,7 +367,10 @@ namespace GreatVEngine
 }
 
 
-GreatVEngine::OpenIL::Initer GreatVEngine::OpenIL::Initer::initer;
+// // #ifndef __CPP_SHIT_OPENIL__
+// // #define __CPP_SHIT_OPENIL__ 1
+// GreatVEngine::OpenIL::Initer GreatVEngine::OpenIL::Initer::initer;
+// // #endif
 
 
 inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL::Image::Load2D(const Filename& filename)
@@ -479,7 +482,7 @@ inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL
 			throw;
 		}
 
-		return MakeReference(image);
+		return WrapReference(image);
 	}
 	else
 	{
@@ -632,7 +635,7 @@ inline GreatVEngine::OpenIL::Image::CubeImages GreatVEngine::OpenIL::Image::Load
 				originMode,
 				std::move(mipmaps));
 
-			cubeImages[face] = MakeReference(image);
+			cubeImages[face] = WrapReference(image);
 		}
 
 		ilDeleteImage(handle); ErrorTest();

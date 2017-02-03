@@ -53,6 +53,7 @@ namespace GreatVEngine
 	public:
 		inline static Reference<Geometry> LoadMesh(const Reference<System::BinaryFileReader>& reader_);
 		inline static Reference<Geometry> LoadMesh(const Filename& filename_);
+		inline static Reference<Geometry> CreatePlain(const Vec2& size_, const Vec2& tex_, const UVec2& seg_);
 		inline static Reference<Geometry> CreateBox(const Vec3& size_, const Vec3& tex_, const UVec3& seg_);
 		inline static Reference<Geometry> CreateSphere(const Float32& radius_, const Vec2& tex_, const UVec2& seg_);
 		inline static Reference<Geometry> CreateCapsule(const Float32& radius_, const Float32& height_, const Vec2& tex_, const UVec2& seg_);
@@ -110,7 +111,7 @@ namespace GreatVEngine
 		inline Reference<Bytes> GetVertices(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
 		{
 			Size vertexSize = GetVertexSize(vertexPackMode_);
-			auto bytes = MakeReference(new Bytes(vertices.size() * vertexSize, 0x00));
+			auto bytes = MakeReference<Bytes>(vertices.size() * vertexSize, 0x00);
 
 			switch(vertexPackMode_)
 			{
@@ -182,7 +183,7 @@ namespace GreatVEngine
 		inline Reference<Bytes> GetVertices(const Mat4& transform_, const VertexPackMode& vertexPackMode_ = VertexPackMode::Default) const
 		{
 			Size vertexSize = GetVertexSize(vertexPackMode_);
-			auto bytes = MakeReference(new Bytes(vertices.size() * vertexSize, 0x00));
+			auto bytes = MakeReference<Bytes>(vertices.size() * vertexSize, 0x00);
 
 			auto rotate = Mat3(transform_);
 
@@ -288,7 +289,7 @@ namespace GreatVEngine
 				case IndexPackMode::UInt32:
 				{
 					Size indexSize = sizeof(UInt32);
-					auto bytes = MakeReference(new Bytes(indices.size() * indexSize));
+					auto bytes = MakeReference<Bytes>(indices.size() * indexSize);
 
 					Size i = 0;
 					for(auto &index : indices)
@@ -472,13 +473,57 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::L
 
 	mesh->GenBoundBox();
 
-	return MakeReference(mesh);
+	return WrapReference(mesh);
 }
 inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::LoadMesh(const Filename& filename_)
 {
 	auto reader = System::BinaryFileReader::LoadFile(filename_);
 
 	return LoadMesh(reader);
+}
+inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreatePlain(const Vec2& size_, const Vec2& tex_, const UVec2& seg_)
+{
+	if(seg_.x == 0 || seg_.y == 0)
+	{
+		throw Exception("Invalid segments count");
+	}
+
+	auto geometry = new Geometry(
+		(seg_.x + 1) * (seg_.y + 1),
+		seg_.x*seg_.y*6);
+
+	Size id;
+	auto maxPos = size_ * 0.5f;
+	auto minPos = size_ * -0.5f;
+
+	for(Size x = 0; x <= seg_.x; ++x)
+	for(Size y = 0; y <= seg_.y; ++y)
+	{
+		Vec2 t(Float32(x)/Float32(seg_.x),Float32(y)/Float32(seg_.y));
+
+		id = y*(seg_.x + 1) + x;
+		geometry->vertices[id].pos = Vec3(Mix(minPos, maxPos, t), 0.0f);
+		geometry->vertices[id].tex = t * Vec2(tex_.x, tex_.y);
+		geometry->vertices[id].tan = Vec3(1.0f,0.0f,0.0f);
+		geometry->vertices[id].bin = Vec3(0.0f,1.0f,0.0f);
+		geometry->vertices[id].nor = Vec3(0.0f,0.0f,-1.0f);
+	}
+
+	for(Size x = 0; x < seg_.x; ++x)
+	for(Size y = 0; y < seg_.y; ++y)
+	{
+		id = 6*(y*seg_.x + x);
+		geometry->indices[id + 0] = (y + 0)*(seg_.x + 1) + (x + 0);
+		geometry->indices[id + 1] = (y+0)*(seg_.x+1) + (x+1);
+		geometry->indices[id + 2] = (y+1)*(seg_.x+1) + (x+0);
+		geometry->indices[id + 3] = geometry->indices[id+2];
+		geometry->indices[id + 4] = geometry->indices[id+1];
+		geometry->indices[id + 5] = (y+1)*(seg_.x+1) + (x+1);
+	}
+
+	geometry->GenBoundBox();
+
+	return WrapReference(geometry);
 }
 inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateBox(const Vec3& size_, const Vec3& tex_, const UVec3& seg_)
 {
@@ -626,7 +671,7 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 
 	geometry->GenBoundBox();
 
-	return MakeReference(geometry);
+	return WrapReference(geometry);
 }
 inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateSphere(const Float32& radius_, const Vec2& tex_, const UVec2& seg_)
 {
@@ -667,7 +712,7 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 
 	geometry->GenBoundBox();
 
-	return MakeReference(geometry);
+	return WrapReference(geometry);
 }
 inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateCapsule(const Float32& radius_, const Float32& height_, const Vec2& tex_, const UVec2& seg_)
 {
@@ -755,7 +800,7 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 
 	geometry->GenBoundBox();
 
-	return MakeReference(geometry);
+	return WrapReference(geometry);
 }
 inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::CreateTorus(const Float32 radius_, const Float32 width_, const Vec2& tex_, const UVec2& seg_)
 {
@@ -814,7 +859,7 @@ inline GreatVEngine::Reference<GreatVEngine::Geometry> GreatVEngine::Geometry::C
 
 	geometry->GenBoundBox();
 
-	return MakeReference(geometry);
+	return WrapReference(geometry);
 }
 #pragma endregion
 

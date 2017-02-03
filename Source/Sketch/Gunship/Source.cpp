@@ -4,6 +4,7 @@
 #include <Infrastructure/OpenGL.hpp>
 #include <Infrastructure/BulletPhysics.hpp>
 #include <Input/Input.hpp>
+#include <Geometry/Collision.hpp>
 
 namespace GVE = GreatVEngine;
 using namespace GVE;
@@ -67,6 +68,65 @@ void func()
 		graphicsMaterialFlat->SetValue("materialGloss", 0.5f);
 		graphicsMaterialFlat->SetValue("materialRoughness", 0.5f);
 	}
+
+	/*auto objectBunny = Graphics::OpenGL::Object::Load(graphicsEngine, Filepath("Media/Models/Scene.gvs"), graphicsMaterialFlat);
+	auto limb = objectBunny->operator[](0);
+	auto model = limb->GetModel();
+	auto shape = model->GetShape();
+	auto geometry = shape->geometry;
+
+	auto file = fopen(Filepath("Media/Models/Scene.bin").c_str(), "wb");
+	{
+		UInt32 verticesCount = static_cast<UInt32>(geometry->GetVerticesCount());
+		auto vertices = Vector<Float32>(verticesCount * (3 + 3*3 + 2));
+
+		Size v = 0;
+		for(auto &vertex : geometry->vertices)
+		{
+			auto id = v * (3 + 3*3 + 2);
+
+			vertices[id + 0] = vertex.pos.x;
+			vertices[id + 1] = vertex.pos.y;
+			vertices[id + 2] = vertex.pos.z;
+
+			vertices[id + 3] = vertex.tan.x;
+			vertices[id + 4] = vertex.tan.y;
+			vertices[id + 5] = vertex.tan.z;
+			vertices[id + 6] = vertex.bin.x;
+			vertices[id + 7] = vertex.bin.y;
+			vertices[id + 8] = vertex.bin.z;
+			vertices[id + 9] = vertex.nor.x;
+			vertices[id + 10] = vertex.nor.y;
+			vertices[id + 11] = vertex.nor.z;
+
+			vertices[id + 12] = vertex.tex.x;
+			vertices[id + 13] = vertex.tex.y;
+
+			++v;
+		}
+
+		UInt32 indicesCount = static_cast<UInt32>(geometry->GetIndicesCount());
+		auto indices = Vector<UInt32>(indicesCount);
+
+		Size i = 0;
+		for(auto &index : geometry->indices)
+		{
+			indices[i] = index;
+			++i;
+		}
+
+		fwrite(&verticesCount, 1, sizeof(UInt32), file);
+		fwrite(vertices.data(), 1, sizeof(Float32)* (3 + 3*3 + 2) * verticesCount, file);
+
+		fwrite(&indicesCount, 1, sizeof(UInt32), file);
+		fwrite(indices.data(), 1, sizeof(UInt32)* indicesCount, file);
+
+		fclose(file);
+	}
+
+	return;*/
+
+
 	auto graphicsObject = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
 	{
 		auto geometry = Geometry::CreateBox(Vec3(400.0f, 1.0f, 400.0f), Vec3(1.0f), UVec3(1));
@@ -95,164 +155,80 @@ void func()
 		physicsBodyRigid2->SetUser(graphicsObject2);
 	}
 
-	/*
-	for(int i = 0; i < 50; ++i)
+	auto graphicsSphere = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
 	{
-		auto physicsShape = Physics::BulletPhysics::Shape::CreateBox(Vec3(10.0f), 100.0f);
-		auto physicsBodyRigid = MakeReference(new Physics::BulletPhysics::Bodies::Rigid(
-			physicsShape,
-			Vec3(Rnd(-40.0f, +40.0f), 50.0f + Rnd(100.0f), Rnd(-40.0f, +40.0f)),
-			Vec3(Rnd(360.0f), 0.0f, 0.0f)));
-		{
-			physicsWorld->Add(physicsBodyRigid);
-		}
-		auto graphicsObject = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
-		{
-			auto geometry = Geometry::CreateBox(Vec3(10.0f), Vec3(1.0f), UVec3(1));
-			auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
-			auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
-			graphicsObject->SetModel(model);
-			graphicsScene->Add(graphicsObject);
-			physicsBodyRigid->SetUser(graphicsObject);
-		}
+		graphicsSphere->SetLocalPosition(Vec3(0.0f, 10.0f, 0.0f));
+
+		auto geometry = Geometry::CreateSphere(5.0f, Vec2(1.0f), UVec2(32));
+		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
+		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		graphicsSphere->SetModel(model);
+		graphicsScene->Add(graphicsSphere);
 	}
-	for(int i = 0; i < 50; ++i)
+	auto graphicsPlane = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
 	{
-		auto physicsShape = Physics::BulletPhysics::Shape::CreateBox(Vec3(10.0f), 100.0f);
-		auto physicsBodyRigid = MakeReference(new Physics::BulletPhysics::Bodies::Rigid(
-			physicsShape,
-			RotateY3(i*10.0f) * Vec3(0.0f, 100.0f + i*5.0f, 100.0f),
-			Vec3(0.0f, i*10.0f, 0.0f)));
-		{
-			physicsWorld->Add(physicsBodyRigid);
-		}
-		auto graphicsObject = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
-		{
-			auto geometry = Geometry::CreateBox(Vec3(10.0f), Vec3(1.0f), UVec3(1));
-			auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
-			auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
-			graphicsObject->SetModel(model);
-			graphicsScene->Add(graphicsObject);
-			physicsBodyRigid->SetUser(graphicsObject);
-		}
+		graphicsPlane->SetLocalPosition(Vec3(-20.0f, 10.0f, 10.0f));
+		graphicsPlane->SetLocalAngle(Vec3(-20.0f, 10.0f, 15.0f));
+
+		auto geometry = Geometry::CreatePlain(Vec2(10.0f), Vec2(1.0f), UVec2(2));
+		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
+		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		graphicsPlane->SetModel(model);
+		graphicsScene->Add(graphicsPlane);
 	}
-	*/
-	/*auto sponza = Graphics::OpenGL::Object::Load(graphicsEngine, Filepath("Media/Models/Sponza.gvs"), graphicsMaterialFlat);
+	auto graphicsBox = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
 	{
-		graphicsScene->Add(sponza);
-	}*/
+		graphicsBox->SetLocalPosition(Vec3(+20.0f, 10.0f, 10.0f));
+		graphicsBox->SetLocalAngle(Vec3(+10.0f, 20.0f, 30.0f));
 
+		auto geometry = Geometry::CreateBox(Vec3(8.0f, 10.0f, 12.0f), Vec3(1.0f), UVec3(1));
+		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
+		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		graphicsBox->SetModel(model);
+		graphicsScene->Add(graphicsBox);
+	}
 
-	// // aX
-	// auto v1 = (Mat3)Quaternion(Vec3(1.0f, 0.0f, 0.0f), 0.0f)	* Vec3(0.0f, 1.0f, 0.0f);
-	// auto v2 = (Mat3)Quaternion(Vec3(1.0f, 0.0f, 0.0f), 90.0f)	* Vec3(0.0f, 1.0f, 0.0f);
-	// auto v3 = (Mat3)Quaternion(Vec3(1.0f, 0.0f, 0.0f), 45.0f)	* Vec3(0.0f, 1.0f, 0.0f);
-	// auto v4 = (Mat3)Quaternion(Vec3(1.0f, 0.0f, 0.0f), 180.0f)	* Vec3(0.0f, 1.0f, 0.0f);
-	// auto v5 = (Mat3)Quaternion(Vec3(1.0f, 0.0f, 0.0f), 270.0f)	* Vec3(0.0f, 1.0f, 0.0f);
-	// // aY
-	// auto v1 = (Mat3)Quaternion(Vec3(0.0f, 1.0f, 0.0f), 0.0f)	* Vec3(0.0f, 0.0f, 1.0f);
-	// auto v2 = (Mat3)Quaternion(Vec3(0.0f, 1.0f, 0.0f), 90.0f)	* Vec3(0.0f, 0.0f, 1.0f);
-	// auto v3 = (Mat3)Quaternion(Vec3(0.0f, 1.0f, 0.0f), 45.0f)	* Vec3(0.0f, 0.0f, 1.0f);
-	// auto v4 = (Mat3)Quaternion(Vec3(0.0f, 1.0f, 0.0f), 180.0f)	* Vec3(0.0f, 0.0f, 1.0f);
-	// auto v5 = (Mat3)Quaternion(Vec3(0.0f, 1.0f, 0.0f), 270.0f)	* Vec3(0.0f, 0.0f, 1.0f);
-	// // aZ
-	// auto v1 = (Mat3)Quaternion(Vec3(0.0f, 0.0f, 1.0f), 0.0f)	* Vec3(1.0f, 0.0f, 0.0f);
-	// auto v2 = (Mat3)Quaternion(Vec3(0.0f, 0.0f, 1.0f), 90.0f)	* Vec3(1.0f, 0.0f, 0.0f);
-	// auto v3 = (Mat3)Quaternion(Vec3(0.0f, 0.0f, 1.0f), 45.0f)	* Vec3(1.0f, 0.0f, 0.0f);
-	// auto v4 = (Mat3)Quaternion(Vec3(0.0f, 0.0f, 1.0f), 180.0f)	* Vec3(1.0f, 0.0f, 0.0f);
-	// auto v5 = (Mat3)Quaternion(Vec3(0.0f, 0.0f, 1.0f), 270.0f)	* Vec3(1.0f, 0.0f, 0.0f);
-
+	auto p = graphicsSphere->GetPosition();
+	auto r = 5.0f;
+	auto p1 = p - Vec3(0.0f, 20.0f, 50.0f);
+	auto p2 = p + Vec3(0.0f, 20.0f, 50.0f);
+	// auto p = Vec3(0.0f, 10.0f, 0.0f);
+	// auto n = Vec3(0.0f, 1.0f, 0.0f);
+	// auto p1 = Vec3(10.0f, 20.0f, -50.0f);
+	// auto p2 = Vec3(10.0f, -20.0f, 50.0f);
 
 	while(!KeyState(Keys::ESC))
 	{
 		Input::Loop();
 		window->Loop();
-		Input::Mouse::SetPosition(Vec2(Input::Mouse::GetDesktopSize()) / 2.0f);
+		Input::Mouse::SetPosition(Vec2(WinAPI::GetDesktopSize()) / 2.0f);
 
-		/*
-		if(KeyState(Keys::NUM_DIGIT6))
+		if(ButtonState(Buttons::Left))
 		{
-			physicsBodyRigid2->AddCentralImpulse(Vec3(+100.0f, 0.0f, 0.0f));
+			p1 = VecXYZ(graphicsCamera->GetViewInverseMatrix() * Vec4(Vec3(3.0f, -2.0f, 10.0f), 1.0f));
+			p2 = VecXYZ(graphicsCamera->GetViewInverseMatrix() * Vec4(Vec3(3.0f, -2.0f, 30.0f), 1.0f));
 		}
-		if(KeyState(Keys::NUM_DIGIT4))
+
+		graphicsScene->DrawLine(p1, p2, Vec4(1, 1, 0, 1));
+		graphicsScene->DrawCircle(p1, 1.0f, Vec4(1, 1, 0, 1));
+		graphicsScene->DrawCircle(p2, 1.0f, Vec4(1, 1, 0, 1));
+
+		using Caster = Cast::Interval;
+
+		// if(Caster::SphereProcess({p1, p2}, {p, r}))
+		// if(Caster::QuadProcess({p1, normalize(p2 - p1)}, {graphicsPlane->GetLocalPosition(), graphicsPlane->GetLocalAngle(), Vec2(10.0f)}))
+		// if(Caster::QuadProcess({p1, p2}, {graphicsPlane->GetLocalPosition(), graphicsPlane->GetLocalAngle(), Vec2(10.0f)}))
+		// if(Caster::BoxProcess({p1, normalize(p2 - p1)}, {graphicsBox->GetLocalPosition(), graphicsBox->GetLocalAngle(), Vec3(8.0f, 10.0f, 12.0f)}))
+		if(Caster::BoxProcess({p1, p2}, {graphicsBox->GetLocalPosition(), graphicsBox->GetLocalAngle(), Vec3(8.0f, 10.0f, 12.0f)}))
 		{
-			physicsBodyRigid2->AddCentralImpulse(Vec3(-100.0f, 0.0f, 0.0f));
+			auto cp = Caster::GetLast().position;
+			auto cn = Caster::GetLast().normal;
+
+			graphicsScene->DrawLine(p1, cp, Vec4(1, 0, 0, 1));
+			graphicsScene->DrawCircle(cp, 1.5f, Vec4(1, 0, 0, 1));
+			graphicsScene->DrawLine(cp, cp + cn*5.0f, Vec4(0, 1, 0, 1));
 		}
-		// if(KeyState(Keys::NUM_DIGIT8))
-		// {
-		// 	physicsBodyRigid2->AddCentralImpulse(Vec3(0.0f, 0.0f, 100.0f));
-		// }
-		// if(KeyState(Keys::NUM_DIGIT2))
-		// {
-		// 	physicsBodyRigid2->AddCentralImpulse(Vec3(0.0f, 0.0f, -100.0f));
-		// }
-		*/
 
-		/*Float32 angle = 2.0f;
-		Float32 speed = 0.2f;
-		{
-			if(KeyState(Keys::L_SHIFT))
-			{
-				speed = 5.0f;
-			}
-			if(KeyState(Keys::L_ALT))
-			{
-				speed = 0.05f;
-			}
-			if(KeyState(Keys::UP))
-			{
-				graphicsCamera->Rotate(Vec3(+1, 0, 0)*angle);
-			}
-			if(KeyState(Keys::DOWN))
-			{
-				graphicsCamera->Rotate(Vec3(-1, 0, 0)*angle);
-			}
-			if(KeyState(Keys::RIGHT))
-			{
-				graphicsCamera->Rotate(Vec3(0, +1, 0)*angle);
-			}
-			if(KeyState(Keys::LEFT))
-			{
-				graphicsCamera->Rotate(Vec3(0, -1, 0)*angle);
-			}
-			if(KeyState(Keys::E))
-			{
-				graphicsCamera->Rotate(Vec3(0, 0, +1)*angle);
-			}
-			if(KeyState(Keys::Q))
-			{
-				graphicsCamera->Rotate(Vec3(0, 0, -1)*angle);
-			}
-			if(KeyState(Keys::W))
-			{
-				graphicsCamera->Move(Vec3(0, 0, +1)*speed);
-			}
-			if(KeyState(Keys::S))
-			{
-				graphicsCamera->Move(Vec3(0, 0, -1)*speed);
-			}
-			if(KeyState(Keys::D))
-			{
-				graphicsCamera->Move(Vec3(+1, 0, 0)*speed);
-			}
-			if(KeyState(Keys::A))
-			{
-				graphicsCamera->Move(Vec3(-1, 0, 0)*speed);
-			}
-			if(KeyState(Keys::SPACE))
-			{
-				graphicsCamera->Move(Vec3(0, +1, 0)*speed);
-			}
-			if(KeyState(Keys::L_CTRL))
-			{
-				graphicsCamera->Move(Vec3(0, -1, 0)*speed);
-			}
-		}*/
-
-		// graphicsCamera->Rotate(Vec3(
-		// 	-Input::Mouse::GetPositionDelta().y * 0.1f,
-		// 	Input::Mouse::GetPositionDelta().x * 0.1f ,
-		// 	0.0f));
 
 		auto RMat = [](Vec3 a)
 		{
@@ -298,29 +274,30 @@ void func()
 			VecXYZ(MMat(physicsBodyRigid2->GetPosition(), physicsBodyRigid2->GetAngle()) * Vec4(Vec3(+10.0f, 0.0f, 0.0f), 1.0f)),
 			RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, -tForce.z, 0.0f));
 
+		Float32 speed = 200.0f;
 		if(KeyState(Keys::E))
 		{
-			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, 0.0f, +100.0f));
+			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, 0.0f, +speed));
 		}
 		if(KeyState(Keys::D))
 		{
-			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, 0.0f, -100.0f));
+			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, 0.0f, -speed));
 		}
 		if(KeyState(Keys::S))
 		{
-			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(-100.0f, 0.0f, 0.0f));
+			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(-speed, 0.0f, 0.0f));
 		}
 		if(KeyState(Keys::F))
 		{
-			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(+100.0f, 0.0f, 0.0f));
+			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(+speed, 0.0f, 0.0f));
 		}
 		if(KeyState(Keys::SPACE))
 		{
-			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, +100.0f, 0.0f));
+			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, +speed, 0.0f));
 		}
 		if(KeyState(Keys::L_CTRL))
 		{
-			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, -100.0f, 0.0f));
+			physicsBodyRigid2->AddCentralImpulse(RMat(physicsBodyRigid2->GetAngle()) * Vec3(0.0f, -speed, 0.0f));
 		}
 
 		graphicsCamera->SetPosition(VecXYZ(
@@ -328,9 +305,6 @@ void func()
 			RotateZXY4(physicsBodyRigid2->GetAngle()))*
 			Vec4(0.0f, 4.0f, 6.0f, 1.0f))); // Vec4(0.0f, 20.0f, -60.0f, 1.0f)));
 		graphicsCamera->SetAngle(physicsBodyRigid2->GetAngle());
-
-		graphicsScene->DrawCircle(Vec2(100.0f), 50.0f, Vec4(1, 0, 0, 1));
-		graphicsScene->DrawCircle(Vec3(0.0f), 5.0f, Vec4(0, 1, 0, 1));
 
 		physicsWorld->Render(1.0f / 60.0f);
 		graphicsScene->Render(graphicsCamera);

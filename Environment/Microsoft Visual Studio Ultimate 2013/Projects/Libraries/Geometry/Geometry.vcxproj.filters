@@ -21,12 +21,18 @@
     <ClCompile Include="..\..\..\..\..\Source\Geometry\Header.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Source\Geometry\Collision.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\Source\Geometry\Geometry.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Source\Geometry\Header.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Source\Geometry\Collision.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

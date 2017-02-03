@@ -45,11 +45,11 @@ void GreatVEngine::OpenGL::WinAPI::Context::Reset()
 GreatVEngine::OpenGL::WinAPI::ExtendedContext::Initer::Initer()
 {
 	auto instance = GreatVEngine::WinAPI::Instance::Get();
-	auto windowClass = MakeReference(new GreatVEngine::WinAPI::WindowClass(instance, "class"));
-	auto window = MakeReference(new GreatVEngine::WinAPI::Window(windowClass, "window"));
-	auto deviceContext = MakeReference(new GreatVEngine::WinAPI::DeviceContext(window));
+	auto windowClass = MakeReference<GreatVEngine::WinAPI::WindowClass>(instance, "class");
+	auto window = MakeReference<GreatVEngine::WinAPI::Window>(windowClass, "window");
+	auto deviceContext = MakeReference<GreatVEngine::WinAPI::DeviceContext>(window);
 	deviceContext->SetPixelFormat();
-	auto context = MakeReference(new WinAPI::Context(deviceContext));
+	auto context = MakeReference<WinAPI::Context>(deviceContext);
 	context->Set();
 
 	texturesCount;
