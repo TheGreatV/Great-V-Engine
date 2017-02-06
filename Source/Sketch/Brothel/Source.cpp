@@ -18,16 +18,22 @@ void func()
 
 	auto game = MakeReference<Brothel::Game>(deviceContext, window);
 
-	auto building = MakeReference<Brothel::Building>(game, Vec3(0.0f), Vec3(0.0f));
-	auto section = MakeReference<Brothel::Section>(building, Vec3(0.0f), Vec3(0.0f));
-	auto miserableBedroom = Brothel::Rooms::Bedrooms::Miserable::Make(building, Vec3(4.0f, 0.0f, 0.0f), Vec3(0.0f));
-	auto personnel = MakeReference<Brothel::Personnel>(game, Vec3(-4.0f, 0.0f, -2.0f), Vec3(0.0f), 18, Brothel::Personnel::Gender::Female);
-	auto guest = MakeReference<Brothel::Guest>(game, Vec3(-4.0f, 0.0f, +2.0f), Vec3(0.0f), 18, Brothel::Guest::Gender::Male);
+	auto building = Brothel::Make<Brothel::Building>(game, Vec3(0.0f), Vec3(0.0f));
+	auto section = Brothel::Make<Brothel::Section>(building, Vec3(0.0f), Vec3(0.0f));
+	auto miserableBedroom = Brothel::Make<Brothel::Rooms::Bedrooms::Miserable>(building, Vec3(4.0f, 0.0f, 0.0f), Vec3(0.0f));
+	auto miserableBedroom2 = Brothel::Make<Brothel::Rooms::Bedrooms::Miserable>(building, Vec3(4.0f, 0.0f, -8.0f - 4.0f), Vec3(0.0f, 180.0f, 0.0f));
+	auto personnel = Brothel::Make<Brothel::Personnel>(game, Vec3(-4.0f - 1.0f, 0.0f, -2.0f), Vec3(0.0f), 18, Brothel::Personnel::Gender::Female);
+	auto personnel2 = Brothel::Make<Brothel::Personnel>(game, Vec3(-4.0f + 1.0f, 0.0f, -2.0f), Vec3(0.0f), 18, Brothel::Personnel::Gender::Female);
+	auto guest = Brothel::Make<Brothel::Guest>(game, Vec3(-4.0f - 1.0f, 0.0f, +2.0f), Vec3(0.0f), 18, Brothel::Guest::Gender::Male);
 
 	while(!KeyState(Keys::ESC))
 	{
 		Input::Loop();
 		window->Loop();
+
+		personnel->Loop();
+		personnel2->Loop();
+		guest->Loop();
 
 		game->Loop();
 		// graphicsScene->Render(graphicsCamera);

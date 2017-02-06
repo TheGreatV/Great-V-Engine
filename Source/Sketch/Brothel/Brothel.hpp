@@ -65,7 +65,7 @@ namespace Selectable
 
 			return picked;
 		}
-		template <class Condition_> Reference<Selection> Pick(Reference<Graphics::Camera> camera_, const Vec2& p_, Condition_ condition_) const
+		template <class Filter_> Reference<Selection> Pick(Reference<Graphics::Camera> camera_, const Vec2& p_, Filter_ filter_) const
 		{
 			auto t = VecXYZ(camera_->GetPIMat() * Vec4(p_, 1.0f, 1.0f));
 			auto p1 = VecXYZ(camera_->GetViewInverseMatrix() * Vec4(t * 10.0f, 1.0f));
@@ -77,10 +77,35 @@ namespace Selectable
 
 			for(auto &selection : selections)
 			{
-				if(condition_(selection))
+				if(filter_(selection))
 				{
 					auto distance = selection->GetDistance(p1, d);
 					if(distance < minDistance)
+					{
+						minDistance = distance;
+						picked = selection;
+					}
+				}
+			}
+
+			return picked;
+		}
+		template <class Filter_, class Comparer_> Reference<Selection> Pick(Reference<Graphics::Camera> camera_, const Vec2& p_, Filter_ filter_, Comparer_ comparer_) const
+		{
+			auto t = VecXYZ(camera_->GetPIMat() * Vec4(p_, 1.0f, 1.0f));
+			auto p1 = VecXYZ(camera_->GetViewInverseMatrix() * Vec4(t * 10.0f, 1.0f));
+			auto p2 = VecXYZ(camera_->GetViewInverseMatrix() * Vec4(t * 1000.0f, 1.0f));
+			auto d = normalize(p2 - p1);
+
+			Float32 minDistance = Selection::NO_SELECTION;
+			Reference<Selection> picked = nullptr;
+
+			for(auto &selection : selections)
+			{
+				if(filter_(selection))
+				{
+					auto distance = selection->GetDistance(p1, d);
+					if(comparer_(picked, minDistance, selection, distance))
 					{
 						minDistance = distance;
 						picked = selection;
@@ -102,6 +127,8 @@ namespace Brothel
 	class Game;
 	class CameraController;
 
+	class Entity;
+
 	class Building;
 	class Room;
 	class Section; // stub for room
@@ -118,6 +145,15 @@ namespace Brothel
 	class Character;
 	class Personnel;
 	class Guest;
+
+
+	template<class T, class...A> Reference<T> Make(A...a)
+	{
+		auto memory = static_cast<T*>(malloc(sizeof(T)));
+		auto instance = WrapReference(memory);
+		new(memory)T(instance, a...);
+		return instance;
+	}
 
 
 	class Exception:
@@ -164,6 +200,7 @@ namespace Brothel
 		const Reference<Graphics::OpenGL::Material> graphicsMaterial_Flat;
 		const Reference<Graphics::Camera> graphicsCamera_Main;
 
+		const Reference<Selectable::Selector> selector_Main;
 		const Reference<CameraController> cameraController;
 	public:
 		inline Game(const Reference<GreatVEngine::WinAPI::DeviceContext>& deviceContext_, const Reference<WinAPI::Window>& window_);
@@ -179,10 +216,12 @@ namespace Brothel
 			Move,
 			Rotate,
 			Pull,
+			PersonnelPick
 		};
 	public:
 		Game*const	game;
 		Mode		mode = Mode::None;
+
 		Vec3		position = Vec3(0.0f),
 					smoothedPosition = Vec3(0.0f);
 		Vec3		angle = Vec3(0.0f),
@@ -191,6 +230,9 @@ namespace Brothel
 					smoothedDistance = 20.0f;
 		bool		isLastPullPositionObtained = false;
 		Vec3		lastPullPosition;
+
+		Reference<Personnel> pickedPersonnel = nullptr;
+
 		const Reference<Graphics::Camera> graphicsCamera;
 	public:
 		inline CameraController(Game* game_, const Reference<Graphics::Camera> graphicsCamera_):
@@ -202,20 +244,33 @@ namespace Brothel
 		inline void PerformMoveMode();
 		inline void PerformRotateMode();
 		inline void PerformPullMode();
+		inline void PerformPick();
 	public:
 		inline void Loop();
 	};
 
-	class Building:
+	class Entity:
 		public Game::Dependent,
+		public Selection
+	{
+	public:
+		inline Entity(const Reference<Entity>& this_, const Reference<Game>& game_):
+			Dependent(game_)
+		{
+			game_->selector_Main->Add(this_);
+		}
+	};
+
+	class Building:
+		public Entity,
 		public Helper::Transformation::HMat3
 	{
 	public:
 		Vector<Reference<Room>> rooms;
 		Reference<Graphics::OpenGL::Object> graphicsObject;
 	public:
-		inline Building(const Reference<Game>& game_, const Vec3& pos_, const Vec3& ang_):
-			Dependent(game_),
+		inline Building(const Reference<Building>& this_, const Reference<Game>& game_, const Vec3& pos_, const Vec3& ang_):
+			Entity(Cast<Entity>(this_), game_),
 			HierarchyMatrix(pos_, ang_, Vec3(1.0f), nullptr),
 			rooms(),
 			graphicsObject(new Graphics::OpenGL::Object(game_->graphicsEngine))
@@ -236,8 +291,7 @@ namespace Brothel
 		virtual ~Building() = default;
 	};
 	class Room:
-		public Game::Dependent,
-		public Selection,
+		public Entity,
 		public Helper::Transformation::HMat3
 	{
 	public:
@@ -248,8 +302,8 @@ namespace Brothel
 	protected:
 		const Link<Building> building;
 	protected:
-		inline Room(const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_):
-			Dependent(building_->GetGame()),
+		inline Room(const Reference<Room>& this_, const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_):
+			Entity(Cast<Entity>(this_), building_->GetGame()),
 			HierarchyMatrix(pos_, ang_, Vec3(1.0f), nullptr),
 			building(building_)
 		{
@@ -268,8 +322,8 @@ namespace Brothel
 	public:
 		Reference<Graphics::OpenGL::Object> graphicsObject;
 	public:
-		inline Section(const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_):
-			Room(building_, pos_, ang_),
+		inline Section(const Reference<Section>& this_, const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_):
+			Room(Cast<Room>(this_), building_, pos_, ang_),
 			graphicsObject(new Graphics::OpenGL::Object(game->graphicsEngine))
 		{
 			graphicsObject;
@@ -298,7 +352,7 @@ namespace Brothel
 		}
 	};
 
-	class Inmate: public Shared<Inmate>
+	class Inmate // : public Shared<Inmate> // cause shit on creating shared_ptr through Make<T>()
 	{
 	protected:
 		Reference<Bunk> bunk = nullptr;
@@ -318,7 +372,7 @@ namespace Brothel
 		}
 	};
 	class Bunk:
-		public Game::Dependent,
+		public Entity,
 		public Helper::Transformation::HMat3
 	{
 	public:
@@ -327,8 +381,8 @@ namespace Brothel
 		const Link<Room> room;
 		Reference<Inmate> inmate = nullptr;
 	public:
-		inline Bunk(const Reference<Room>& room_, const Vec3& pos_, const Vec3& ang_):
-			Dependent(room_->GetGame()),
+		inline Bunk(const Reference<Bunk>& this_, const Reference<Room>& room_, const Vec3& pos_, const Vec3& ang_):
+			Entity(Cast<Entity>(this_), room_->GetGame()),
 			HierarchyMatrix(pos_, ang_, Vec3(1.0f), room_.get()),
 			room(room_),
 			graphicsObject(new Graphics::OpenGL::Object(game->graphicsEngine))
@@ -373,26 +427,23 @@ namespace Brothel
 			using Bunks = Vector<Reference<Bunk>>;
 		public:
 			Bunks bunks;
-		protected:
-			inline Bedroom(const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_, const Bunks& bunks_):
-				Room(building_, pos_, ang_),
-				bunks(bunks_)
-			{
-			}
-			template<class Derived, class ... Arguments> static inline Reference<Derived> Make(Arguments...arguments_)
-			{
-				auto memory = static_cast<Derived*>(malloc(sizeof(Derived)));
-				auto room = WrapReference(memory);
-				new(memory) Derived(room, arguments_...);
-				return room;
-			}
 		public:
+			inline Bedroom(const Reference<Bedroom>& this_, const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_):
+				Room(this_, building_, pos_, ang_),
+				bunks()
+			{
+			}
 			virtual ~Bedroom() override = default;
 		public:
 			inline void AttachInmate(const Reference<Inmate>& inmate_)
 			{
 				for(auto &bunk : bunks)
 				{
+					if(inmate_->GetBunk() && (inmate_->GetBunk()->GetRoom() == bunk->GetRoom()))
+					{
+						return;
+					}
+
 					if(bunk && !bunk->GetInmate())
 					{
 						if(auto inmateBunk = inmate_->GetBunk())
@@ -404,7 +455,7 @@ namespace Brothel
 
 						if(auto inmateBunk = inmate_->GetBunk())
 						{
-							inmateBunk->SetInmate(nullptr);
+							inmateBunk->SetInmate(inmate_);
 						}
 
 						return;
@@ -422,39 +473,8 @@ namespace Brothel
 			{
 			public:
 				Reference<Graphics::OpenGL::Object> graphicsObject;
-			protected:
-				friend Bedroom;
-				inline Miserable(const Reference<Miserable>& this_, const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_):
-					Bedroom(building_, pos_, ang_, {
-						// MakeReference(new Bunk(this_, Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f))),
-						// MakeReference(new Bunk(this_, Vec3(0.0f, 2.0f, 0.0f), Vec3(0.0f)))
-					}),
-					graphicsObject(new Graphics::OpenGL::Object(game->graphicsEngine))
-				{
-					auto t1 = MakeReference<Bunk>(this_, Vec3(-1.0f, 0.0f, -1.0f), Vec3(0.0f));
-					auto t2 = MakeReference<Bunk>(this_, Vec3(-1.0f, 2.0f, -1.0f), Vec3(0.0f));
-					bunks = {t1, t2};
-
-					graphicsObject;
-					{
-						auto geometry = Geometry::CreateBox(Vec3(4.0f, 4.0f, 8.0f), Vec3(1.0f), UVec3(1));
-						auto shape = MakeReference<Graphics::OpenGL::Shape>(game->graphicsEngine, geometry);
-						auto model = MakeReference<Graphics::OpenGL::Model>(game->graphicsEngine, shape, game->graphicsMaterial_Flat);
-
-						graphicsObject->SetModel(model);
-						graphicsObject->SetParent(this);
-						graphicsObject->SetLocalPosition(Vec3(0.0f, 2.0f, 0.0f));
-						graphicsObject->SetLocalScale(Vec3(-1.0f));
-
-						game->graphicsScene_Main->Add(graphicsObject);
-					}
-				}
 			public:
-				static inline Reference<Miserable> Make(const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_)
-				{
-					auto miserable = Bedroom::Make<Miserable>(building_, pos_, ang_);
-					return miserable;
-				}
+				inline Miserable(const Reference<Miserable>& this_, const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_);
 				virtual ~Miserable() override = default;
 			public:
 				virtual Float32 GetDistance(const Vec3& position_, const Vec3& direction_) const override
@@ -468,15 +488,18 @@ namespace Brothel
 				}
 			};
 		}
-		class Bathroom:
+		/*class Bathroom:
 			public Room
 		{
-		};
+		};*/
+		/*class Shower:
+			public Room
+		{
+		};*/
 	}
 
 	class Character:
-		public Game::Dependent,
-		public Selection,
+		public Entity,
 		public Helper::Transformation::HMat3
 	{
 	public:
@@ -492,8 +515,8 @@ namespace Brothel
 		const Age age;
 		const Gender gender;
 	public:
-		inline Character(const Reference<Game>& game_, const Vec3& pos_, const Vec3& ang_, const Age& age_, const Gender& gender_):
-			Dependent(game_),
+		inline Character(const Reference<Character>& this_, const Reference<Game>& game_, const Vec3& pos_, const Vec3& ang_, const Age& age_, const Gender& gender_):
+			Entity(Cast<Entity>(this_), game_),
 			HierarchyMatrix(pos_, ang_, Vec3(1.0f), nullptr),
 			age(age_),
 			gender(gender_),
@@ -545,8 +568,8 @@ namespace Brothel
 		const Reference<Graphics::OpenGL::Object> graphicsObjectPassionIndicator;
 		// Reference<Graphics::OpenGL::Object> graphicsObjectHygieneIndicator; // TODO
 	public:
-		inline Personnel(const Reference<Game>& game_, const Vec3& pos_, const Vec3& ang_, const Age& age_, const Gender& gender_):
-			Character(game_, pos_, ang_, age_, gender_),
+		inline Personnel(const Reference<Personnel>& this_, const Reference<Game>& game_, const Vec3& pos_, const Vec3& ang_, const Age& age_, const Gender& gender_):
+			Character(Cast<Character>(this_), game_, pos_, ang_, age_, gender_),
 			graphicsObjectPassionIndicator(new Graphics::OpenGL::Object(game->graphicsEngine))
 		{
 			graphicsObjectPassionIndicator;
@@ -578,8 +601,8 @@ namespace Brothel
 		public Character
 	{
 	public:
-		inline Guest(const Reference<Game>& game_, const Vec3& pos_, const Vec3& ang_, const Age& age_, const Gender& gender_):
-			Character(game_, pos_, ang_, age_, gender_)
+		inline Guest(const Reference<Guest>& this_, const Reference<Game>& game_, const Vec3& pos_, const Vec3& ang_, const Age& age_, const Gender& gender_):
+			Character(Cast<Character>(this_), game_, pos_, ang_, age_, gender_)
 		{
 		}
 		virtual ~Guest() override = default;
@@ -596,7 +619,8 @@ inline Brothel::Game::Game(const Reference<WinAPI::DeviceContext>& deviceContext
 	graphicsLight_Sunlight(new Graphics::OpenGL::Lights::Direction()),
 	graphicsMaterial_Flat(new Graphics::OpenGL::Material(graphicsEngine)),
 	graphicsCamera_Main(new Graphics::Camera()),
-	cameraController(new CameraController(this, graphicsCamera_Main))
+	cameraController(new CameraController(this, graphicsCamera_Main)),
+	selector_Main(new Selectable::Selector())
 {
 	graphicsLight_Sunlight;
 	{
@@ -688,12 +712,12 @@ inline void Brothel::CameraController::PerformPullMode()
 			}
 			else
 			{
-				if(glm::length(collisionPosition) > 20.0f)
-				{
-					isLastPullPositionObtained = false;
-					mode = Mode::None;
-				}
-				else
+				// if(glm::length(collisionPosition) > 20.0f)
+				// {
+				// 	isLastPullPositionObtained = false;
+				// 	mode = Mode::None;
+				// }
+				// else
 				{
 					isLastPullPositionObtained = true;
 				}
@@ -712,11 +736,18 @@ inline void Brothel::CameraController::PerformPullMode()
 		mode = Mode::None;
 	}
 }
+inline void Brothel::CameraController::PerformPick()
+{
+
+}
 inline void Brothel::CameraController::Loop()
 {
 	auto mouseLeft = Input::Mouse::GetButtonState(Buttons::Left);
 	auto mouseMiddle = Input::Mouse::GetButtonState(Buttons::Middle);
 	auto mouseRight = Input::Mouse::GetButtonState(Buttons::Right);
+
+	auto m = Vec2(game->window->ToLocalPosition(IVec2(Input::Mouse::GetPosition()))); // game->graphicsScene_Main->DrawCircle(m, 5.0f, Vec4(0, 1, 0, 1));
+	auto p = (m / Vec2(game->window->GetSize())) * 2.0f - 1.0f;
 
 	switch(mode)
 	{
@@ -731,10 +762,67 @@ inline void Brothel::CameraController::Loop()
 				mode = Mode::Rotate;
 				PerformRotateMode();
 			}
-			if(mouseLeft && !mouseMiddle && !mouseRight)
+			/*if(mouseLeft && !mouseMiddle && !mouseRight)
 			{
 				mode = Mode::Pull;
 				PerformPullMode();
+			}*/
+
+			for(auto &i : game->selector_Main->selections)
+			{
+				if(auto casted = std::dynamic_pointer_cast<Section>(i)) if(casted->graphicsObject)
+				{
+					casted->graphicsObject->SetColor(Vec4(1.0f));
+				}
+
+				if(auto casted = std::dynamic_pointer_cast<Rooms::Bedrooms::Miserable>(i)) if(casted->graphicsObject)
+				{
+					casted->graphicsObject->SetColor(Vec4(1.0f));
+				}
+			
+				if(auto casted = std::dynamic_pointer_cast<Character>(i)) if(casted->graphicsObject)
+				{
+					casted->graphicsObject->SetColor(Vec4(1.0f));
+				}
+			}
+
+			auto picked = game->selector_Main->Pick(graphicsCamera, p, [](const Reference<Selectable::Selection>&){
+				return true;
+			}, [](const Reference<Selectable::Selection>& old_, const Float32& oldDistance_, const Reference<Selectable::Selection>& new_, const Float32& newDistance_){
+				return (newDistance_ != Selection::NO_SELECTION) && (
+					(old_ && !UpCast<Character>(old_) && UpCast<Character>(new_)) ||
+					(newDistance_ < oldDistance_));
+			});
+			if(picked)
+			{
+				if(auto casted = std::dynamic_pointer_cast<Section>(picked)) if(casted->graphicsObject)
+				{
+					casted->graphicsObject->SetColor(Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				}
+
+				if(auto casted = std::dynamic_pointer_cast<Rooms::Bedrooms::Miserable>(picked)) if(casted->graphicsObject)
+				{
+					casted->graphicsObject->SetColor(Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				}
+
+				if(auto casted = std::dynamic_pointer_cast<Character>(picked)) if(casted->graphicsObject)
+				{
+					casted->graphicsObject->SetColor(Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				}
+			}
+			
+			if(mouseLeft && !mouseMiddle && !mouseRight)
+			{
+				if(picked)
+				if(auto personnel = UpCast<Personnel>(picked))
+				{
+					pickedPersonnel = personnel;
+					mode = Mode::PersonnelPick;
+				}
+				else
+				{
+
+				}
 			}
 		} break;
 		case Mode::Move: {
@@ -745,6 +833,30 @@ inline void Brothel::CameraController::Loop()
 		} break;
 		case Mode::Pull: {
 			PerformPullMode();
+		} break;
+		case Mode::PersonnelPick: {
+			if(mouseLeft && !mouseMiddle && !mouseRight)
+			{
+			}
+			else
+			{
+				if(pickedPersonnel)
+				{
+					auto picked = game->selector_Main->Pick(graphicsCamera, p, [](const Reference<Selectable::Selection>& selection_){
+						auto casted = UpCast<Rooms::Bedroom>(selection_);
+						return casted != nullptr;
+					});
+
+					if(picked)
+					{
+						auto room = UpCast<Rooms::Bedroom>(picked);
+						room->AttachInmate(pickedPersonnel);
+					}
+
+					pickedPersonnel = nullptr;
+				}
+				mode = Mode::None;
+			}
 		} break;
 	}
 
@@ -760,6 +872,44 @@ inline void Brothel::CameraController::Loop()
 	graphicsCamera->SetAngle(ang);
 }
 
+#pragma endregion
+
+#pragma region Rooms
+
+#pragma region Bedrooms
+
+#pragma region Miserable
+
+inline Brothel::Rooms::Bedrooms::Miserable::Miserable(const Reference<Miserable>& this_, const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_):
+	Bedroom(Cast<Bedroom>(this_), building_, pos_, ang_),
+	graphicsObject(new Graphics::OpenGL::Object(game->graphicsEngine))
+{
+	auto t1 = Make<Bunk>(this_, Vec3(-1.0f, 0.0f, -1.0f), Vec3(0.0f));
+	auto t2 = Make<Bunk>(this_, Vec3(-1.0f, 2.0f, -1.0f), Vec3(0.0f));
+	bunks = {t1, t2};
+
+	graphicsObject;
+	{
+		auto geometry = Geometry::CreateBox(Vec3(4.0f, 4.0f, 8.0f), Vec3(1.0f), UVec3(1));
+		auto shape = MakeReference<Graphics::OpenGL::Shape>(game->graphicsEngine, geometry);
+		auto model = MakeReference<Graphics::OpenGL::Model>(game->graphicsEngine, shape, game->graphicsMaterial_Flat);
+
+		graphicsObject->SetModel(model);
+		graphicsObject->SetParent(this);
+		graphicsObject->SetLocalPosition(Vec3(0.0f, 2.0f, 0.0f));
+		graphicsObject->SetLocalScale(Vec3(-1.0f));
+
+		game->graphicsScene_Main->Add(graphicsObject);
+	}
+}
+
+#pragma endregion
+
+#pragma endregion
+
+#pragma endregion
+
+#pragma region 
 #pragma endregion
 
 

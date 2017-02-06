@@ -98,7 +98,15 @@ namespace GreatVEngine
 	{
 		return std::static_pointer_cast<A>(b_);
 	}
+	template<class A, class B> inline Reference<A> Cast(const Reference<B>& b_)
+	{
+		return std::static_pointer_cast<A>(b_);
+	}
 	template<class A, class B> inline Reference<A> UpCast(Reference<B>& b_)
+	{
+		return std::dynamic_pointer_cast<A>(b_);
+	}
+	template<class A, class B> inline Reference<A> UpCast(const Reference<B>& b_)
 	{
 		return std::dynamic_pointer_cast<A>(b_);
 	}
