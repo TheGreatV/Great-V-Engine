@@ -16,7 +16,8 @@ void func()
 		deviceContext->SetPixelFormat();
 	}
 
-	auto game = MakeReference<Brothel::Game>(deviceContext, window);
+	// auto game = MakeReference<Brothel::Game>(deviceContext, window);
+	auto game = Brothel::Make<Brothel::Game>(deviceContext, window);
 
 	auto building = Brothel::Make<Brothel::Building>(game, Vec3(0.0f), Vec3(0.0f));
 	auto section = Brothel::Make<Brothel::Section>(building, Vec3(0.0f), Vec3(0.0f));
@@ -30,10 +31,6 @@ void func()
 	{
 		Input::Loop();
 		window->Loop();
-
-		personnel->Loop();
-		personnel2->Loop();
-		guest->Loop();
 
 		game->Loop();
 		// graphicsScene->Render(graphicsCamera);

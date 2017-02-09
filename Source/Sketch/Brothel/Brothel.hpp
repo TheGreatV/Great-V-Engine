@@ -125,6 +125,13 @@ namespace Brothel
 	class Selection;
 
 	class Game;
+
+	class GameState;
+	namespace GameStates
+	{
+		class None;
+	}
+
 	class CameraController;
 
 	class Entity;
@@ -201,12 +208,108 @@ namespace Brothel
 		const Reference<Graphics::Camera> graphicsCamera_Main;
 
 		const Reference<Selectable::Selector> selector_Main;
+		Reference<GameState> state;
 		const Reference<CameraController> cameraController;
 	public:
-		inline Game(const Reference<GreatVEngine::WinAPI::DeviceContext>& deviceContext_, const Reference<WinAPI::Window>& window_);
+		Vector<Reference<Room>> rooms;
+		Vector<Reference<Character>> characters;
 	public:
+		inline Game(const Reference<Game>& this_, const Reference<GreatVEngine::WinAPI::DeviceContext>& deviceContext_, const Reference<WinAPI::Window>& window_);
+	public:
+		inline void Change(const Reference<GameState>& state_)
+		{
+			state = state_;
+		}
 		inline void Loop();
 	};
+
+	class GameState
+	{
+	protected:
+		const Reference<Game> game;
+	public:
+		inline GameState(const Reference<Game>& game_):
+			game(game_)
+		{
+		}
+	public:
+		virtual void Loop()
+		{
+		}
+	};
+	namespace GameStates
+	{
+		class None:
+			public GameState
+		{
+		public:
+			inline None(const Reference<Game>& game_):
+				GameState(game_)
+			{
+			}
+		public:
+			virtual void Loop() override;
+		};
+		class RotateCamera:
+			public GameState
+		{
+		public:
+			inline RotateCamera(const Reference<Game>& game_):
+				GameState(game_)
+			{
+			}
+		public:
+			virtual void Loop() override;
+		};
+		class ShiftCamera:
+			public GameState
+		{
+		public:
+			inline ShiftCamera(const Reference<Game>& game_):
+				GameState(game_)
+			{
+			}
+		public:
+			virtual void Loop() override;
+		};
+		class PersonnelAssign:
+			public GameState
+		{
+		public:
+			const Reference<Personnel> personnel;
+		public:
+			inline PersonnelAssign(const Reference<Game>& game_, const Reference<Personnel>& personnel_):
+				GameState(game_),
+				personnel(personnel_)
+			{
+			}
+		public:
+			virtual void Loop() override;
+		};
+		class BuildRoomSelection:
+			public GameState
+		{
+		public:
+			inline BuildRoomSelection(const Reference<Game>& game_):
+				GameState(game_)
+			{
+			}
+		public:
+			virtual void Loop() override;
+		};
+		template<class T> class BuildSectionSelection:
+			public GameState
+		{
+		public:
+			inline BuildSectionSelection(const Reference<Game>& game_):
+				GameState(game_)
+			{
+			}
+		public:
+			virtual void Loop() override;
+		};
+	}
+
 	class CameraController
 	{
 	public:
@@ -259,6 +362,7 @@ namespace Brothel
 		{
 			game_->selector_Main->Add(this_);
 		}
+		virtual ~Entity() = default;
 	};
 
 	class Building:
@@ -294,22 +398,22 @@ namespace Brothel
 		public Entity,
 		public Helper::Transformation::HMat3
 	{
-	public:
-		const Link<Room>
-			left	= Reference<Room>(nullptr),
-			right	= Reference<Room>(nullptr),
-			back	= Reference<Room>(nullptr);
+	// public:
+	// 	const Link<Room>
+	// 		left	= Reference<Room>(nullptr),
+	// 		right	= Reference<Room>(nullptr),
+	// 		back	= Reference<Room>(nullptr);
 	protected:
 		const Link<Building> building;
-	protected:
+	public:
 		inline Room(const Reference<Room>& this_, const Reference<Building>& building_, const Vec3& pos_, const Vec3& ang_):
 			Entity(Cast<Entity>(this_), building_->GetGame()),
 			HierarchyMatrix(pos_, ang_, Vec3(1.0f), nullptr),
 			building(building_)
 		{
+			game->rooms.push_back(this_);
 		}
-	public:
-		virtual ~Room() = default;
+		virtual ~Room() override;
 	public:
 		inline Reference<Building> GetBuilding() const
 		{
@@ -534,6 +638,8 @@ namespace Brothel
 
 				game->graphicsScene_Main->Add(graphicsObject);
 			}
+
+			game->characters.push_back(this_);
 		}
 		virtual ~Character() = default;
 	public:
@@ -612,7 +718,7 @@ namespace Brothel
 
 #pragma region Game
 
-inline Brothel::Game::Game(const Reference<WinAPI::DeviceContext>& deviceContext_, const Reference<WinAPI::Window>& window_):
+inline Brothel::Game::Game(const Reference<Game>& this_, const Reference<WinAPI::DeviceContext>& deviceContext_, const Reference<WinAPI::Window>& window_):
 	window(window_),
 	graphicsEngine(new Graphics::OpenGL::Engine(deviceContext_)),
 	graphicsScene_Main(new Graphics::OpenGL::Scene(graphicsEngine, window_->GetSize())),
@@ -620,6 +726,7 @@ inline Brothel::Game::Game(const Reference<WinAPI::DeviceContext>& deviceContext
 	graphicsMaterial_Flat(new Graphics::OpenGL::Material(graphicsEngine)),
 	graphicsCamera_Main(new Graphics::Camera()),
 	cameraController(new CameraController(this, graphicsCamera_Main)),
+	state(new GameStates::None(this_)),
 	selector_Main(new Selectable::Selector())
 {
 	graphicsLight_Sunlight;
@@ -650,6 +757,19 @@ inline Brothel::Game::Game(const Reference<WinAPI::DeviceContext>& deviceContext
 inline void Brothel::Game::Loop()
 {
 	cameraController->Loop();
+
+	auto s = state;
+	s->Loop();
+
+	for(auto &room : rooms)
+	{
+		// room->Loop();
+	}
+
+	for(auto &character : characters)
+	{
+		character->Loop();
+	}
 }
 
 #pragma endregion
@@ -742,7 +862,7 @@ inline void Brothel::CameraController::PerformPick()
 }
 inline void Brothel::CameraController::Loop()
 {
-	auto mouseLeft = Input::Mouse::GetButtonState(Buttons::Left);
+	/*auto mouseLeft = Input::Mouse::GetButtonState(Buttons::Left);
 	auto mouseMiddle = Input::Mouse::GetButtonState(Buttons::Middle);
 	auto mouseRight = Input::Mouse::GetButtonState(Buttons::Right);
 
@@ -762,11 +882,11 @@ inline void Brothel::CameraController::Loop()
 				mode = Mode::Rotate;
 				PerformRotateMode();
 			}
-			/*if(mouseLeft && !mouseMiddle && !mouseRight)
-			{
-				mode = Mode::Pull;
-				PerformPullMode();
-			}*/
+			// if(mouseLeft && !mouseMiddle && !mouseRight)
+			// {
+			// 	mode = Mode::Pull;
+			// 	PerformPullMode();
+			// }
 
 			for(auto &i : game->selector_Main->selections)
 			{
@@ -858,7 +978,7 @@ inline void Brothel::CameraController::Loop()
 				mode = Mode::None;
 			}
 		} break;
-	}
+	}*/
 
 	// smooth camera
 	smoothedPosition = position; // Mix(smoothedPosition, position, 1.0f / 4.0f);
@@ -910,6 +1030,80 @@ inline Brothel::Rooms::Bedrooms::Miserable::Miserable(const Reference<Miserable>
 #pragma endregion
 
 #pragma region 
+
+template<class T>
+void Brothel::GameStates::BuildSectionSelection<T>::Loop()
+{
+	auto mouseLeft = Input::Mouse::GetButtonState(Buttons::Left);
+	auto mouseMiddle = Input::Mouse::GetButtonState(Buttons::Middle);
+	auto mouseRight = Input::Mouse::GetButtonState(Buttons::Right);
+
+	for(auto &i : game->selector_Main->selections)
+	{
+		if(auto casted = std::dynamic_pointer_cast<Section>(i)) if(casted->graphicsObject)
+		{
+			casted->graphicsObject->SetColor(Vec4(1.0f));
+		}
+
+		if(auto casted = std::dynamic_pointer_cast<Rooms::Bedrooms::Miserable>(i)) if(casted->graphicsObject)
+		{
+			casted->graphicsObject->SetColor(Vec4(1.0f));
+		}
+
+		if(auto casted = std::dynamic_pointer_cast<Character>(i)) if(casted->graphicsObject)
+		{
+			casted->graphicsObject->SetColor(Vec4(1.0f));
+		}
+	}
+
+	auto m = Vec2(game->window->ToLocalPosition(IVec2(Input::Mouse::GetPosition()))); // game->graphicsScene_Main->DrawCircle(m, 5.0f, Vec4(0, 1, 0, 1));
+	auto p = (m / Vec2(game->window->GetSize())) * 2.0f - 1.0f;
+
+	auto picked = game->selector_Main->Pick(game->graphicsCamera_Main, p, [](const Reference<Selectable::Selection>& selection_){
+		auto casted = UpCast<Section>(selection_);
+		return casted != nullptr;
+	});
+	if(picked)
+	{
+		if(auto casted = std::dynamic_pointer_cast<Section>(picked)) if(casted->graphicsObject)
+		{
+			casted->graphicsObject->SetColor(Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+		}
+
+		if(auto casted = std::dynamic_pointer_cast<Rooms::Bedrooms::Miserable>(picked)) if(casted->graphicsObject)
+		{
+			casted->graphicsObject->SetColor(Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+		}
+
+		if(auto casted = std::dynamic_pointer_cast<Character>(picked)) if(casted->graphicsObject)
+		{
+			casted->graphicsObject->SetColor(Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+		}
+	}
+
+	if(!mouseMiddle && !mouseRight)
+	{
+		if(mouseLeft)
+		{
+			if(picked)
+			{
+				auto section = UpCast<Section>(picked); // must be Section
+				// TODO
+				Make<T>(section->GetBuilding(), section->GetPosition(), section->GetAngle());
+				// section;
+			}
+
+			game->Change(MakeReference<GameStates::None>(game));
+			return;
+		}
+	}
+	else
+	{
+		game->Change(MakeReference<GameStates::None>(game));
+		return;
+	}
+}
+
 #pragma endregion
 
 

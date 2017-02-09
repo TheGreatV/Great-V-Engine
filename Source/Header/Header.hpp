@@ -77,11 +77,15 @@ namespace GreatVEngine
 	{
 		return std::make_shared<T>(a...);
 	}
+	template<class T> inline Reference<T> MakeReference(const Link<T>& t)
+	{
+		return Reference<T>(t);
+	}
 	// template<class T> inline Reference<T> MakeReference(std::unique_ptr<T> t)
 	// {
 	// 	return Reference<T>(t);
 	// }
-	template<class T> inline Link<T> MakeLink(T t)
+	template<class T> inline Link<T> WrapLink(T t)
 	{
 		return Link<T>(t);
 	}

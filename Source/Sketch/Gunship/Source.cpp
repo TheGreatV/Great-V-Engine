@@ -10,6 +10,9 @@ namespace GVE = GreatVEngine;
 using namespace GVE;
 
 
+GreatVEngine::OpenIL::Initer GreatVEngine::OpenIL::Initer::initer;
+
+
 void func()
 {
 	WinAPI::Window::Size resolution(800, 600);
@@ -17,37 +20,37 @@ void func()
 	// WinAPI::Window::Size resolution(1920, 1080);
 
 	auto instance = GreatVEngine::WinAPI::Instance::Get();
-	auto windowClass = MakeReference(new GreatVEngine::WinAPI::WindowClass(instance, "class"));
-	auto window = MakeReference(new GreatVEngine::WinAPI::Window(windowClass, "window", resolution));
-	auto deviceContext = MakeReference(new GreatVEngine::WinAPI::DeviceContext(window));
+	auto windowClass = MakeReference<GreatVEngine::WinAPI::WindowClass>(instance, "class");
+	auto window = MakeReference<GreatVEngine::WinAPI::Window>(windowClass, "window", resolution);
+	auto deviceContext = MakeReference<GreatVEngine::WinAPI::DeviceContext>(window);
 	{
 		deviceContext->SetPixelFormat();
 	}
 
-	auto physicsEngine = MakeReference(new Physics::BulletPhysics::Engine);
-	auto physicsWorld = MakeReference(new Physics::BulletPhysics::World(physicsEngine));
+	auto physicsEngine = MakeReference<Physics::BulletPhysics::Engine>();
+	auto physicsWorld = MakeReference<Physics::BulletPhysics::World>(physicsEngine);
 	{
 		physicsWorld->SetGravity(Vec3(0.0f));
 	}
 
 	auto physicsShape = Physics::BulletPhysics::Shape::CreateGeometry(Geometry::CreateBox(Vec3(400.0f, 1.0f, 400.0f), Vec3(1.0f), UVec3(1)), 0.0f);
-	auto physicsBodyRigid = MakeReference(new Physics::BulletPhysics::Bodies::Rigid(physicsShape));
+	auto physicsBodyRigid = MakeReference<Physics::BulletPhysics::Bodies::Rigid>(physicsShape);
 	{
 		physicsWorld->Add(physicsBodyRigid);
 	}
 
-	auto graphicsCamera = MakeReference(new Graphics::Camera());
+	auto graphicsCamera = MakeReference<Graphics::Camera>();
 	{
 		graphicsCamera->SetPosition(Vec3(0.0f, 50.0f, -100.0f));
 		graphicsCamera->SetAngle(Vec3(20.0f, 0.0f, 0.0f));
 		graphicsCamera->SetProjection(Helper::Transformation::Dimension3::Projection::Params::Perspective(60.0f, window->GetAspect(), 0.1f, 10000.0f));
 	}
 
-	auto graphicsEngine = MakeReference(new Graphics::OpenGL::Engine(deviceContext));
+	auto graphicsEngine = MakeReference<Graphics::OpenGL::Engine>(deviceContext);
 
-	auto graphicsScene = MakeReference(new Graphics::OpenGL::Scene(graphicsEngine, window->GetSize()));
+	auto graphicsScene = MakeReference<Graphics::OpenGL::Scene>(graphicsEngine, window->GetSize());
 
-	auto graphicsLightDirection1 = MakeReference(new Graphics::OpenGL::Lights::Direction());
+	auto graphicsLightDirection1 = MakeReference<Graphics::OpenGL::Lights::Direction>();
 	{
 		graphicsLightDirection1->SetLocalAngle(Vec3(80.0f, 0.0f, 0.0f));
 		graphicsLightDirection1->SetColor(Vec4(Vec3(1.0f), 0.8f));
@@ -60,7 +63,7 @@ void func()
 		graphicsScene->Add(graphicsEnvironmentGlobalmap1);
 	}
 
-	auto graphicsMaterialFlat = MakeReference(new Graphics::OpenGL::Material(graphicsEngine));
+	auto graphicsMaterialFlat = MakeReference<Graphics::OpenGL::Material>(graphicsEngine);
 	{
 		graphicsMaterialFlat->Technique(Graphics::Material::TechniqueType::Basic) = Graphics::OpenGL::Technique::Load(graphicsEngine, Filepath("Media/Shaders/Materials/Blank/Basic/Common.glsl."), "vs", "", "", "", "fs");
 		graphicsMaterialFlat->SetValue("materialColor", Vec3(1.0f));
@@ -127,11 +130,11 @@ void func()
 	return;*/
 
 
-	auto graphicsObject = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
+	auto graphicsObject = MakeReference<Graphics::OpenGL::Object>(graphicsEngine);
 	{
 		auto geometry = Geometry::CreateBox(Vec3(400.0f, 1.0f, 400.0f), Vec3(1.0f), UVec3(1));
-		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
-		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		auto shape = MakeReference<Graphics::OpenGL::Shape>(graphicsEngine, geometry);
+		auto model = MakeReference<Graphics::OpenGL::Model>(graphicsEngine, shape, graphicsMaterialFlat);
 		graphicsObject->SetModel(model);
 		graphicsScene->Add(graphicsObject);
 		physicsBodyRigid->SetUser(graphicsObject);
@@ -139,51 +142,51 @@ void func()
 
 	auto physicsShape2 = Physics::BulletPhysics::Shape::CreateBox(Vec3(10.0f, 15.0f, 20.0f), 100.0f);
 	// auto physicsShape2 = Physics::BulletPhysics::Shape::CreateCapsule(5.0f, 10.0f, 100.0f);
-	auto physicsBodyRigid2 = MakeReference(new Physics::BulletPhysics::Bodies::Rigid(physicsShape2, Vec3(0.0f, 50.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f)));
+	auto physicsBodyRigid2 = MakeReference<Physics::BulletPhysics::Bodies::Rigid>(physicsShape2, Vec3(0.0f, 50.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f));
 	{
 		// physicsBodyRigid2->SetAngleFactor(Vec3(0.0f, 0.0f, 0.0f));
 		physicsWorld->Add(physicsBodyRigid2);
 	}
-	auto graphicsObject2 = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
+	auto graphicsObject2 = MakeReference<Graphics::OpenGL::Object>(graphicsEngine);
 	{
 		auto geometry = Geometry::CreateBox(Vec3(10.0f, 15.0f, 20.0f), Vec3(1.0f), UVec3(1));
 		// auto geometry = Geometry::CreateCapsule(5.0f, 10.0f, Vec2(2.0f, 3.0f), UVec2(32, 16));
-		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
-		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		auto shape = MakeReference<Graphics::OpenGL::Shape>(graphicsEngine, geometry);
+		auto model = MakeReference<Graphics::OpenGL::Model>(graphicsEngine, shape, graphicsMaterialFlat);
 		graphicsObject2->SetModel(model);
 		graphicsScene->Add(graphicsObject2);
 		physicsBodyRigid2->SetUser(graphicsObject2);
 	}
 
-	auto graphicsSphere = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
+	auto graphicsSphere = MakeReference<Graphics::OpenGL::Object>(graphicsEngine);
 	{
 		graphicsSphere->SetLocalPosition(Vec3(0.0f, 10.0f, 0.0f));
 
 		auto geometry = Geometry::CreateSphere(5.0f, Vec2(1.0f), UVec2(32));
-		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
-		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		auto shape = MakeReference<Graphics::OpenGL::Shape>(graphicsEngine, geometry);
+		auto model = MakeReference<Graphics::OpenGL::Model>(graphicsEngine, shape, graphicsMaterialFlat);
 		graphicsSphere->SetModel(model);
 		graphicsScene->Add(graphicsSphere);
 	}
-	auto graphicsPlane = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
+	auto graphicsPlane = MakeReference<Graphics::OpenGL::Object>(graphicsEngine);
 	{
 		graphicsPlane->SetLocalPosition(Vec3(-20.0f, 10.0f, 10.0f));
 		graphicsPlane->SetLocalAngle(Vec3(-20.0f, 10.0f, 15.0f));
 
 		auto geometry = Geometry::CreatePlain(Vec2(10.0f), Vec2(1.0f), UVec2(2));
-		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
-		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		auto shape = MakeReference<Graphics::OpenGL::Shape>(graphicsEngine, geometry);
+		auto model = MakeReference<Graphics::OpenGL::Model>(graphicsEngine, shape, graphicsMaterialFlat);
 		graphicsPlane->SetModel(model);
 		graphicsScene->Add(graphicsPlane);
 	}
-	auto graphicsBox = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
+	auto graphicsBox = MakeReference<Graphics::OpenGL::Object>(graphicsEngine);
 	{
 		graphicsBox->SetLocalPosition(Vec3(+20.0f, 10.0f, 10.0f));
 		graphicsBox->SetLocalAngle(Vec3(+10.0f, 20.0f, 30.0f));
 
 		auto geometry = Geometry::CreateBox(Vec3(8.0f, 10.0f, 12.0f), Vec3(1.0f), UVec3(1));
-		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
-		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		auto shape = MakeReference<Graphics::OpenGL::Shape>(graphicsEngine, geometry);
+		auto model = MakeReference<Graphics::OpenGL::Model>(graphicsEngine, shape, graphicsMaterialFlat);
 		graphicsBox->SetModel(model);
 		graphicsScene->Add(graphicsBox);
 	}
