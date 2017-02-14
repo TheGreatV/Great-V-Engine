@@ -2,8 +2,41 @@
 #include "Brothel.hpp"
 
 
+void test()
+{
+	auto content = System::LoadFileContent(Filepath("Media/Data/Brothel/Test.json"));
+
+	while(content.back() == '\0') content.pop_back();
+
+	auto node = GVE::JSON::Parse(content);
+
+	/*Vec3
+		pos = Vec3(0.0f),
+		ang = Vec3(0.0f);*/
+	
+	/*if((GVE::JSON::Object::Type)node["Position"] == GVE::JSON::Object::Type::Map)
+	{
+		pos = Vec3(
+			(float)(double)node["Position"]["X"],
+			(float)(double)node["Position"]["Y"],
+			(float)(double)node["Position"]["Z"]);
+	}*/
+	/*if((GVE::JSON::Object::Type)node["Angle"] == GVE::JSON::Object::Type::Map)
+	{
+		ang = Vec3(
+			(float)(double)node["Angle"]["X"],
+			(float)(double)node["Angle"]["Y"],
+			(float)(double)node["Angle"]["Z"]);
+	}*/
+
+	// 
+}
+
+
 void func()
 {
+	test();
+
 	WinAPI::Window::Size resolution(800, 600);
 	// WinAPI::Window::Size resolution(1280, 600);
 	// WinAPI::Window::Size resolution(1920, 1080);

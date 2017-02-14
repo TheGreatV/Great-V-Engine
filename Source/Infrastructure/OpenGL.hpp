@@ -165,11 +165,11 @@ namespace GreatVEngine
 				{
 					return WrapReference(new Technique(
 						engine_,
-						vertex_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + vertex_) : GreatVEngine::OpenGL::Shader::Source(),
-						tessellationControl_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + tessellationControl_) : GreatVEngine::OpenGL::Shader::Source(),
-						tessellationEvaluation_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + tessellationEvaluation_) : GreatVEngine::OpenGL::Shader::Source(),
-						geometry_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + geometry_) : GreatVEngine::OpenGL::Shader::Source(),
-						fragment_.size() > 0 ? System::LoadFileContent<UInt8>(base_ + fragment_) : GreatVEngine::OpenGL::Shader::Source()));
+						vertex_.size() > 0 ? System::LoadFileContentBinary<UInt8>(base_ + vertex_) : GreatVEngine::OpenGL::Shader::Source(),
+						tessellationControl_.size() > 0 ? System::LoadFileContentBinary<UInt8>(base_ + tessellationControl_) : GreatVEngine::OpenGL::Shader::Source(),
+						tessellationEvaluation_.size() > 0 ? System::LoadFileContentBinary<UInt8>(base_ + tessellationEvaluation_) : GreatVEngine::OpenGL::Shader::Source(),
+						geometry_.size() > 0 ? System::LoadFileContentBinary<UInt8>(base_ + geometry_) : GreatVEngine::OpenGL::Shader::Source(),
+						fragment_.size() > 0 ? System::LoadFileContentBinary<UInt8>(base_ + fragment_) : GreatVEngine::OpenGL::Shader::Source()));
 				}
 			};
 			class Map:
@@ -637,9 +637,9 @@ namespace GreatVEngine
 					inline Presenter(GreatVEngine::OpenGL::Context* context_):
 						program([&](){
 							auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.vs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.gs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.fs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.vs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.gs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Screen Quad/Drawer 2D/1.fs"))),
 							});
 
 							program_->Set();
@@ -718,9 +718,9 @@ namespace GreatVEngine
 					inline DecalPass(GreatVEngine::OpenGL::Context* context_, GeometyPass* geometyPass_):
 						program([&](){
 							auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.vs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.gs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.fs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.vs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.gs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Decals/1.glsl.fs"))),
 						});
 
 						program_->Set();
@@ -770,9 +770,9 @@ namespace GreatVEngine
 						inline AmbientOcclusion(GreatVEngine::OpenGL::Context* context_, GeometyPass* geometyPass_):
 							program([&](){
 								auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/1.glsl.vs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/1.glsl.gs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/1.glsl.fs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/1.glsl.vs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/1.glsl.gs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/1.glsl.fs"))),
 								});
 
 								program_->Set();
@@ -797,9 +797,9 @@ namespace GreatVEngine
 							}, nullptr)),
 							programCompressedDepth([&](){
 								auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/Depth Blur/1.glsl.vs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/Depth Blur/1.glsl.gs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/Depth Blur/1.glsl.fs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/Depth Blur/1.glsl.vs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/Depth Blur/1.glsl.gs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Ambient Occlusion/Depth Blur/1.glsl.fs"))),
 								});
 
 								program_->Set();
@@ -827,9 +827,9 @@ namespace GreatVEngine
 						inline Direction(GreatVEngine::OpenGL::Context* context_):
 							program([&](){
 								auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.vs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.gs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.fs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.vs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.gs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Direction Light/Basic/1.glsl.fs"))),
 								});
 
 								program_->Set();
@@ -856,9 +856,9 @@ namespace GreatVEngine
 						inline Point(GreatVEngine::OpenGL::Context* context_):
 							program([&](){
 								auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.vs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.gs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.fs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.vs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.gs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Point Light/Basic/1.glsl.fs"))),
 							});
 
 							program_->Set();
@@ -904,9 +904,9 @@ namespace GreatVEngine
 						inline LocalReflections(GreatVEngine::OpenGL::Context* context_):
 							program([&](){
 								auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Local Reflections/1.glsl.vs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Local Reflections/1.glsl.gs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Local Reflections/1.glsl.fs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Local Reflections/1.glsl.vs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Local Reflections/1.glsl.gs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Local Reflections/1.glsl.fs"))),
 							});
 
 							program_->Set();
@@ -937,9 +937,9 @@ namespace GreatVEngine
 							sampler(new GreatVEngine::OpenGL::Sampler(context_, GreatVEngine::OpenGL::Sampler::Wrap::Clamp, GreatVEngine::OpenGL::Sampler::Filter::Mipmap)),
 							program([&](){
 								auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.vs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.gs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.fs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.vs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.gs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Globalmap Environment/1.glsl.fs"))),
 								});
 
 								program_->Set();
@@ -970,9 +970,9 @@ namespace GreatVEngine
 							sampler(new GreatVEngine::OpenGL::Sampler(context_, GreatVEngine::OpenGL::Sampler::Wrap::Clamp, GreatVEngine::OpenGL::Sampler::Filter::Mipmap)),
 							program([&](){
 								auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.vs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.gs"))),
-									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.fs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.vs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.gs"))),
+									new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment, System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Deferred Shading/Cubemap Environment/1.glsl.fs"))),
 								});
 
 								program_->Set();
@@ -1045,9 +1045,9 @@ namespace GreatVEngine
 							inline IntensityFilter(GreatVEngine::OpenGL::Context* context_):
 								program([&](){
 									auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/1.glsl.vs"))),
-										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/1.glsl.gs"))),
-										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/1.glsl.fs"))),
+										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/1.glsl.vs"))),
+										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/1.glsl.gs"))),
+										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/1.glsl.fs"))),
 									});
 
 									program_->Set();
@@ -1071,9 +1071,9 @@ namespace GreatVEngine
 							inline Blur(GreatVEngine::OpenGL::Context* context_):
 								program([&](){
 									auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/Blur/1.glsl.vs"))),
-										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/Blur/1.glsl.gs"))),
-										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/Blur/1.glsl.fs"))),
+										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/Blur/1.glsl.vs"))),
+										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/Blur/1.glsl.gs"))),
+										new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Post Processing/Bloom/Blur/1.glsl.fs"))),
 									});
 
 									program_->Set();
@@ -1155,9 +1155,9 @@ namespace GreatVEngine
 						vertices(new GreatVEngine::OpenGL::Buffers::Array(context_, 1, nullptr)),
 						programLines2D([&](){
 							auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/Line.glsl.vs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/Line.glsl.gs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/Line.glsl.fs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/2D/Line.glsl.vs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/2D/Line.glsl.gs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/2D/Line.glsl.fs"))),
 							});
 
 							program_->Set();
@@ -1167,9 +1167,9 @@ namespace GreatVEngine
 						attributesLines2D(new GreatVEngine::OpenGL::Buffers::Attribute(context_, programLines2D, vertices, nullptr, {})),
 						programLines3D([&](){
 							auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/3D/Line.glsl.vs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/3D/Line.glsl.gs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/3D/Line.glsl.fs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/3D/Line.glsl.vs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/3D/Line.glsl.gs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/3D/Line.glsl.fs"))),
 							});
 
 							program_->Set();
@@ -1179,9 +1179,9 @@ namespace GreatVEngine
 						attributesLines3D(new GreatVEngine::OpenGL::Buffers::Attribute(context_, programLines3D, vertices, nullptr, {})),
 						programCircles2D([&](){
 							auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/Circle.glsl.vs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/Circle.glsl.gs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/2D/Circle.glsl.fs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/2D/Circle.glsl.vs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/2D/Circle.glsl.gs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/2D/Circle.glsl.fs"))),
 							});
 
 							program_->Set();
@@ -1191,9 +1191,9 @@ namespace GreatVEngine
 						attributesCircles2D(new GreatVEngine::OpenGL::Buffers::Attribute(context_, programCircles2D, vertices, nullptr, {})),
 						programCircles3D([&](){
 							auto program_ = new GreatVEngine::OpenGL::Program(context_, {
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/3D/Circle.glsl.vs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/3D/Circle.glsl.gs"))),
-								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContent<UInt8>(Filepath("Media/Shaders/Drawer/3D/Circle.glsl.fs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Vertex,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/3D/Circle.glsl.vs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Geometry,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/3D/Circle.glsl.gs"))),
+								new GreatVEngine::OpenGL::Shader(GreatVEngine::OpenGL::Shader::Type::Fragment,	System::LoadFileContentBinary<UInt8>(Filepath("Media/Shaders/Drawer/3D/Circle.glsl.fs"))),
 							});
 
 							program_->Set();
@@ -2072,6 +2072,13 @@ inline void GreatVEngine::Graphics::OpenGL::Scene::Render(Reference<Graphics::Ca
 					program->SetInt("textureColor", 0);
 					program->SetInt("textureNormals", 1);
 					program->SetInt("textureSpecular", 2);
+
+					program->SetInt("textureAlbedo",	0);
+					program->SetInt("textureNormals",	1);
+					program->SetInt("textureHeight",	2);
+					program->SetInt("textureOcclusion",	3);
+					program->SetInt("textureRoughness",	4);
+					program->SetInt("textureMetalness",	5);
 
 					program->SetVec3("cameraPosition", camera_->GetPosition());
 					program->SetMat4("viewProjectionMatrix", camera_->GetVPMat());

@@ -1366,10 +1366,16 @@ namespace GreatVEngine
 		{
 			switch(format_)
 			{
+				case Format::R8_UInt:
+				case Format::R16_UInt:
+				case Format::R32_SFloat:
+					return Texture::Format::R;
 				case Format::R8G8B8_UInt:
+				case Format::R16G16B16_UInt:
 				case Format::R32G32B32_SFloat:
 					return Texture::Format::RGB;
 				case Format::R8G8B8A8_UInt:
+				case Format::R16G16B16A16_UInt:
 				case Format::R32G32B32A32_SFloat:
 					return Texture::Format::RGBA;
 				case Format::B8G8R8_UInt:
@@ -1383,12 +1389,18 @@ namespace GreatVEngine
 		{
 			switch(format_)
 			{
-				case Format::R8G8B8_UInt: 
+				case Format::R8_UInt:
+				case Format::R8G8B8_UInt:
 				case Format::R8G8B8A8_UInt:
 				case Format::B8G8R8_UInt:
 				case Format::B8G8R8A8_UInt:
 					return Texture::ComponentType::UInt8;
-				case Format::R32G32B32_SFloat: 
+				case Format::R16_UInt:
+				case Format::R16G16B16_UInt:
+				case Format::R16G16B16A16_UInt:
+					return Texture::ComponentType::UInt16;
+				case Format::R32_SFloat:
+				case Format::R32G32B32_SFloat:
 				case Format::R32G32B32A32_SFloat:
 					return Texture::ComponentType::SFloat32;
 				default: throw Exception("Unsupported format");

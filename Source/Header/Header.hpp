@@ -119,10 +119,15 @@ namespace GreatVEngine
 
 	enum class Format
 	{
+		R8_UInt,
 		R8G8B8_UInt,
 		R8G8B8A8_UInt,
 		B8G8R8_UInt,
 		B8G8R8A8_UInt,
+		R16_UInt,
+		R16G16B16_UInt,
+		R16G16B16A16_UInt,
+		R32_SFloat,
 		R32G32B32_SFloat,
 		R32G32B32A32_SFloat,
 	};

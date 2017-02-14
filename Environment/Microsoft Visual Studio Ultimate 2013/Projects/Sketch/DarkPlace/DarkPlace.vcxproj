@@ -37,6 +37,7 @@
     <Import Project="..\..\..\Properties\Great V Library User - Logic.props" />
     <Import Project="..\..\..\Properties\Great V Library User - Input.props" />
     <Import Project="..\..\..\Properties\Great V Library User - Infrastructure.props" />
+    <Import Project="..\..\..\Properties\Great V Utility User - JSON.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -44,6 +45,7 @@
     <Import Project="..\..\..\Properties\Great V Library User - Logic.props" />
     <Import Project="..\..\..\Properties\Great V Library User - Input.props" />
     <Import Project="..\..\..\Properties\Great V Library User - Infrastructure.props" />
+    <Import Project="..\..\..\Properties\Great V Utility User - JSON.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />

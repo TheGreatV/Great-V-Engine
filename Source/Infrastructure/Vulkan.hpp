@@ -136,11 +136,11 @@ namespace GreatVEngine
 			{
 				return WrapReference(new Technique(
 					engine_,
-					vertex_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + vertex_) : Shader::Source(),
-					tessellationControl_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + tessellationControl_) : Shader::Source(),
-					tessellationEvaluation_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + tessellationEvaluation_) : Shader::Source(),
-					geometry_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + geometry_) : Shader::Source(),
-					fragment_.size() > 0 ? System::LoadFileContent<UInt32>(base_ + fragment_) : Shader::Source()));
+					vertex_.size() > 0 ? System::LoadFileContentBinary<UInt32>(base_ + vertex_) : Shader::Source(),
+					tessellationControl_.size() > 0 ? System::LoadFileContentBinary<UInt32>(base_ + tessellationControl_) : Shader::Source(),
+					tessellationEvaluation_.size() > 0 ? System::LoadFileContentBinary<UInt32>(base_ + tessellationEvaluation_) : Shader::Source(),
+					geometry_.size() > 0 ? System::LoadFileContentBinary<UInt32>(base_ + geometry_) : Shader::Source(),
+					fragment_.size() > 0 ? System::LoadFileContentBinary<UInt32>(base_ + fragment_) : Shader::Source()));
 			}
 		};
 		class Map:

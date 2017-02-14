@@ -1,5 +1,9 @@
 #pragma once
 #include "DarkPlace.hpp"
+#include "Utilities/JSON/JSON.hpp"
+
+
+GreatVEngine::OpenIL::Initer GreatVEngine::OpenIL::Initer::initer;
 
 
 void func()
@@ -16,15 +20,34 @@ void func()
 		deviceContext->SetPixelFormat();
 	}
 
-	auto game = DarkPlace::Make<DarkPlace::Game>(); // deviceContext, window);
+	auto game = DarkPlace::Make<DarkPlace::Game>(deviceContext, window); // deviceContext, window);
 	
-	auto entity = game->Add<DarkPlace::Entity>();
-	game->Remove(MakeReference(entity));
+	auto player = game->Add<DarkPlace::Player>(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f));
+	auto test = game->Add<DarkPlace::Test>(Vec3(0.0f), Vec3(0.0f));
+	// auto test2 = game->Add<DarkPlace::Test2>(Vec3(0.0f, 14.0f, 0.0f), Vec3(40.0f, 0.0f, 0.0f));
+
+
+	auto decal = MakeReference<Graphics::OpenGL::Decal>();
+	{
+		decal->SetLocalPosition(Vec3(5.0f, 0.0f, 0.0f));
+		decal->SetLocalAngle(Vec3(90.0f, 0.0f, 0.0f));
+		decal->SetLocalScale(Vec3(8.0f));
+
+		game->graphicsScene_Main->LoadDecals(
+			Filepath("Media/Images/Decals/GlassHole_Albedo.png"),
+			Filepath("Media/Images/Decals/GlassHole_Topology.png"),
+			Filepath("Media/Images/Decals/GlassHole_Material.png"));
+
+		game->graphicsScene_Main->Add(decal);
+	}
+
 
 	while(!KeyState(Keys::ESC))
 	{
 		Input::Loop();
 		window->Loop();
+
+		game->Update();
 
 		Sleep(1000 / 60);
 

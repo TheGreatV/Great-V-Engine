@@ -83,6 +83,7 @@ namespace GreatVEngine
 			};
 			enum class Format: GLenum
 			{
+				R				= IL_LUMINANCE,
 				RGB				= IL_RGB,
 				BGR				= IL_BGR,
 				RGBA			= IL_RGBA,
@@ -294,11 +295,22 @@ namespace GreatVEngine
 		{
 			switch(format_)
 			{
+				case GreatVEngine::OpenIL::Image::Format::R:
+				{
+					switch(componentType_)
+					{
+						case GreatVEngine::OpenIL::Image::ComponentType::UInt8: return Format::R8_UInt;
+						case GreatVEngine::OpenIL::Image::ComponentType::UInt16: return Format::R16_UInt;
+						case GreatVEngine::OpenIL::Image::ComponentType::SFloat32: return Format::R32_SFloat;
+						default: throw Exception("Unsupported component type");
+					}
+				} break;
 				case GreatVEngine::OpenIL::Image::Format::RGB:
 				{
 					switch(componentType_)
 					{
 						case GreatVEngine::OpenIL::Image::ComponentType::UInt8: return Format::R8G8B8_UInt;
+						case GreatVEngine::OpenIL::Image::ComponentType::UInt16: return Format::R16G16B16_UInt;
 						case GreatVEngine::OpenIL::Image::ComponentType::SFloat32: return Format::R32G32B32_SFloat;
 						default: throw Exception("Unsupported component type");
 					}
@@ -316,6 +328,7 @@ namespace GreatVEngine
 					switch(componentType_)
 					{
 						case GreatVEngine::OpenIL::Image::ComponentType::UInt8: return Format::R8G8B8A8_UInt;
+						case GreatVEngine::OpenIL::Image::ComponentType::UInt16: return Format::R16G16B16A16_UInt;
 						case GreatVEngine::OpenIL::Image::ComponentType::SFloat32: return Format::R32G32B32A32_SFloat;
 						default: throw Exception("Unsupported component type");
 					}
@@ -407,6 +420,7 @@ inline GreatVEngine::Reference<GreatVEngine::OpenIL::Image> GreatVEngine::OpenIL
 		{
 			switch(format)
 			{
+				case GreatVEngine::OpenIL::Image::Format::R:
 				case GreatVEngine::OpenIL::Image::Format::RGB:
 				case GreatVEngine::OpenIL::Image::Format::BGR:
 				case GreatVEngine::OpenIL::Image::Format::RGBA:

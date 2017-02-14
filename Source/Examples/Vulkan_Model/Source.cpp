@@ -298,8 +298,8 @@ void func()
 		return std::move(result);
 	};
 
-	auto sourceShaderVertex = System::LoadFileContent<UInt32>(Filepath("Media/Shaders/Vulkan_Model/1.spir-v.vs"));
-	auto sourceShaderFragment = System::LoadFileContent<UInt32>(Filepath("Media/Shaders/Vulkan_Model/1.spir-v.fs"));
+	auto sourceShaderVertex = System::LoadFileContentBinary<UInt32>(Filepath("Media/Shaders/Vulkan_Model/1.spir-v.vs"));
+	auto sourceShaderFragment = System::LoadFileContentBinary<UInt32>(Filepath("Media/Shaders/Vulkan_Model/1.spir-v.fs"));
 
 	auto shaderVertex = new Vulkan::Shader(vkDevice, sourceShaderVertex);
 	auto shaderFragment = new Vulkan::Shader(vkDevice, sourceShaderFragment);

@@ -4,6 +4,8 @@
 
 #include <Header/Header.hpp>
 
+#include <JSON.hpp>
+
 
 #pragma endregion
 
@@ -16,6 +18,7 @@ namespace GreatVEngine
 {
 	namespace JSON
 	{
+		using namespace ::JSON;
 	}
 }
 

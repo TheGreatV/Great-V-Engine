@@ -85,7 +85,27 @@ namespace GreatVEngine
 		};
 
 
-		template<typename Value> Vector<Value> LoadFileContent(const Filename& filename_)
+		inline String LoadFileContent(const Filename& filename_)
+		{
+			FILE* file = nullptr;
+			if(fopen_s(&file, filename_.c_str(), "r") != 0)
+			{
+				throw Exception("failed to load file: " + filename_);
+			}
+			fseek(file, 0, FILE_END);
+			auto size = ftell(file);
+
+			rewind(file);
+
+			String data; data.resize(size);
+			fread((void*)data.data(), 1, size, file);
+
+			fclose(file);
+
+			return std::move(data);
+		}
+
+		template<typename Value> Vector<Value> LoadFileContentBinary(const Filename& filename_)
 		{
 			FILE* file = nullptr;
 			if(fopen_s(&file, filename_.c_str(), "rb") != 0)

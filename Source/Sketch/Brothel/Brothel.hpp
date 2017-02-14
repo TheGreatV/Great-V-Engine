@@ -15,6 +15,8 @@
 
 #include <Infrastructure/OpenGL.hpp>
 
+#include <Utilities/JSON/JSON.hpp>
+
 namespace GVE = GreatVEngine;
 using namespace GVE;
 

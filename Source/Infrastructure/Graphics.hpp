@@ -85,9 +85,20 @@ namespace GreatVEngine
 				Map5						= 5,
 				Map6						= 6,
 				Map7						= 7,
+
+				// DTR
+				Diffuse						= Map0,
 				Color						= Map0,
 				Topology					= Map1,
 				Reflections					= Map2,
+
+				// Separete
+				Albedo						= Map0,
+				Normals						= Map1,
+				Height						= Map2,
+				Occlusion					= Map3,
+				Roughness					= Map4,
+				Metalness					= Map5,
 			};
 		public:
 			const static Size TechniquesCount = 8;
