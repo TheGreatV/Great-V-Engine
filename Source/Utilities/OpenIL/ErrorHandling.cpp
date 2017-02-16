@@ -38,6 +38,7 @@ GreatVEngine::OpenIL::ErrorText GreatVEngine::OpenIL::GetErrorText(const ErrorCo
 		case IL_STACK_OVERFLOW: return "IL_STACK_OVERFLOW";
 		case IL_STACK_UNDERFLOW: return "IL_STACK_UNDERFLOW";
 		case IL_INVALID_CONVERSION: return "IL_INVALID_CONVERSION";
+		case IL_LIB_TIFF_ERROR: return "IL_LIB_TIFF_ERROR";
 		case IL_LIB_JPEG_ERROR: return "IL_LIB_JPEG_ERROR";
 		case IL_LIB_PNG_ERROR: return "IL_LIB_PNG_ERROR";
 		case IL_UNKNOWN_ERROR: return "IL_UNKNOWN_ERROR";
