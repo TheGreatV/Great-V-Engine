@@ -8,13 +8,13 @@
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\External\OpenIL\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\External\OpenIL\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\External\OpenIL\lib\$(PlatformTarget)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>DevIL.lib;ILU.lib;ILUT.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /R /Y "$(SolutionDir)..\..\External\OpenIL\dll\DevIL.dll" "$(OutDir)"
-xcopy /R /Y "$(SolutionDir)..\..\External\OpenIL\dll\ILU.dll" "$(OutDir)"
-xcopy /R /Y "$(SolutionDir)..\..\External\OpenIL\dll\ILUT.dll" "$(OutDir)"</Command>
+      <Command>xcopy /R /Y "$(SolutionDir)..\..\External\OpenIL\dll\$(PlatformTarget)\DevIL.dll" "$(OutDir)"
+xcopy /R /Y "$(SolutionDir)..\..\External\OpenIL\dll\$(PlatformTarget)\ILU.dll" "$(OutDir)"
+xcopy /R /Y "$(SolutionDir)..\..\External\OpenIL\dll\$(PlatformTarget)\ILUT.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup />
