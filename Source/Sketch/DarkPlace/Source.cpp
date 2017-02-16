@@ -8,6 +8,9 @@ GreatVEngine::OpenIL::Initer GreatVEngine::OpenIL::Initer::initer;
 
 void func()
 {
+	// auto image = OpenIL::Image::Load2D(Filepath("Media/Images/Layered.psd"));
+
+
 	WinAPI::Window::Size resolution(800, 600);
 	// WinAPI::Window::Size resolution(1280, 600);
 	// WinAPI::Window::Size resolution(1920, 1080);
@@ -22,9 +25,9 @@ void func()
 
 	auto game = DarkPlace::Make<DarkPlace::Game>(deviceContext, window); // deviceContext, window);
 	
-	auto player = game->Add<DarkPlace::Player>(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f));
+	auto player = game->Add<DarkPlace::Player>(Vec3(0.0f, 20.0f, 0.0f), Vec3(0.0f));
 	auto test = game->Add<DarkPlace::Test>(Vec3(0.0f), Vec3(0.0f));
-	// auto test2 = game->Add<DarkPlace::Test2>(Vec3(0.0f, 14.0f, 0.0f), Vec3(40.0f, 0.0f, 0.0f));
+	auto test2 = game->Add<DarkPlace::Test2>(Vec3(0.0f, 14.0f, 0.0f), Vec3(40.0f, 0.0f, 0.0f));
 
 
 	auto decal = MakeReference<Graphics::OpenGL::Decal>();
@@ -34,9 +37,9 @@ void func()
 		decal->SetLocalScale(Vec3(8.0f));
 
 		game->graphicsScene_Main->LoadDecals(
-			Filepath("Media/Images/Decals/GlassHole_Albedo.png"),
-			Filepath("Media/Images/Decals/GlassHole_Topology.png"),
-			Filepath("Media/Images/Decals/GlassHole_Material.png"));
+			Filepath("Media/Images/Decals/Hearth_Albedo.png"),
+			Filepath("Media/Images/Decals/Hearth_Topology.png"),
+			Filepath("Media/Images/Decals/Hearth_Material.png"));
 
 		game->graphicsScene_Main->Add(decal);
 	}

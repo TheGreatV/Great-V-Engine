@@ -34,11 +34,11 @@ void DarkPlace::Player::Update()
 	auto rGame = MakeReference(game);
 
 	Input::Mouse::SetPosition(Vec2(WinAPI::GetDesktopSize()) / 2.0f);
-	Float32 moment = 0.1f * (KeyState(Keys::X) ? 0.1f : 1.0f);
+	Float32 motion = 0.1f * (KeyState(Keys::X) ? 0.1f : 1.0f);
 	rGame->graphicsCamera_Main->Rotate(Vec3(
-		-Input::Mouse::GetPositionDelta().y * moment,
-		Input::Mouse::GetPositionDelta().x * moment,
-		KeyState(Keys::Q) ? -1.0f : KeyState(Keys::E) ? +1.0f : 0.0f));
+		-Input::Mouse::GetPositionDelta().y * motion,
+		Input::Mouse::GetPositionDelta().x * motion,
+		KeyState(Keys::Q) ? -2.0f : KeyState(Keys::E) ? +2.0f : 0.0f));
 
 	Float32 speed = 1.0f * KeyState(Keys::L_SHIFT) ? 10.0f : KeyState(Keys::Z) ? 0.1f : 1.0f;
 	rGame->graphicsCamera_Main->Move(Vec3(

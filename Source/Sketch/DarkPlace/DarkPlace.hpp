@@ -55,7 +55,10 @@ namespace DarkPlace
 		const Reference<Graphics::OpenGL::Material> graphicsMaterial_Flat;
 		const Reference<Graphics::Camera> graphicsCamera_Main;
 
-		const Reference<Graphics::OpenGL::Material> graphicsMaterial_Brick1;
+		const Reference<Graphics::OpenGL::Material> graphicsMaterial_Brick3;
+		const Reference<Graphics::OpenGL::Material> graphicsMaterial_Brick4;
+
+		const Reference<Graphics::OpenGL::Environments::Globalmap> graphicsEnvironment_Main;
 	public:
 		const Reference<Physics::BulletPhysics::World> physicsWorld_Main;
 	protected:
@@ -160,7 +163,10 @@ inline DarkPlace::Game::Game(const Reference<Game>& this_, const Reference<Great
 	graphicsMaterial_Flat(new Graphics::OpenGL::Material(graphicsEngine)),
 	graphicsCamera_Main(new Graphics::Camera()),
 
-	graphicsMaterial_Brick1(new Graphics::OpenGL::Material(graphicsEngine)),
+	graphicsMaterial_Brick3(new Graphics::OpenGL::Material(graphicsEngine)),
+	graphicsMaterial_Brick4(new Graphics::OpenGL::Material(graphicsEngine)),
+
+	graphicsEnvironment_Main(Graphics::OpenGL::Environments::Globalmap::LoadCube(graphicsEngine, Filepath("Media/Images/Rocks.dds"))),
 
 	physicsWorld_Main(new Physics::BulletPhysics::World(physicsEngine))
 {
@@ -171,7 +177,7 @@ inline DarkPlace::Game::Game(const Reference<Game>& this_, const Reference<Great
 
 	graphicsLight_Sunlight;
 	{
-		graphicsLight_Sunlight->SetLocalAngle(Vec3(80.0f, 0.0f, 0.0f));
+		graphicsLight_Sunlight->SetLocalAngle(Vec3(60.0f, 0.0f, 0.0f));
 		graphicsLight_Sunlight->SetColor(Vec4(Vec3(1.0f), 0.8f));
 		graphicsLight_Sunlight->SetAmbient(0.5f);
 
@@ -181,10 +187,9 @@ inline DarkPlace::Game::Game(const Reference<Game>& this_, const Reference<Great
 	graphicsMaterial_Flat;
 	{
 		graphicsMaterial_Flat->Technique(Graphics::Material::TechniqueType::Basic) = Graphics::OpenGL::Technique::Load(graphicsEngine, Filepath("Media/Shaders/Materials/Blank/Basic/Common.glsl."), "vs", "", "", "", "fs");
-		graphicsMaterial_Flat->SetValue("materialColor", Vec3(1.0f));
-		graphicsMaterial_Flat->SetValue("materialSpecular", Vec3(1.0f)*1.0f);
-		graphicsMaterial_Flat->SetValue("materialGloss", 0.1f);
-		graphicsMaterial_Flat->SetValue("materialRoughness", 0.8f);
+		graphicsMaterial_Flat->SetValue("materialAlbedo", Vec3(1.0f));
+		graphicsMaterial_Flat->SetValue("materialRoughness", 0.05f);
+		graphicsMaterial_Flat->SetValue("materialMetalness", 0.0f);
 	}
 
 	graphicsCamera_Main;
@@ -194,25 +199,32 @@ inline DarkPlace::Game::Game(const Reference<Game>& this_, const Reference<Great
 		graphicsCamera_Main->SetProjection(Helper::Transformation::Dimension3::Projection::Params::Perspective(60.0f, window_->GetAspect(), 0.1f, 10000.0f));
 	}
 
-	graphicsMaterial_Brick1;
+	graphicsMaterial_Brick3;
 	{
-		graphicsMaterial_Brick1->Technique(Graphics::Material::TechniqueType::Basic) = Graphics::OpenGL::Technique::Load(graphicsEngine, Filepath("Media/Shaders/Materials/Simple/Basic/SeparateMaps.glsl."), "vs", "", "", "", "fs");
+		graphicsMaterial_Brick3->Technique(Graphics::Material::TechniqueType::Basic) = Graphics::OpenGL::Technique::Load(graphicsEngine, Filepath("Media/Shaders/Materials/Simple/Basic/SeparateMaps.glsl."), "vs", "", "", "", "fs");
 
-		// graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Color) = Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick1_D.png"));
-		// graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Topology) = Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick1_T.png"));
-		// graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Reflections) = Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick1_R.png"));
-		
-		graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Albedo)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Albedo.png"));
-		graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Normals)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Normals.png"));
-		graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Height)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Height.png"));
-		graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Occlusion)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Occlusion.png"));
-		graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Roughness)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Roughness.png"));
-		graphicsMaterial_Brick1->Map(Graphics::Material::MapType::Metalness)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Metalness.png"));
+		graphicsMaterial_Brick3->Map(Graphics::Material::MapType::Albedo)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Albedo.png"));
+		graphicsMaterial_Brick3->Map(Graphics::Material::MapType::Normals)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Normals.png"));
+		graphicsMaterial_Brick3->Map(Graphics::Material::MapType::Height)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Height.png"));
+		graphicsMaterial_Brick3->Map(Graphics::Material::MapType::Occlusion)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Occlusion.png"));
+		graphicsMaterial_Brick3->Map(Graphics::Material::MapType::Roughness)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Roughness.png"));
+		graphicsMaterial_Brick3->Map(Graphics::Material::MapType::Metalness)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick3/Metalness.png"));
+	}
+	graphicsMaterial_Brick4;
+	{
+		graphicsMaterial_Brick4->Technique(Graphics::Material::TechniqueType::Basic) = Graphics::OpenGL::Technique::Load(graphicsEngine, Filepath("Media/Shaders/Materials/Simple/Basic/SeparateMaps.glsl."), "vs", "", "", "", "fs");
 
-		// graphicsMaterial_Brick1->SetValue("materialColor", Vec3(1.0f));
-		// graphicsMaterial_Brick1->SetValue("materialSpecular", Vec3(1.0f)*1.0f);
-		// graphicsMaterial_Brick1->SetValue("materialGloss", 0.1f);
-		// graphicsMaterial_Brick1->SetValue("materialRoughness", 0.8f);
+		graphicsMaterial_Brick4->Map(Graphics::Material::MapType::Albedo)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick4/Albedo.png"));
+		graphicsMaterial_Brick4->Map(Graphics::Material::MapType::Normals)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick4/Normals.png"));
+		graphicsMaterial_Brick4->Map(Graphics::Material::MapType::Height)		= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick4/Height.png"));
+		graphicsMaterial_Brick4->Map(Graphics::Material::MapType::Occlusion)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick4/Occlusion.png"));
+		graphicsMaterial_Brick4->Map(Graphics::Material::MapType::Roughness)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick4/Roughness.png"));
+		graphicsMaterial_Brick4->Map(Graphics::Material::MapType::Metalness)	= Graphics::OpenGL::Map::Load2D(graphicsEngine, Filepath("Media/Images/Materials/Brick4/Metalness.png"));
+	}
+
+	graphicsEnvironment_Main;
+	{
+		graphicsScene_Main->Add(graphicsEnvironment_Main);
 	}
 }
 
@@ -274,7 +286,7 @@ inline DarkPlace::Player::Player(const Reference<Player>& this_, const Reference
 	physicsBody;
 	{
 		physicsBody->SetAngleFactor(Vec3(0.0f));
-		// physicsBody->SetUser(this_);
+		physicsBody->SetUser(this_);
 
 		game_->physicsWorld_Main->Add(physicsBody);
 	}
@@ -289,14 +301,14 @@ inline DarkPlace::Test::Test(const Reference<Test>& this_, const Reference<Game>
 	HierarchyMatrix(pos_, ang_, Vec3(1.0f), nullptr),
 	graphicsObject(new Graphics::OpenGL::Object(game_->graphicsEngine)),
 	physicsBody(new Physics::BulletPhysics::Bodies::Rigid(
-		Physics::BulletPhysics::Shape::CreateBox(Vec3(20.0f, 1.0f, 20.0f), 0.0f),
+		Physics::BulletPhysics::Shape::CreateBox(Vec3(200.0f, 1.0f, 200.0f), 0.0f),
 		VecXYZ(GetMMat() * Vec4(0.0f, -0.5f, 0.0f, 1.0f)), ang_))
 {
 	graphicsObject;
 	{
-		auto geometry = Geometry::CreateBox(Vec3(20.0f, 1.0f, 20.0f), Vec3(1.0f), UVec3(1));
+		auto geometry = Geometry::CreateBox(Vec3(200.0f, 1.0f, 200.0f), Vec3(20.0f, 0.1f, 20.0f), UVec3(1));
 		auto shape = MakeReference<Graphics::OpenGL::Shape>(game_->graphicsEngine, geometry);
-		auto model = MakeReference<Graphics::OpenGL::Model>(game_->graphicsEngine, shape, game_->graphicsMaterial_Brick1);
+		auto model = MakeReference<Graphics::OpenGL::Model>(game_->graphicsEngine, shape, game_->graphicsMaterial_Brick3);
 
 		graphicsObject->SetModel(model);
 		graphicsObject->SetParent(this);
@@ -325,7 +337,7 @@ inline DarkPlace::Test2::Test2(const Reference<Test2>& this_, const Reference<Ga
 	{
 		auto geometry = Geometry::CreateBox(Vec3(5.0f), Vec3(1.0f), UVec3(1));
 		auto shape = MakeReference<Graphics::OpenGL::Shape>(game_->graphicsEngine, geometry);
-		auto model = MakeReference<Graphics::OpenGL::Model>(game_->graphicsEngine, shape, game_->graphicsMaterial_Flat);
+		auto model = MakeReference<Graphics::OpenGL::Model>(game_->graphicsEngine, shape, game_->graphicsMaterial_Brick4);
 
 		graphicsObject->SetModel(model);
 		graphicsObject->SetParent(this);
