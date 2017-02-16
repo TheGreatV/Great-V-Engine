@@ -6,10 +6,9 @@
 layout(pixel_center_integer) in vec4 gl_FragCoord;
 
 
-uniform sampler2D	textureColor;
-uniform sampler2D	textureSpecular;
+uniform sampler2D	textureAlbedo;
 uniform sampler2D	textureNormal;
-uniform sampler2D	textureMaterial;
+uniform sampler2D	textureRoughnessMetalnessOcclusion;
 uniform sampler2D	textureDepth;
 uniform sampler2D	textureDiffuse;
 uniform samplerCube	textureEnvironment;
@@ -38,37 +37,67 @@ void main()
 {
 	vec2 screenTex = gl_FragCoord.xy/screen;
 
-	vec4	dataColor = texture(textureColor, screenTex);
-	vec4	dataSpecular = texture(textureSpecular, screenTex);
+	vec4	dataAlbedo = texture(textureAlbedo, screenTex);
 	vec4	dataNormal = texture(textureNormal, screenTex);
-	vec4	dataMaterial = texture(textureMaterial, screenTex);
+	vec4	dataRoughnessMetalnessOcclusion = texture(textureRoughnessMetalnessOcclusion, screenTex);
 	vec4	dataDepth = texture(textureDepth, screenTex);
 	vec4	dataDiffuse = texture(textureDiffuse, screenTex);
-
-	vec3	color = dataColor.xyz;
-	vec3	specular = dataSpecular.xyz;
-	vec3	normal = dataNormal.xyz;
-	float	roughness = dataMaterial.x;
-	vec3	diffuse = dataDiffuse.xyz;
-	float	diffuseIntensity = dataDiffuse.w;
-	float	depth = dataDepth.x; if(depth >= 1.0f) return;
+    
+	vec3	albedo = dataAlbedo.xyz;
+	vec3	normal = normalize(dataNormal.xyz);
+	float	roughness = dataRoughnessMetalnessOcclusion.x;
+	float	metalness = dataRoughnessMetalnessOcclusion.y;
+	float	occlusion = dataRoughnessMetalnessOcclusion.z;
+	float	depth = dataDepth.x; if(depth >= 1.0f) return; // TODO: check this shit
 	float	distance = camFarXNear / (camFar - depth * camFarMNear); 
-	vec3	position = (pRec.xyz*gl_FragCoord.w) * distance;
+	vec3	position = pRec.xyz * distance;
 	vec3	view = -normalize(position); // from pixel to camera
 	vec3	reflection = reflect(-view, normal);
-	vec3	light = reflection; // from pixel to light
+	float	diffuseIntensity = dataDiffuse.w;
 	
+	float	gloss = 1.0f - roughness;
+
 	float	totalRangeIntensity = environmentColor.w;
 	
-	// float	specularIntensity = clamp(Specular(normal, light, view, roughness), 0.0f, 1.0f);
 	float	specularIntensity = clamp(Fresnel(normal, view, roughness), 0.0f, 1.0f);
 	
-	float	mipmapLevel = pow(roughness, 1.0f)*environmentMipmapsCount;
+	float	mipmapLevel = pow(roughness, 1.0f) * environmentMipmapsCount;
 	vec4	dataEnvironment = textureLod(textureEnvironment, reflection, mipmapLevel);
 	vec3	environment = dataEnvironment.xyz;
 	
-	// oSpecular = vec4(vec3(totalRangeIntensity), 1.0f);
-	oSpecular = vec4(totalRangeIntensity*diffuseIntensity*specularIntensity * environment*environmentColor.xyz*specular, totalRangeIntensity);
+	oSpecular = vec4(gloss * totalRangeIntensity*diffuseIntensity*specularIntensity * environment*environmentColor.xyz * mix(vec3(1.0f), albedo, metalness), totalRangeIntensity);
+	
+	// vec4	dataColor = texture(textureColor, screenTex);
+	// vec4	dataSpecular = texture(textureSpecular, screenTex);
+	// vec4	dataNormal = texture(textureNormal, screenTex);
+	// vec4	dataMaterial = texture(textureMaterial, screenTex);
+	// vec4	dataDepth = texture(textureDepth, screenTex);
+	// vec4	dataDiffuse = texture(textureDiffuse, screenTex);
+
+	// vec3	color = dataColor.xyz;
+	// vec3	specular = dataSpecular.xyz;
+	// vec3	normal = dataNormal.xyz;
+	// float	roughness = dataMaterial.x;
+	// vec3	diffuse = dataDiffuse.xyz;
+	// float	diffuseIntensity = dataDiffuse.w;
+	// float	depth = dataDepth.x; if(depth >= 1.0f) return;
+	// float	distance = camFarXNear / (camFar - depth * camFarMNear); 
+	// vec3	position = (pRec.xyz*gl_FragCoord.w) * distance;
+	// vec3	view = -normalize(position); // from pixel to camera
+	// vec3	reflection = reflect(-view, normal);
+	// vec3	light = reflection; // from pixel to light
+	
+	// float	totalRangeIntensity = environmentColor.w;
+	// 
+	// // float	specularIntensity = clamp(Specular(normal, light, view, roughness), 0.0f, 1.0f);
+	// float	specularIntensity = clamp(Fresnel(normal, view, roughness), 0.0f, 1.0f);
+	// 
+	// float	mipmapLevel = pow(roughness, 1.0f)*environmentMipmapsCount;
+	// vec4	dataEnvironment = textureLod(textureEnvironment, reflection, mipmapLevel);
+	// vec3	environment = dataEnvironment.xyz;
+	// 
+	// // oSpecular = vec4(vec3(totalRangeIntensity), 1.0f);
+	// oSpecular = vec4(totalRangeIntensity*diffuseIntensity*specularIntensity * environment*environmentColor.xyz*specular, totalRangeIntensity);
 }
 
 float Fresnel(vec3 normal, vec3 view, float roughness) {

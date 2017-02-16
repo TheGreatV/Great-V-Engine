@@ -3,10 +3,9 @@
 #define PI 3.1415926535897932384626433832795
 
 
-uniform sampler2D	textureColor;
-uniform sampler2D	textureSpecular;
+uniform sampler2D	textureAlbedo;
 uniform sampler2D	textureNormal;
-uniform sampler2D	textureMaterial;
+uniform sampler2D	textureRoughnessMetalnessOcclusion;
 uniform sampler2D	textureDepth;
 
 
@@ -36,32 +35,31 @@ float Specular(vec3 normal, vec3 light, vec3 view, float roughness);
 
 
 void main() {
-	vec4 dataColor = texture(textureColor, pTex);
-	vec4 dataSpecular = texture(textureSpecular, pTex);
-	vec4 dataNormal = texture(textureNormal, pTex);
-	vec4 dataMaterial = texture(textureMaterial, pTex);
-	vec4 dataDepth = texture(textureDepth, pTex);
+	vec4	dataAlbedo = texture(textureAlbedo, pTex);
+	vec4	dataNormal = texture(textureNormal, pTex);
+	vec4	dataRoughnessMetalnessOcclusion = texture(textureRoughnessMetalnessOcclusion, pTex);
+	vec4	dataDepth = texture(textureDepth, pTex);
 
-	vec3	color = dataColor.xyz;
-	vec3	specular = dataSpecular.xyz;
+	vec3	albedo = dataAlbedo.xyz;
 	vec3	normal = normalize(dataNormal.xyz);
-	float	roughness = dataMaterial.x;
-	float	depth = dataDepth.x; if(depth >= 1.0f) return;
+	float	roughness = dataRoughnessMetalnessOcclusion.x;
+	float	metalness = dataRoughnessMetalnessOcclusion.y;
+	float	occlusion = dataRoughnessMetalnessOcclusion.z;
+	float	depth = dataDepth.x; if(depth >= 1.0f) return; // TODO: check this shit
 	float	distance = camFarXNear / (camFar - depth * camFarMNear); 
 	vec3	position = pView.xyz * distance;
 	vec3	view = -normalize(position); // from pixel to camera
-	vec3	reflection = reflect(view, normal);
+	vec3	reflection = reflect(-view, normal);
 	vec3	light = -lightDirection; // from pixel to light
 	
-	float	diffuseIntensity = Diffuse(normal, light, view, roughness, lightAmbient);
+	float	gloss = 1.0f - roughness;
 	
+	float	diffuseIntensity = Diffuse(normal, light, view, roughness, lightAmbient * occlusion);
 	float	specularIntensity = Specular(normal, light, view, roughness);
 	
-	oDiffuse = vec4(diffuseIntensity * color*lightColor, diffuseIntensity);
-	oSpecular = vec4(specularIntensity * specular*lightColor, 1.0f);
-	// oColor = vec4((color + specularIntensity*specular)*diffuseIntensity*lightColor ,1.0f);
-	// oColor = pView;
-	// oColor = vec4(vec3(specularIntensity), 1.0f);
+	oDiffuse = vec4((1.0f - gloss) * diffuseIntensity * albedo * lightColor, diffuseIntensity);
+	oSpecular = vec4(gloss * specularIntensity * mix(vec3(1.0f), albedo, metalness) * lightColor, 1.0f);
+	// oSpecular = vec4(vec3(specularIntensity), 1.0f);
 }
 
 

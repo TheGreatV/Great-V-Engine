@@ -1,9 +1,8 @@
 #version 330
 
-uniform	vec3	materialColor;
-uniform	vec3	materialSpecular;
-uniform	float	materialGloss;
+uniform	vec3	materialAlbedo;
 uniform	float	materialRoughness;
+uniform	float	materialMetalness;
 
 
 in vec3		fPos;
@@ -11,21 +10,26 @@ in mat3		fTBN;
 in vec2		fTex;
 
 
-out vec4	oColor;
-out vec4	oSpecular;
+out vec4	oAlbedo;
 out vec4	oNormal;
-out vec4	oMaterial;
+out vec4	oRoughnessMetalnessOcclusion;
 
 
 void main()
 {
 	vec3 normal = normalize(fTBN[2]);
 	
-	vec3 albedo		= mix(materialColor,	vec3(0.0f),			materialGloss);
-	vec3 specular	= mix(vec3(0.0f),		materialSpecular,	materialGloss);
+	vec3	albedo		= materialAlbedo;
+	float	roughness	= materialRoughness;
+	float	metalness	= materialMetalness;
+	float	occlusion	= 1.0f;
 	
-	oColor		= vec4(albedo, 1.0f);
-	oSpecular	= vec4(specular, 1.0f);
-	oNormal		= vec4(normal, 1.0f);
-	oMaterial	= vec4(materialRoughness, 0.0f, 0.0f, 1.0f);
+	oAlbedo = vec4(albedo, 1.0f);
+	oNormal = vec4(normal, 1.0f);
+	oRoughnessMetalnessOcclusion = vec4(roughness, metalness, occlusion, 1.0f);
 }
+
+
+
+
+

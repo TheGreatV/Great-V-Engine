@@ -608,10 +608,10 @@ namespace GreatVEngine
 				struct Target
 				{
 				public:
-					GreatVEngine::OpenGL::Texture*const diffuse;
-					GreatVEngine::OpenGL::Texture*const specular;
-					GreatVEngine::OpenGL::Buffers::Frame*const frameComplete;
-					GreatVEngine::OpenGL::Buffers::Frame*const frameSpecular;
+					const Pointer<GreatVEngine::OpenGL::Texture> diffuse;
+					const Pointer<GreatVEngine::OpenGL::Texture> specular;
+					const Pointer<GreatVEngine::OpenGL::Buffers::Frame> frameComplete;
+					const Pointer<GreatVEngine::OpenGL::Buffers::Frame> frameSpecular;
 				public:
 					inline Target(GreatVEngine::OpenGL::Context* context_, const Viewport& viewport_):
 						diffuse(new GreatVEngine::OpenGL::Texture( // RGB - diffuse total color, A - diffuse intensity (for environment calculation)
@@ -622,8 +622,8 @@ namespace GreatVEngine
 							context_, viewport_.x, viewport_.y, 1, GreatVEngine::OpenGL::Texture::Type::D2,
 							GreatVEngine::OpenGL::Texture::InternalFormat::RGBA16F, GreatVEngine::OpenGL::Texture::Format::RGBA, GreatVEngine::OpenGL::Texture::ComponentType::SFloat16,
 							GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Off, nullptr)),
-						frameComplete(new GreatVEngine::OpenGL::Buffers::Frame(context_, {diffuse, specular}, nullptr, nullptr)),
-						frameSpecular(new GreatVEngine::OpenGL::Buffers::Frame(context_, {specular}, nullptr, nullptr))
+						frameComplete(new GreatVEngine::OpenGL::Buffers::Frame(context_, {diffuse.get(), specular.get()}, nullptr, nullptr)),
+						frameSpecular(new GreatVEngine::OpenGL::Buffers::Frame(context_, {specular.get()}, nullptr, nullptr))
 					{
 					}
 				};
@@ -667,15 +667,18 @@ namespace GreatVEngine
 					Normals + Height
 					*/
 				public:
-					GreatVEngine::OpenGL::Texture*const color;	//	R8	G8	B8	XX	colorRGB
-					GreatVEngine::OpenGL::Texture*const specular;	//	R8	G8	B8	XX	specularRGB
-					GreatVEngine::OpenGL::Texture*const normals;	//	R16	G16	B16	XX	normalXYZ
-					GreatVEngine::OpenGL::Texture*const material;	//	R8	XX	XX	XX	roughness, ???, ???
-					GreatVEngine::OpenGL::Texture*const depthStencil;	//	D24	S8
-					GreatVEngine::OpenGL::Buffers::Frame*const frame;
+					// const Pointer<GreatVEngine::OpenGL::Texture> color;	//	R8	G8	B8	XX	colorRGB
+					// const Pointer<GreatVEngine::OpenGL::Texture> specular;	//	R8	G8	B8	XX	specularRGB
+					// const Pointer<GreatVEngine::OpenGL::Texture> normals;	//	R16	G16	B16	XX	normalXYZ
+					// const Pointer<GreatVEngine::OpenGL::Texture> material;	//	R8	XX	XX	XX	roughness, ???, ???
+					const Pointer<GreatVEngine::OpenGL::Texture> albedo;
+					const Pointer<GreatVEngine::OpenGL::Texture> normal;
+					const Pointer<GreatVEngine::OpenGL::Texture> roughnessMetalnessOcclusion;
+					const Pointer<GreatVEngine::OpenGL::Texture> depthStencil;	//	D24	S8
+					const Pointer<GreatVEngine::OpenGL::Buffers::Frame> frame;
 				public:
 					inline GeometyPass(GreatVEngine::OpenGL::Context* context_, const Viewport& viewport_):
-						color(new GreatVEngine::OpenGL::Texture(context_, viewport_.x, viewport_.y, 1,
+						/*color(new GreatVEngine::OpenGL::Texture(context_, viewport_.x, viewport_.y, 1,
 							GreatVEngine::OpenGL::Texture::Type::D2, GreatVEngine::OpenGL::Texture::InternalFormat::RGBA8, GreatVEngine::OpenGL::Texture::Format::RGBA, GreatVEngine::OpenGL::Texture::ComponentType::UInt8,
 							GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Off, nullptr)),
 						specular(new GreatVEngine::OpenGL::Texture(context_, viewport_.x, viewport_.y, 1,
@@ -686,25 +689,28 @@ namespace GreatVEngine
 							GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Off, nullptr)),
 						material(new GreatVEngine::OpenGL::Texture(context_, viewport_.x, viewport_.y, 1,
 							GreatVEngine::OpenGL::Texture::Type::D2, GreatVEngine::OpenGL::Texture::InternalFormat::RGBA8, GreatVEngine::OpenGL::Texture::Format::RGBA, GreatVEngine::OpenGL::Texture::ComponentType::UInt8,
+							GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Off, nullptr)),*/
+						albedo(new GreatVEngine::OpenGL::Texture(context_, viewport_.x, viewport_.y, 1,
+							GreatVEngine::OpenGL::Texture::Type::D2, GreatVEngine::OpenGL::Texture::InternalFormat::RGB8, GreatVEngine::OpenGL::Texture::Format::RGB, GreatVEngine::OpenGL::Texture::ComponentType::UInt8,
+							GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Off, nullptr)),
+						normal(new GreatVEngine::OpenGL::Texture(context_, viewport_.x, viewport_.y, 1,
+							GreatVEngine::OpenGL::Texture::Type::D2, GreatVEngine::OpenGL::Texture::InternalFormat::RGB16F, GreatVEngine::OpenGL::Texture::Format::RGB, GreatVEngine::OpenGL::Texture::ComponentType::SFloat16,
+							GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Off, nullptr)),
+						roughnessMetalnessOcclusion(new GreatVEngine::OpenGL::Texture(context_, viewport_.x, viewport_.y, 1,
+							GreatVEngine::OpenGL::Texture::Type::D2, GreatVEngine::OpenGL::Texture::InternalFormat::RGB8, GreatVEngine::OpenGL::Texture::Format::RGB, GreatVEngine::OpenGL::Texture::ComponentType::UInt8,
 							GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Off, nullptr)),
 						depthStencil(new GreatVEngine::OpenGL::Texture(context_, viewport_.x, viewport_.y, 1,
 							GreatVEngine::OpenGL::Texture::Type::D2, GreatVEngine::OpenGL::Texture::InternalFormat::Depth24Stencil8, GreatVEngine::OpenGL::Texture::Format::DepthStencil, GreatVEngine::OpenGL::Texture::ComponentType::UInt24_8,
 							GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Off, nullptr)),
-						frame(new GreatVEngine::OpenGL::Buffers::Frame(context_, {color, specular, normals, material}, depthStencil))
+						// frame(new GreatVEngine::OpenGL::Buffers::Frame(context_, {color.get(), specular.get(), normals.get(), material.get()}, depthStencil.get()))
+						frame(new GreatVEngine::OpenGL::Buffers::Frame(context_, {albedo.get(), normal.get(), roughnessMetalnessOcclusion.get()}, depthStencil.get()))
 					{
 						frame->Reset();
 					}
-					inline ~GeometyPass()
-					{
-						delete frame;
-						delete color;
-						delete specular;
-						delete normals;
-						delete material;
-						delete depthStencil;
-					}
+				public:
+					inline void Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_);
 				};
-				struct DecalPass
+				/*struct DecalPass
 				{
 				public:
 					GreatVEngine::OpenGL::Program*const program;
@@ -750,7 +756,7 @@ namespace GreatVEngine
 						delete vertices;
 						delete program;
 					}
-				};
+				};*/
 				struct LightPass
 				{
 				public:
@@ -759,13 +765,13 @@ namespace GreatVEngine
 					public:
 						const static Size COMPRESSED_DEPTH_SCALE_FACTOR = 1;
 					public:
-						GreatVEngine::OpenGL::Program*const program;
-						GreatVEngine::OpenGL::Buffers::Array*const vertices;
-						GreatVEngine::OpenGL::Buffers::Attribute*const attributes;
-						GreatVEngine::OpenGL::Buffers::Frame*const frame;
-						GreatVEngine::OpenGL::Texture*const compressedDepth;
-						GreatVEngine::OpenGL::Buffers::Frame*const frameCompressedDepth;
-						GreatVEngine::OpenGL::Program*const programCompressedDepth;
+						const Pointer<GreatVEngine::OpenGL::Program> program;
+						const Pointer<GreatVEngine::OpenGL::Buffers::Array> vertices;
+						const Pointer<GreatVEngine::OpenGL::Buffers::Attribute> attributes;
+						const Pointer<GreatVEngine::OpenGL::Buffers::Frame> frame;
+						const Pointer<GreatVEngine::OpenGL::Texture> compressedDepth;
+						const Pointer<GreatVEngine::OpenGL::Buffers::Frame> frameCompressedDepth;
+						const Pointer<GreatVEngine::OpenGL::Program> programCompressedDepth;
 					public:
 						inline AmbientOcclusion(GreatVEngine::OpenGL::Context* context_, GeometyPass* geometyPass_):
 							program([&](){
@@ -780,10 +786,9 @@ namespace GreatVEngine
 								return program_;
 							}()),
 							vertices(new GreatVEngine::OpenGL::Buffers::Array(context_, 1, nullptr)),
-							attributes(new GreatVEngine::OpenGL::Buffers::Attribute(context_, program, vertices, nullptr, {})),
+							attributes(new GreatVEngine::OpenGL::Buffers::Attribute(context_, program.get(), vertices.get(), nullptr, {})),
 							frame(new GreatVEngine::OpenGL::Buffers::Frame(context_, {
-								geometyPass_->color,
-								geometyPass_->specular,
+								geometyPass_->roughnessMetalnessOcclusion.get()
 							}, nullptr)),
 							compressedDepth(new GreatVEngine::OpenGL::Texture(
 								context_,
@@ -793,7 +798,7 @@ namespace GreatVEngine
 								GreatVEngine::OpenGL::Texture::Wrap::Clamp, GreatVEngine::OpenGL::Texture::Filter::Linear,
 								nullptr)),
 							frameCompressedDepth(new GreatVEngine::OpenGL::Buffers::Frame(context_, {
-								compressedDepth,
+								compressedDepth.get(),
 							}, nullptr)),
 							programCompressedDepth([&](){
 								auto program_ = new GreatVEngine::OpenGL::Program(context_, {
@@ -816,13 +821,15 @@ namespace GreatVEngine
 							programCompressedDepth->Set();
 							programCompressedDepth->SetInt("textureDepth", 0);
 						}
+					public:
+						inline void Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_);
 					};
 					struct Direction
 					{
 					public:
-						GreatVEngine::OpenGL::Program*const program;
-						GreatVEngine::OpenGL::Buffers::Array*const vertices;
-						GreatVEngine::OpenGL::Buffers::Attribute*const attributes;
+						const Pointer<GreatVEngine::OpenGL::Program> program;
+						const Pointer<GreatVEngine::OpenGL::Buffers::Array> vertices;
+						const Pointer<GreatVEngine::OpenGL::Buffers::Attribute> attributes;
 					public:
 						inline Direction(GreatVEngine::OpenGL::Context* context_):
 							program([&](){
@@ -837,16 +844,17 @@ namespace GreatVEngine
 								return program_;
 							}()),
 							vertices(new GreatVEngine::OpenGL::Buffers::Array(context_, 1, nullptr)),
-							attributes(new GreatVEngine::OpenGL::Buffers::Attribute(context_, program, vertices, nullptr, {}))
+							attributes(new GreatVEngine::OpenGL::Buffers::Attribute(context_, program.get(), vertices.get(), nullptr, {}))
 						{
-							program->SetInt("textureColor", 0);
-							program->SetInt("textureSpecular", 1);
-							program->SetInt("textureNormal", 2);
-							program->SetInt("textureMaterial", 3);
-							program->SetInt("textureDepth", 4);
+							program->SetInt("textureAlbedo", 0);
+							program->SetInt("textureNormal", 1);
+							program->SetInt("textureRoughnessMetalnessOcclusion", 2);
+							program->SetInt("textureDepth", 3);
 						}
+					public:
+						inline void Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_);
 					};
-					struct Point
+					/*struct Point
 					{
 					public:
 						GreatVEngine::OpenGL::Program*const program;
@@ -874,27 +882,25 @@ namespace GreatVEngine
 							program->SetInt("textureMaterial", 3);
 							program->SetInt("textureDepth", 4);
 						}
-					};
+					};*/
 				public:
-					AmbientOcclusion*const ambientOcclusion;
-					Direction*const direction;
-					Point*const point;
+					const Pointer<AmbientOcclusion> ambientOcclusion;
+					const Pointer<Direction> direction;
+					// Point*const point;
 				public:
 					inline LightPass(GreatVEngine::OpenGL::Context* context_, GeometyPass* geometyPass_):
 						ambientOcclusion(new AmbientOcclusion(context_, geometyPass_)),
-						direction(new Direction(context_)),
-						point(new Point(context_))
+						direction(new Direction(context_))
+						// point(new Point(context_))
 					{
 					}
-					inline ~LightPass()
-					{
-						delete direction;
-					}
+				public:
+					inline void Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_);
 				};
 				struct EnvironmentPass
 				{
 				public:
-					struct LocalReflections
+					/*struct LocalReflections
 					{
 					public:
 						GreatVEngine::OpenGL::Program*const program;
@@ -924,14 +930,14 @@ namespace GreatVEngine
 							program->SetInt("textureDiffuse", 5);
 							program->SetInt("textureEnvironment", 8);
 						}
-					};
+					};*/
 					struct Globalmap
 					{
 					public:
-						GreatVEngine::OpenGL::Sampler* sampler;
-						GreatVEngine::OpenGL::Program*const program;
-						GreatVEngine::OpenGL::Buffers::Array* vertices;
-						GreatVEngine::OpenGL::Buffers::Attribute* attributes;
+						const Pointer<GreatVEngine::OpenGL::Sampler> sampler;
+						const Pointer<GreatVEngine::OpenGL::Program> program;
+						const Pointer<GreatVEngine::OpenGL::Buffers::Array> vertices;
+						const Pointer<GreatVEngine::OpenGL::Buffers::Attribute> attributes;
 					public:
 						inline Globalmap(GreatVEngine::OpenGL::Context* context_):
 							sampler(new GreatVEngine::OpenGL::Sampler(context_, GreatVEngine::OpenGL::Sampler::Wrap::Clamp, GreatVEngine::OpenGL::Sampler::Filter::Mipmap)),
@@ -947,18 +953,19 @@ namespace GreatVEngine
 								return program_;
 							}()),
 							vertices(new GreatVEngine::OpenGL::Buffers::Array(context_, 1, nullptr)),
-							attributes(new GreatVEngine::OpenGL::Buffers::Attribute(context_, program, vertices, nullptr, {}))
+							attributes(new GreatVEngine::OpenGL::Buffers::Attribute(context_, program.get(), vertices.get(), nullptr, {}))
 						{
-							program->SetInt("textureColor", 0);
-							program->SetInt("textureSpecular", 1);
-							program->SetInt("textureNormal", 2);
-							program->SetInt("textureMaterial", 3);
-							program->SetInt("textureDepth", 4);
-							program->SetInt("textureDiffuse", 5);
+							program->SetInt("textureAlbedo", 0);
+							program->SetInt("textureNormal", 1);
+							program->SetInt("textureRoughnessMetalnessOcclusion", 2);
+							program->SetInt("textureDepth", 3);
+							program->SetInt("textureDiffuse", 4);
 							program->SetInt("textureEnvironment", 8);
 						}
+					public:
+						inline void Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_);
 					};
-					struct Cubemap
+					/*struct Cubemap
 					{
 					public:
 						GreatVEngine::OpenGL::Sampler* sampler;
@@ -990,26 +997,23 @@ namespace GreatVEngine
 							program->SetInt("textureDiffuse", 5);
 							program->SetInt("textureEnvironment", 8);
 						}
-					};
+					};*/
 				public:
-					LocalReflections*const localReflections;
-					Cubemap*const cubemap;
-					Globalmap*const globalmap;
+					// LocalReflections*const localReflections;
+					// Cubemap*const cubemap;
+					const Pointer<Globalmap> globalmap;
 					// bool isEnabled_ScreenSpaceLocalReflections = true;
 				public:
 					inline EnvironmentPass(GreatVEngine::OpenGL::Context* context_):
-						localReflections(new LocalReflections(context_)),
-						cubemap(new Cubemap(context_)),
+						// localReflections(new LocalReflections(context_)),
+						// cubemap(new Cubemap(context_)),
 						globalmap(new Globalmap(context_))
 					{
 					}
-					inline ~EnvironmentPass()
-					{
-						delete cubemap;
-						delete globalmap;
-					}
+				public:
+					inline void Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_);
 				};
-				struct PostProcessing
+				/*struct PostProcessing
 				{
 				public:
 					struct Bloom
@@ -1106,7 +1110,7 @@ namespace GreatVEngine
 						bloom(new Bloom(context_, viewport_))
 					{
 					}
-				};
+				};*/
 				struct Drawer
 				{
 				public:
@@ -1207,14 +1211,14 @@ namespace GreatVEngine
 			protected:
 				const Reference<Engine> engine;
 				Viewport viewport;
-				Target* target;
-				GeometyPass* geometyPass;
-				DecalPass* decalPass;
-				LightPass* lightPass;
-				EnvironmentPass* environmentPass;
-				PostProcessing* postProcessing;
-				Drawer* drawer;
-				Presenter* presenter;
+				const Pointer<Target> target;
+				const Pointer<GeometyPass> geometyPass;
+				// DecalPass* decalPass;
+				const Pointer<LightPass> lightPass;
+				const Pointer<EnvironmentPass> environmentPass;
+				// PostProcessing* postProcessing;
+				const Pointer<Drawer> drawer;
+				const Pointer<Presenter> presenter;
 				Vector<Reference<Object>> objects;
 				Vector<Reference<Lights::Direction>> lightsDirection;
 				Vector<Reference<Lights::Point>> lightsPoint;
@@ -1228,26 +1232,20 @@ namespace GreatVEngine
 					viewport(viewport_),
 					target(new Target(engine_->context, viewport_)),
 					geometyPass(new GeometyPass(engine->context, viewport_)),
-					decalPass(new DecalPass(engine->context, geometyPass)),
-					lightPass(new LightPass(engine->context, geometyPass)),
+					// decalPass(new DecalPass(engine->context, geometyPass)),
+					lightPass(new LightPass(engine->context, geometyPass.get())),
 					environmentPass(new EnvironmentPass(engine->context)),
-					postProcessing(new PostProcessing(engine->context, viewport_)),
+					// postProcessing(new PostProcessing(engine->context, viewport_)),
 					drawer(new Drawer(engine->context)),
 					presenter(new Presenter(engine->context))
 				{
 				}
-				virtual ~Scene() override
-				{
-					delete geometyPass;
-					delete lightPass;
-					delete presenter;
-				}
 			public:
 				inline void LoadDecals(const Filename& albedo_, const Filename& topology_, const Filename& material_)
 				{
-					decalPass->atlasAlbedo = engine->LoadTexture(albedo_);
-					decalPass->atlasTopology = engine->LoadTexture(topology_);
-					decalPass->atlasMaterial = engine->LoadTexture(material_);
+					// decalPass->atlasAlbedo = engine->LoadTexture(albedo_);
+					// decalPass->atlasTopology = engine->LoadTexture(topology_);
+					// decalPass->atlasMaterial = engine->LoadTexture(material_);
 				}
 			protected:
 				inline void Add(Reference<Bone> bone_); // recursively add child objects of bone
@@ -1864,10 +1862,371 @@ inline void GreatVEngine::Graphics::OpenGL::Object::Visualize(Reference<Scene> s
 }
 #pragma endregion
 #pragma region Scene
+
+#pragma region GeometryPass
+
+inline void GreatVEngine::Graphics::OpenGL::Scene::GeometyPass::Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_)
+{
+	// sort by material/shape
+	std::sort(scene_->objects.begin(), scene_->objects.end(), [](const Reference<Object>& a, const Reference<Object>& b){
+		return *a.get() < *b.get();
+	});
+
+	frame->Set();
+	{
+		glEnable(GL_CULL_FACE); glCullFace(GL_BACK); glFrontFace(GL_CCW); GreatVEngine::OpenGL::DebugTest();
+		glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LESS); GreatVEngine::OpenGL::DebugTest();
+		glEnable(GL_STENCIL_TEST); glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glDisable(GL_BLEND); GreatVEngine::OpenGL::DebugTest();
+
+		glClearColor(0.16f, 0.16f, 0.16f, 1.0f);
+		glClearDepth(1.0f);
+		glClearStencil(0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); GreatVEngine::OpenGL::DebugTest();
+
+		glViewport(0, 0, scene_->viewport.x, scene_->viewport.y);
+
+		for(auto &object : scene_->objects)
+		{
+			if(object->IsVisible())
+			{
+				object->Visualize(scene_);
+
+				glStencilFunc(GL_ALWAYS, object->GetGroups(), 0xFF);
+
+				auto &model = object->model;
+
+				if(model)
+				{
+					auto shape = model->shape;
+					auto material = model->material;
+					auto program = model->material->techniques[(Size)techniqueType_]->program;
+
+					model->Set(techniqueType_);
+
+					if(object->IsBonesEnabled())
+					{
+						program->SetBlock("BonesData", 0);
+						object->bufferBonesData->BindBase(0);
+						{
+							object->bufferBonesData->Set();
+							auto data = (UInt8*)object->bufferBonesData->Map();
+							{
+								for(Size i = 0; i < min(object->bones.size(), Object::MAX_BONES_COUNT); ++i)
+								{
+									auto &bone = object->bones[i];
+
+									((Mat4*)data)[i] =
+										bone->GetMMat()*
+										(bone->GetParent() ? bone->origin.GetMIMat() * bone->GetParent()->GetMIMat() : bone->origin.GetMIMat())
+										;
+								}
+							}
+							object->bufferBonesData->Unmap();
+						}
+					}
+
+					program->SetInt("textureColor", 0);
+					program->SetInt("textureNormals", 1);
+					program->SetInt("textureSpecular", 2);
+
+					program->SetInt("textureAlbedo", 0);
+					program->SetInt("textureNormals", 1);
+					program->SetInt("textureHeight", 2);
+					program->SetInt("textureOcclusion", 3);
+					program->SetInt("textureRoughness", 4);
+					program->SetInt("textureMetalness", 5);
+
+					program->SetVec3("cameraPosition", camera_->GetPosition());
+					program->SetMat4("viewProjectionMatrix", camera_->GetVPMat());
+					program->SetMat4("modelViewProjectionMatrix", camera_->GetVPMat() * object->GetMMat());
+					program->SetMat4("modelMatrix", Move4(-camera_->GetPosition()) * object->GetMMat());
+					program->SetMat3("rotateMatrix", object->GetRMat());
+
+					model->DrawIndexed();
+				}
+			}
+		}
+	}
+}
+
+#pragma endregion
+
+#pragma region LightPass
+
+#pragma region AmbientOcclusion
+
+inline void GreatVEngine::Graphics::OpenGL::Scene::LightPass::AmbientOcclusion::Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_)
+{
+	// compressDepth
+	frameCompressedDepth->Set();
+	{
+		glViewport(0, 0, compressedDepth->GetWidth(), compressedDepth->GetHeight());
+
+		glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
+		glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
+		glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
+		glDisable(GL_BLEND); GreatVEngine::OpenGL::DebugTest();
+
+		scene_->geometyPass->depthStencil->Set(0);
+
+		attributes->Set();
+		vertices->Set();
+		programCompressedDepth->Set();
+		programCompressedDepth->SetVec2("screen", Vec2(scene_->viewport.x, scene_->viewport.y) / (Float32)LightPass::AmbientOcclusion::COMPRESSED_DEPTH_SCALE_FACTOR);
+		programCompressedDepth->SetFloat("camFar", camera_->GetPerspective().zFar);
+		programCompressedDepth->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+		programCompressedDepth->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+		programCompressedDepth->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
+		programCompressedDepth->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+
+		glDrawArrays(GL_POINTS, 0, 1);
+	}
+	
+	// ambient occlusion
+	frame->Set();
+	// if(!GetAsyncKeyState('F'))
+	{
+		glViewport(0, 0, scene_->viewport.x, scene_->viewport.y);
+		// glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		// glClear(GL_COLOR_BUFFER_BIT);
+
+		glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
+		glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
+		glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
+		glEnable(GL_BLEND); GreatVEngine::OpenGL::glBlendFuncSeparate(GL_ZERO, GL_SRC_ALPHA, GL_ZERO, GL_ONE); GreatVEngine::OpenGL::DebugTest();
+		glColorMask(GL_FALSE, GL_FALSE, GL_TRUE, GL_FALSE);
+
+		compressedDepth->Set(0);
+		compressedDepth->GenerateMipmaps();
+		// geometyPass->depthStencil->Set(0);
+		scene_->geometyPass->normal->Set(1);
+
+		attributes->Set();
+		vertices->Set();
+		program->Set();
+
+		program->SetFloat("mipmapsCount", glm::log2((Float32)compressedDepth->GetWidth()));
+
+		program->SetVec2("screen", Vec2(scene_->viewport.x, scene_->viewport.y));
+		program->SetFloat("camFar", camera_->GetPerspective().zFar);
+		program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+		program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+		program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
+		program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+
+		glDrawArrays(GL_POINTS, 0, 1);
+
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	}
+}
+
+#pragma endregion
+
+#pragma region Direction
+
+inline void GreatVEngine::Graphics::OpenGL::Scene::LightPass::Direction::Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_)
+{
+	scene_->target->frameComplete->Set();
+	{
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		scene_->geometyPass->albedo->Set(0);
+		scene_->geometyPass->normal->Set(1);
+		scene_->geometyPass->roughnessMetalnessOcclusion->Set(2);
+		scene_->geometyPass->depthStencil->Set(3);
+
+		glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
+		glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
+		glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
+		glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE); GreatVEngine::OpenGL::DebugTest();
+
+		attributes->Set();
+		vertices->Set();
+		program->Set();
+		program->SetFloat("camFar", camera_->GetPerspective().zFar);
+		program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+		program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+		program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+			
+		for(auto &light : scene_->lightsDirection)
+		{
+			if(light->IsVisible())
+			{
+				program->SetVec3("lightDirection", light->GetRMat() * Vec3(0.0f, 0.0f, 1.0f));
+				program->SetVec3("lightColor", VecXYZ(light->GetColor()) * light->GetColor().w);
+				program->SetFloat("lightAmbient", light->GetAmbient());
+				program->SetFloat("lightFog", light->GetFog());
+
+				glDrawArrays(GL_POINTS, 0, 1);
+			}
+		}
+
+		/*lightPass->point;
+		{
+			glEnable(GL_CULL_FACE); glCullFace(GL_FRONT); GreatVEngine::OpenGL::DebugTest();
+			glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
+			glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
+			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE); GreatVEngine::OpenGL::DebugTest();
+
+			lightPass->point->attributes->Set();
+			lightPass->point->vertices->Set();
+			lightPass->point->program->Set();
+			lightPass->point->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
+			lightPass->point->program->SetFloat("camFar", camera_->GetPerspective().zFar);
+			lightPass->point->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+			lightPass->point->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+			lightPass->point->program->SetMat4("viewProjectionMatrix", camera_->GetVPMat() * Move4(camera_->GetPosition()));
+			lightPass->point->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+			
+			for(auto &light : lightsPoint)
+			{
+				if(light->IsVisible())
+				{
+					lightPass->point->program->SetVec3("lightPosition", light->GetPosition() - camera_->GetPosition());
+					lightPass->point->program->SetVec3("lightColor", VecXYZ(light->GetColor()) * light->GetColor().w);
+					// lightPass->point->program->SetVec3("lightRange", Vec3(light->GetRangeNear(), 1.0f / (light->GetRangeFar() - light->GetRangeNear()), 0.0f));
+					lightPass->point->program->SetVec3("lightRange", Vec3(light->GetRangeNear(), light->GetRangeFar(), 0.0f));
+					lightPass->point->program->SetFloat("lightAmbient", light->GetAmbient());
+					lightPass->point->program->SetFloat("lightFog", light->GetFog());
+
+					glDrawArrays(GL_POINTS, 0, 1);
+				}
+			}
+		}*/
+	}
+}
+
+#pragma endregion
+
+
+inline void GreatVEngine::Graphics::OpenGL::Scene::LightPass::Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_)
+{
+	ambientOcclusion->Render(scene_, camera_, techniqueType_);
+
+	direction->Render(scene_, camera_, techniqueType_);
+}
+
+#pragma endregion
+
+#pragma region EnvironmentPass
+
+#pragma region EnvironmentPass
+
+inline void GreatVEngine::Graphics::OpenGL::Scene::EnvironmentPass::Globalmap::Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_)
+{
+	sampler->Set(8);
+
+	glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
+	glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
+	glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
+	glEnable(GL_BLEND); GreatVEngine::OpenGL::glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+
+	attributes->Set();
+	vertices->Set();
+	program->Set();
+	program->SetVec2("screen", Vec2(scene_->viewport.x, scene_->viewport.y));
+	program->SetFloat("camFar", camera_->GetPerspective().zFar);
+	program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+	program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+	program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
+	program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+
+	for(auto &environment : scene_->environmentsGlobalmap)
+	{
+		if(environment->IsVisible())
+		{
+			environment->texture->Set(8);
+
+			program->SetVec4("environmentColor", environment->GetColor());
+			program->SetFloat("environmentMipmapsCount", glm::log2((Float32)environment->texture->GetWidth()));
+
+			glDrawArrays(GL_POINTS, 0, 1);
+		}
+	}
+
+	sampler->Reset(8);
+}
+
+#pragma endregion
+
+
+inline void GreatVEngine::Graphics::OpenGL::Scene::EnvironmentPass::Render(const Reference<Scene>& scene_, Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_)
+{
+	scene_->target->frameSpecular->Set();
+	{
+		// Clear value of environment coverage
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE); GreatVEngine::OpenGL::DebugTest();
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f); GreatVEngine::OpenGL::DebugTest();
+		glClear(GL_COLOR_BUFFER_BIT); GreatVEngine::OpenGL::DebugTest();
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); GreatVEngine::OpenGL::DebugTest();
+
+		// Set textures
+		scene_->geometyPass->albedo->Set(0);
+		scene_->geometyPass->normal->Set(1);
+		scene_->geometyPass->roughnessMetalnessOcclusion->Set(2);
+		scene_->geometyPass->depthStencil->Set(3);
+		scene_->target->diffuse->Set(4);
+
+		/*cubemap;
+		{
+			std::sort(environmentsCubemap.begin(), environmentsCubemap.end(), [](Reference<Environments::Cubemap> a, Reference<Environments::Cubemap> b){ return a->GetPriority() < b->GetPriority(); }); // bigger priority goes first
+
+			environmentPass->cubemap->sampler->Set(8);
+
+			glEnable(GL_CULL_FACE); glCullFace(GL_FRONT); GreatVEngine::OpenGL::DebugTest();
+			glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
+			glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
+			glEnable(GL_BLEND); GreatVEngine::OpenGL::glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ONE); GreatVEngine::OpenGL::DebugTest();
+
+			environmentPass->cubemap->attributes->Set();
+			environmentPass->cubemap->vertices->Set();
+			environmentPass->cubemap->program->Set();
+			environmentPass->cubemap->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
+			environmentPass->cubemap->program->SetFloat("camFar", camera_->GetPerspective().zFar);
+			environmentPass->cubemap->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
+			environmentPass->cubemap->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
+			environmentPass->cubemap->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
+			environmentPass->cubemap->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
+			
+			for(auto &environment : environmentsCubemap)
+			{
+				if(environment->IsVisible())
+				{
+					environment->texture->Set(8);
+
+					environmentPass->cubemap->program->SetVec3("environmentRangeNear", environment->GetRangeNear());
+					environmentPass->cubemap->program->SetVec3("environmentRangeFar", environment->GetRangeFar());
+					{
+						auto t = (environment->GetRangeMiddle() - environment->GetRangeNear()) / (environment->GetRangeFar() - environment->GetRangeNear());
+						auto a = Vec3(4.0f) * (Vec3(0.5f) - t);
+						auto b = Vec3(1.0f) - a;
+
+						environmentPass->cubemap->program->SetVec3("environmentRangeA", a);
+						environmentPass->cubemap->program->SetVec3("environmentRangeB", b);
+					}
+					environmentPass->cubemap->program->SetMat4("environmentMatrix", camera_->GetVPMat() * environment->GetMMat() * Scale4(environment->GetRangeFar()));
+					environmentPass->cubemap->program->SetMat4("environmentInverseMatrix", environment->GetMIMat() * Move4(camera_->GetPosition()));
+					environmentPass->cubemap->program->SetVec3("environmentColor", VecXYZ(environment->GetColor()) * environment->GetColor().w);
+					environmentPass->cubemap->program->SetFloat("environmentMipmapsCount", glm::log2((Float32)environment->texture->GetWidth()));
+
+					glDrawArrays(GL_POINTS, 0, 1);
+				}
+			}
+
+			environmentPass->cubemap->sampler->Reset(8);
+		}*/
+
+		globalmap->Render(scene_, camera_, techniqueType_);
+	}
+}
+
+#pragma endregion
+
 inline void GreatVEngine::Graphics::OpenGL::Scene::OnModelChanged(Reference<Object> object_, Reference<Model> model_)
 {
 }
-
 
 inline void GreatVEngine::Graphics::OpenGL::Scene::Add(Reference<OpenGL::Bone> bone_)
 {
@@ -2003,97 +2362,13 @@ inline void GreatVEngine::Graphics::OpenGL::Scene::Remove(Reference<OpenGL::Deca
 inline void GreatVEngine::Graphics::OpenGL::Scene::Render(Reference<Graphics::Camera> camera_, const Material::TechniqueType& techniqueType_)
 {
 	auto previousFrame = engine->context->GetBufferFrame();
-
+	auto shared = shared_from_this();
 
 	// render to geometry buffer
-	geometyPass->frame->Set();
-	{
-		// sort by material/shape
-		std::sort(objects.begin(), objects.end(), [](Reference<Object> a, Reference<Object> b){
-			return *a.get() < *b.get();
-		});
-
-		glEnable(GL_CULL_FACE); glCullFace(GL_BACK); glFrontFace(GL_CCW); GreatVEngine::OpenGL::DebugTest();
-		glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LESS); GreatVEngine::OpenGL::DebugTest();
-
-		// glDisable(GL_STENCIL_TEST); DebugTest();
-		glEnable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-		glDisable(GL_BLEND); GreatVEngine::OpenGL::DebugTest();
-
-		glClearColor(0.16f, 0.16f, 0.16f, 1.0f);
-		glClearDepth(1.0f);
-		glClearStencil(0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); GreatVEngine::OpenGL::DebugTest();
-
-		glViewport(0, 0, viewport.x, viewport.y);
-
-		for(auto &object : objects)
-		{
-			if(object->IsVisible())
-			{
-				object->Visualize(shared_from_this());
-
-				glStencilFunc(GL_ALWAYS, object->GetGroups(), 0xFF);
-
-				auto &model = object->model;
-
-				if(model)
-				{
-					auto shape = model->shape;
-					auto material = model->material;
-					auto program = model->material->techniques[(Size)techniqueType_]->program;
-
-					model->Set(techniqueType_);
-
-					if(object->isBonesEnabled)
-					{
-						program->SetBlock("BonesData", 0);
-						object->bufferBonesData->BindBase(0);
-						{
-							object->bufferBonesData->Set();
-							auto data = (UInt8*)object->bufferBonesData->Map();
-							{
-								for(Size i = 0; i < min(object->bones.size(), Object::MAX_BONES_COUNT); ++i)
-								{
-									auto &bone = object->bones[i];
-
-									((Mat4*)data)[i] =
-										bone->GetMMat()*
-										(bone->GetParent() ? bone->origin.GetMIMat() * bone->GetParent()->GetMIMat() : bone->origin.GetMIMat())
-										;
-								}
-							}
-							object->bufferBonesData->Unmap();
-						}
-					}
-
-					program->SetInt("textureColor", 0);
-					program->SetInt("textureNormals", 1);
-					program->SetInt("textureSpecular", 2);
-
-					program->SetInt("textureAlbedo",	0);
-					program->SetInt("textureNormals",	1);
-					program->SetInt("textureHeight",	2);
-					program->SetInt("textureOcclusion",	3);
-					program->SetInt("textureRoughness",	4);
-					program->SetInt("textureMetalness",	5);
-
-					program->SetVec3("cameraPosition", camera_->GetPosition());
-					program->SetMat4("viewProjectionMatrix", camera_->GetVPMat());
-					program->SetMat4("modelViewProjectionMatrix", camera_->GetVPMat() * object->GetMMat());
-					program->SetMat4("modelMatrix", Move4(-camera_->GetPosition()) * object->GetMMat());
-					program->SetMat3("rotateMatrix", object->GetRMat());
-
-					model->DrawIndexed();
-				}
-			}
-		}
-	}
+	geometyPass->Render(shared, camera_, techniqueType_);
 
 	// render decals
-	decalPass->frame->Set();
+	/*decalPass->frame->Set();
 	{
 		if(decalPass->atlasAlbedo) decalPass->atlasAlbedo->Set(0);
 		if(decalPass->atlasTopology) decalPass->atlasTopology->Set(1);
@@ -2141,294 +2416,14 @@ inline void GreatVEngine::Graphics::OpenGL::Scene::Render(Reference<Graphics::Ca
 				}
 			}
 		}
-	}
-
-	if(true)
-	{
-		// compressDepth
-		lightPass->ambientOcclusion->frameCompressedDepth->Set();
-		{
-			glViewport(0, 0,
-				lightPass->ambientOcclusion->compressedDepth->GetWidth(),
-				lightPass->ambientOcclusion->compressedDepth->GetHeight());
-
-			glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_BLEND); GreatVEngine::OpenGL::DebugTest();
-
-			geometyPass->depthStencil->Set(0);
-
-			lightPass->ambientOcclusion->attributes->Set();
-			lightPass->ambientOcclusion->vertices->Set();
-			lightPass->ambientOcclusion->programCompressedDepth->Set();
-			lightPass->ambientOcclusion->programCompressedDepth->SetVec2("screen", Vec2(viewport.x, viewport.y) / (Float32)LightPass::AmbientOcclusion::COMPRESSED_DEPTH_SCALE_FACTOR);
-			lightPass->ambientOcclusion->programCompressedDepth->SetFloat("camFar", camera_->GetPerspective().zFar);
-			lightPass->ambientOcclusion->programCompressedDepth->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
-			lightPass->ambientOcclusion->programCompressedDepth->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
-			lightPass->ambientOcclusion->programCompressedDepth->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
-			lightPass->ambientOcclusion->programCompressedDepth->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
-
-			glDrawArrays(GL_POINTS, 0, 1);
-		}
-		// ambient occlusion
-		lightPass->ambientOcclusion->frame->Set();
-		// if(!GetAsyncKeyState('F'))
-		{
-			glViewport(0, 0, viewport.x, viewport.y);
-			// glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-			// glClear(GL_COLOR_BUFFER_BIT);
-
-			glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
-			glEnable(GL_BLEND); GreatVEngine::OpenGL::glBlendFuncSeparate(GL_ZERO, GL_SRC_ALPHA, GL_ZERO, GL_ONE); GreatVEngine::OpenGL::DebugTest();
-
-			lightPass->ambientOcclusion->compressedDepth->Set(0);
-			lightPass->ambientOcclusion->compressedDepth->GenerateMipmaps();
-			// geometyPass->depthStencil->Set(0);
-			geometyPass->normals->Set(1);
-
-			lightPass->ambientOcclusion->attributes->Set();
-			lightPass->ambientOcclusion->vertices->Set();
-			lightPass->ambientOcclusion->program->Set();
-
-			lightPass->ambientOcclusion->program->SetFloat("mipmapsCount", glm::log2((Float32)lightPass->ambientOcclusion->compressedDepth->GetWidth()));
-
-			lightPass->ambientOcclusion->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
-			lightPass->ambientOcclusion->program->SetFloat("camFar", camera_->GetPerspective().zFar);
-			lightPass->ambientOcclusion->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
-			lightPass->ambientOcclusion->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
-			lightPass->ambientOcclusion->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
-			lightPass->ambientOcclusion->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
-
-			glDrawArrays(GL_POINTS, 0, 1);
-		}
-	}
+	}*/
 
 	// render light (diffuse + specular)
 	target->frameComplete->Set();
-	{
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		geometyPass->color->Set(0);
-		geometyPass->specular->Set(1);
-		geometyPass->normals->Set(2);
-		geometyPass->material->Set(3);
-		geometyPass->depthStencil->Set(4);
-
-		lightPass->direction;
-		{
-			glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
-			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE); GreatVEngine::OpenGL::DebugTest();
-
-			lightPass->direction->attributes->Set();
-			lightPass->direction->vertices->Set();
-			lightPass->direction->program->Set();
-			lightPass->direction->program->SetFloat("camFar", camera_->GetPerspective().zFar);
-			lightPass->direction->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
-			lightPass->direction->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
-			lightPass->direction->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
-			
-			for(auto &light : lightsDirection)
-			{
-				if(light->IsVisible())
-				{
-					lightPass->direction->program->SetVec3("lightDirection", light->GetRMat() * Vec3(0.0f, 0.0f, 1.0f));
-					lightPass->direction->program->SetVec3("lightColor", VecXYZ(light->GetColor()) * light->GetColor().w);
-					lightPass->direction->program->SetFloat("lightAmbient", light->GetAmbient());
-					lightPass->direction->program->SetFloat("lightFog", light->GetFog());
-
-					glDrawArrays(GL_POINTS, 0, 1);
-				}
-			}
-		}
-
-		lightPass->point;
-		{
-			glEnable(GL_CULL_FACE); glCullFace(GL_FRONT); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
-			glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE); GreatVEngine::OpenGL::DebugTest();
-
-			lightPass->point->attributes->Set();
-			lightPass->point->vertices->Set();
-			lightPass->point->program->Set();
-			lightPass->point->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
-			lightPass->point->program->SetFloat("camFar", camera_->GetPerspective().zFar);
-			lightPass->point->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
-			lightPass->point->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
-			lightPass->point->program->SetMat4("viewProjectionMatrix", camera_->GetVPMat() * Move4(camera_->GetPosition()));
-			lightPass->point->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
-			
-			for(auto &light : lightsPoint)
-			{
-				if(light->IsVisible())
-				{
-					lightPass->point->program->SetVec3("lightPosition", light->GetPosition() - camera_->GetPosition());
-					lightPass->point->program->SetVec3("lightColor", VecXYZ(light->GetColor()) * light->GetColor().w);
-					// lightPass->point->program->SetVec3("lightRange", Vec3(light->GetRangeNear(), 1.0f / (light->GetRangeFar() - light->GetRangeNear()), 0.0f));
-					lightPass->point->program->SetVec3("lightRange", Vec3(light->GetRangeNear(), light->GetRangeFar(), 0.0f));
-					lightPass->point->program->SetFloat("lightAmbient", light->GetAmbient());
-					lightPass->point->program->SetFloat("lightFog", light->GetFog());
-
-					glDrawArrays(GL_POINTS, 0, 1);
-				}
-			}
-		}
-	}
+	lightPass->Render(shared, camera_, techniqueType_);
 
 	// render environment (specular only)
-	target->frameSpecular->Set();
-	{
-		// Clear value of environment coverage
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE); GreatVEngine::OpenGL::DebugTest();
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f); GreatVEngine::OpenGL::DebugTest();
-		glClear(GL_COLOR_BUFFER_BIT); GreatVEngine::OpenGL::DebugTest();
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); GreatVEngine::OpenGL::DebugTest();
-
-		// Set textures
-		geometyPass->color->Set(0);
-		geometyPass->specular->Set(1);
-		geometyPass->normals->Set(2);
-		geometyPass->material->Set(3);
-		geometyPass->depthStencil->Set(4);
-		target->diffuse->Set(5);
-
-		/*environmentPass->localReflections;
-		{
-			glDisable(GL_CULL_FACE);
-			glDisable(GL_DEPTH_TEST);
-			glDisable(GL_STENCIL_TEST);
-			glEnable(GL_BLEND); glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-
-			environmentPass->localReflections->attributes->Set();
-			environmentPass->localReflections->vertices->Set();
-			environmentPass->localReflections->program->Set();
-			environmentPass->localReflections->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
-			environmentPass->localReflections->program->SetFloat("camFar", camera_->GetPerspective().zFar);
-			environmentPass->localReflections->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
-			environmentPass->localReflections->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
-			environmentPass->localReflections->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
-			environmentPass->localReflections->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
-
-			glDrawArrays(GL_POINTS, 0, 1);
-		}*/
-
-		environmentPass->cubemap;
-		{
-			std::sort(environmentsCubemap.begin(), environmentsCubemap.end(), [](Reference<Environments::Cubemap> a, Reference<Environments::Cubemap> b){ return a->GetPriority() < b->GetPriority(); }); // bigger priority goes first
-
-			environmentPass->cubemap->sampler->Set(8);
-
-			glEnable(GL_CULL_FACE); glCullFace(GL_FRONT); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
-			glEnable(GL_BLEND); GreatVEngine::OpenGL::glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ONE); GreatVEngine::OpenGL::DebugTest();
-
-			environmentPass->cubemap->attributes->Set();
-			environmentPass->cubemap->vertices->Set();
-			environmentPass->cubemap->program->Set();
-			environmentPass->cubemap->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
-			environmentPass->cubemap->program->SetFloat("camFar", camera_->GetPerspective().zFar);
-			environmentPass->cubemap->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
-			environmentPass->cubemap->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
-			environmentPass->cubemap->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
-			environmentPass->cubemap->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
-			
-			for(auto &environment : environmentsCubemap)
-			{
-				if(environment->IsVisible())
-				{
-					environment->texture->Set(8);
-
-					environmentPass->cubemap->program->SetVec3("environmentRangeNear", environment->GetRangeNear());
-					environmentPass->cubemap->program->SetVec3("environmentRangeFar", environment->GetRangeFar());
-					{
-						auto t = (environment->GetRangeMiddle() - environment->GetRangeNear()) / (environment->GetRangeFar() - environment->GetRangeNear());
-						auto a = Vec3(4.0f) * (Vec3(0.5f) - t);
-						auto b = Vec3(1.0f) - a;
-
-						environmentPass->cubemap->program->SetVec3("environmentRangeA", a);
-						environmentPass->cubemap->program->SetVec3("environmentRangeB", b);
-					}
-					environmentPass->cubemap->program->SetMat4("environmentMatrix", camera_->GetVPMat() * environment->GetMMat() * Scale4(environment->GetRangeFar()));
-					environmentPass->cubemap->program->SetMat4("environmentInverseMatrix", environment->GetMIMat() * Move4(camera_->GetPosition()));
-					environmentPass->cubemap->program->SetVec3("environmentColor", VecXYZ(environment->GetColor()) * environment->GetColor().w);
-					environmentPass->cubemap->program->SetFloat("environmentMipmapsCount", glm::log2((Float32)environment->texture->GetWidth()));
-
-					glDrawArrays(GL_POINTS, 0, 1);
-				}
-			}
-
-			environmentPass->cubemap->sampler->Reset(8);
-		}
-
-		environmentPass->globalmap;
-		{
-			environmentPass->globalmap->sampler->Set(8);
-
-			glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
-			glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
-			glEnable(GL_BLEND); GreatVEngine::OpenGL::glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-
-			environmentPass->globalmap->attributes->Set();
-			environmentPass->globalmap->vertices->Set();
-			environmentPass->globalmap->program->Set();
-			environmentPass->globalmap->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
-			environmentPass->globalmap->program->SetFloat("camFar", camera_->GetPerspective().zFar);
-			environmentPass->globalmap->program->SetFloat("camFarMNear", camera_->GetPerspective().zFar - camera_->GetPerspective().zNear);
-			environmentPass->globalmap->program->SetFloat("camFarXNear", camera_->GetPerspective().zFar * camera_->GetPerspective().zNear);
-			environmentPass->globalmap->program->SetMat4("viewProjectionMatrix", camera_->GetViewProjectionMatrix() * Move4(camera_->GetPosition()));
-			environmentPass->globalmap->program->SetMat4("viewProjectionInverseMatrix", Move4(-camera_->GetPosition()) * camera_->GetViewProjectionInverseMatrix());
-
-			for(auto &environment : environmentsGlobalmap)
-			{
-				if(environment->IsVisible())
-				{
-					environment->texture->Set(8);
-
-					environmentPass->globalmap->program->SetVec4("environmentColor", environment->GetColor());
-					environmentPass->globalmap->program->SetFloat("environmentMipmapsCount", glm::log2((Float32)environment->texture->GetWidth()));
-
-					glDrawArrays(GL_POINTS, 0, 1);
-				}
-			}
-
-			environmentPass->globalmap->sampler->Reset(8);
-		}
-	}
-
-	// post processing
-	/*postProcessing;
-	{
-		// bloom
-		postProcessing->bloom;
-		{
-			// filter
-			postProcessing->bloom->holder->frame->Set();
-			{
-				target->diffuse->Set(0);
-				target->specular->Set(1);
-
-				glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
-				glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
-				glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
-				glDisable(GL_BLEND); GreatVEngine::OpenGL::DebugTest();
-
-				postProcessing->bloom->intensityFilter->attributes->Set();
-				postProcessing->bloom->intensityFilter->vertices->Set();
-				postProcessing->bloom->intensityFilter->program->Set();
-				postProcessing->bloom->intensityFilter->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
-
-				glDrawArrays(GL_POINTS, 0, 1);
-			}
-		}
-	}*/
+	environmentPass->Render(shared, camera_, techniqueType_);
 
 	// enable buffer to draw
 	if(previousFrame)
@@ -2459,34 +2454,8 @@ inline void GreatVEngine::Graphics::OpenGL::Scene::Render(Reference<Graphics::Ca
 	glDisable(GL_STENCIL_TEST);
 	glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE);
 
-	draw(target->diffuse);
-	draw(target->specular);
-
-	/*// draw bloom
-	postProcessing->bloom->blur;
-	{
-		postProcessing->bloom->holder->color->Set(0);
-
-		glDisable(GL_CULL_FACE); GreatVEngine::OpenGL::DebugTest();
-		glDisable(GL_DEPTH_TEST); GreatVEngine::OpenGL::DebugTest();
-		glDisable(GL_STENCIL_TEST); GreatVEngine::OpenGL::DebugTest();
-		glEnable(GL_BLEND); glBlendFunc(GL_ONE, GL_ONE); GreatVEngine::OpenGL::DebugTest();
-
-		postProcessing->bloom->blur->attributes->Set();
-		postProcessing->bloom->blur->vertices->Set();
-		postProcessing->bloom->blur->program->Set();
-		postProcessing->bloom->blur->program->SetFloat("mipmapsCount", glm::log2((Float32)postProcessing->bloom->holder->color->GetWidth()));
-		postProcessing->bloom->blur->program->SetVec2("screen", Vec2(viewport.x, viewport.y));
-
-		glDrawArrays(GL_POINTS, 0, 1);
-	}*/
-
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_STENCIL_TEST);
-	glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	// draw(target->specular);
+	draw(target->diffuse.get());
+	draw(target->specular.get());
 
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
@@ -2569,18 +2538,25 @@ inline void GreatVEngine::Graphics::OpenGL::Scene::Render(Reference<Graphics::Ca
 	}
 	// draw(geometyPass->color);
 
-	if(GetAsyncKeyState(VK_F1)) draw(geometyPass->color);
-	if(GetAsyncKeyState(VK_F2)) draw(geometyPass->specular);
-	if(GetAsyncKeyState(VK_F3)) draw(geometyPass->normals);
-	if(GetAsyncKeyState(VK_F4)) draw(geometyPass->material);
-	if(GetAsyncKeyState(VK_F5)) draw(geometyPass->depthStencil);
-	if(GetAsyncKeyState(VK_F6)) draw(target->diffuse);
-	if(GetAsyncKeyState(VK_F7)) draw(target->specular);
-	if(GetAsyncKeyState(VK_F8)) draw(lightPass->ambientOcclusion->compressedDepth);
-	if(GetAsyncKeyState(VK_F9)) draw(postProcessing->bloom->holder->color);
+	// if(GetAsyncKeyState(VK_F1)) draw(geometyPass->color);
+	// if(GetAsyncKeyState(VK_F2)) draw(geometyPass->specular);
+	// if(GetAsyncKeyState(VK_F3)) draw(geometyPass->normals);
+	// if(GetAsyncKeyState(VK_F4)) draw(geometyPass->material);
+	// if(GetAsyncKeyState(VK_F5)) draw(geometyPass->depthStencil);
+
+	if(GetAsyncKeyState(VK_F1)) draw(geometyPass->albedo.get());
+	if(GetAsyncKeyState(VK_F2)) draw(geometyPass->normal.get());
+	if(GetAsyncKeyState(VK_F3)) draw(geometyPass->roughnessMetalnessOcclusion.get());
+	if(GetAsyncKeyState(VK_F4)) draw(geometyPass->depthStencil.get());
+
+	if(GetAsyncKeyState(VK_F6)) draw(target->diffuse.get());
+	if(GetAsyncKeyState(VK_F7)) draw(target->specular.get());
+	// if(GetAsyncKeyState(VK_F8)) draw(lightPass->ambientOcclusion->compressedDepth);
+	// if(GetAsyncKeyState(VK_F9)) draw(postProcessing->bloom->holder->color);
 
 	glFlush();
 }
+
 #pragma endregion
 
 

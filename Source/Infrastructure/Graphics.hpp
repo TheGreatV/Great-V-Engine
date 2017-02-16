@@ -183,6 +183,10 @@ namespace GreatVEngine
 			inline Object(const Object&) = delete;
 			inline ~Object() = default;
 		public:
+			inline bool IsBonesEnabled() const
+			{
+				return isBonesEnabled;
+			}
 			inline void EnableLocalBones()
 			{
 				isBonesEnabled = true;
