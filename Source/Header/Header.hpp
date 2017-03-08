@@ -32,20 +32,62 @@ namespace GreatVEngine
 {
 	using Size = std::size_t;
 
-	template<class T> using Pointer = std::unique_ptr<T>;
-	template<class T> using Reference = std::shared_ptr<T>;
-	template<class T> using Link = std::weak_ptr<T>;
-	template<class T> using Shared = std::enable_shared_from_this<T>;
-
-	template<class T, size_t S> using Array = std::array<T, S>;
-	template<class T> using Vector = std::vector<T>;
-	template<class T> using List = std::list<T>;
-	template<class T, class S> using Dictionary = std::map<T, S>;
-	template<class T> using Set = std::set<T>;
-	template<class T> using Initializer = std::initializer_list<T>;
-
 	using String = std::string;
 	using WString = std::wstring;
+
+	using Filename = String;
+
+	template<class Type> using Memory = Type*;
+	template<class Type> using Pointer = std::unique_ptr<Type>;
+	template<class Type> using Link = std::weak_ptr<Type>;
+	template<class Type> using Reference = std::shared_ptr<Type>;
+	template<class Type> using Shared = std::enable_shared_from_this<Type>;
+
+	template<class Type, Size Size> using Array = std::array<Type, Size>;
+	template<class Type> using Vector = std::vector<Type>;
+	template<class Type> using List = std::list<Type>;
+	template<class Key, class Value> using Dictionary = std::map<Key, Value>;
+	template<class Type> using Set = std::set<Type>;
+	template<class Type> using Initializer = std::initializer_list<Type>;
+
+
+	// Types
+	template<class Type> class This;
+
+
+	// Functions
+	template<class To, class From> inline Reference<To> Cast(const Reference<From>& from_);
+	template<class To, class From> inline Reference<const To> Cast(const Reference<const From>& from_);
+	template<class To, class From> inline Reference<To> UpCast(const Reference<From>& from_);
+	template<class To, class From> inline Reference<const To> UpCast(const Reference<const From>& from_);
+
+	template<class Type> inline typename std::remove_reference<Type>::type&& Move(Type&& type_);
+	template<class Type> inline Type&& Forward(typename std::remove_reference<Type>::type& type_);
+
+	template<class Type> inline Pointer<Type> WrapPointer(Type*const type_);
+	template<class Type> inline Pointer<const Type> WrapPointer(const Type*const type_);
+	template<class Type, class...Arguments> inline Pointer<Type> MakePointer(Arguments&&...arguments_);
+
+	template<class Type> inline Link<Type> MakeLink(const Reference<Type>& reference_);
+
+	template<class Type> inline Reference<Type> WrapReference(Type*const type_);
+	template<class Type> inline Reference<const Type> WrapReference(const Type*const type_);
+	template<class Type> inline Reference<Type> MakeReference(const Link<Type>& link_);
+	template<class Type, class...Arguments> inline Reference<Type> MakeReference(Arguments&&...arguments_);
+
+	template<class Type> inline Memory<Type> AllocateMemory();
+	template<class Type> inline void ReleaseMemory(const Memory<Type>& memory_);
+
+	template<class Type, class...Arguments> inline Reference<Type> Make(Arguments&&...arguments_);
+
+	template<class Basic> class SmartDestructor:
+		public Basic
+	{
+		template<class Type, class...Arguments> friend inline Reference<Type> Make(Arguments&&...arguments_);
+	protected:
+		bool isConstructed;
+	};
+
 
 	inline WString ToWString(const String& source_)
 	{
@@ -54,68 +96,26 @@ namespace GreatVEngine
 		return converter.from_bytes(source_);
 	}
 
-	using Filename = String;
-
 	inline Filename Filepath(const Filename& filename_)
 	{
 		return "../../../../../" + filename_;
 	}
 
-	template<class T> inline Pointer<T> WrapPointer(T* t)
-	{
-		return Pointer<T>(t);
-	}
-	// template<class T> inline Pointer<T> WrapPointer(std::shared_ptr<T> t)
-	// {
-	// 	return Pointer<T>(t);
-	// }
-	template<class T> inline Reference<T> WrapReference(T* t)
-	{
-		return Reference<T>(t);
-	}
-	template<class T, class...A> inline Reference<T> MakeReference(A...a)
-	{
-		return std::make_shared<T>(a...);
-	}
-	template<class T> inline Reference<T> MakeReference(const Link<T>& t)
-	{
-		return Reference<T>(t);
-	}
-	// template<class T> inline Reference<T> MakeReference(std::unique_ptr<T> t)
-	// {
-	// 	return Reference<T>(t);
-	// }
-	template<class T> inline Link<T> WrapLink(T t)
-	{
-		return Link<T>(t);
-	}
-	template<class T> inline Reference<T> Share(Pointer<T> t)
-	{
-		return std::make_shared<T>(t);
-	}
-	template<class T> inline Reference<T> Share(Link<T> t)
-	{
-		return std::make_shared<T>(t);
-	}
-
-	template<class A, class B> inline Reference<A> Cast(Reference<B>& b_)
-	{
-		return std::static_pointer_cast<A>(b_);
-	}
-	template<class A, class B> inline Reference<A> Cast(const Reference<B>& b_)
-	{
-		return std::static_pointer_cast<A>(b_);
-	}
-	template<class A, class B> inline Reference<A> UpCast(Reference<B>& b_)
-	{
-		return std::dynamic_pointer_cast<A>(b_);
-	}
-	template<class A, class B> inline Reference<A> UpCast(const Reference<B>& b_)
-	{
-		return std::dynamic_pointer_cast<A>(b_);
-	}
 
 	const Size BITS_IN_BYTE = 8;
+
+
+	// Classes definition
+	template<class Type> class This
+	{
+	protected:
+		Link<Type> self;
+	public:
+		inline This(const Reference<Type>& this_);
+	public:
+		template<class Child> inline Reference<Child> GetThis() const;
+		inline Reference<Type> GetThis() const;
+	};
 
 	enum class Format
 	{
@@ -132,6 +132,159 @@ namespace GreatVEngine
 		R32G32B32A32_SFloat,
 	};
 }
+
+
+#pragma region GreatVEngine
+
+#pragma region This
+
+template<class Type>
+inline GreatVEngine::This<Type>::This(const Reference<Type>& this_):
+	self(this_)
+{
+}
+
+template<class Type> template<class Child>
+inline GreatVEngine::Reference<Child> GreatVEngine::This<Type>::GetThis() const
+{
+	return Cast<Child>(MakeReference(self));
+}
+
+template<class Type>
+inline GreatVEngine::Reference<Type> GreatVEngine::This<Type>::GetThis() const
+{
+	return MakeReference(self);
+}
+
+#pragma endregion
+
+
+template<class To, class From>
+inline GreatVEngine::Reference<To> GreatVEngine::Cast(const Reference<From>& from_)
+{
+	return std::static_pointer_cast<To>(from_);
+}
+
+template<class To, class From>
+inline GreatVEngine::Reference<const To> GreatVEngine::Cast(const Reference<const From>& from_)
+{
+	return std::static_pointer_cast<const To>(from_);
+}
+
+template<class To, class From>
+inline GreatVEngine::Reference<To> GreatVEngine::UpCast(const Reference<From>& from_)
+{
+	return std::dynamic_pointer_cast<To>(from_);
+}
+
+template<class To, class From>
+inline GreatVEngine::Reference<const To> GreatVEngine::UpCast(const Reference<const From>& from_)
+{
+	return std::dynamic_pointer_cast<const To>(from_);
+}
+
+
+template<class Type>
+inline typename std::remove_reference<Type>::type&& GreatVEngine::Move(Type&& type_)
+{
+	return std::move(type_);
+}
+
+template<class Type> inline Type&& GreatVEngine::Forward(typename std::remove_reference<Type>::type& type_)
+{
+	return std::forward<Type>(type_);
+}
+
+
+template<class Type>
+inline GreatVEngine::Pointer<Type> GreatVEngine::WrapPointer(Type*const type_)
+{
+	return Move(Pointer<Type>(type_));
+}
+
+template<class Type>
+inline GreatVEngine::Pointer<const Type> GreatVEngine::WrapPointer(const Type*const type_)
+{
+	return Move(Pointer<const Type>(type_));
+}
+
+template<class Type, class...Arguments>
+inline GreatVEngine::Pointer<Type> GreatVEngine::MakePointer(Arguments&&...arguments_)
+{
+	return Move(std::make_unique<Type>(Forward<Arguments>(arguments_)...));
+}
+
+template<class Type>
+inline GreatVEngine::Link<Type> GreatVEngine::MakeLink(const Reference<Type>& reference_)
+{
+	return Move(Link<Type>(reference_));
+}
+
+template<class Type>
+inline GreatVEngine::Reference<Type> GreatVEngine::WrapReference(Type*const type_)
+{
+	return Move(Reference<Type>(type_));
+}
+
+template<class Type>
+inline GreatVEngine::Reference<const Type> GreatVEngine::WrapReference(const Type*const type_)
+{
+	return Move(Reference<const Type>(type_));
+}
+
+template<class Type>
+inline GreatVEngine::Reference<Type> GreatVEngine::MakeReference(const Link<Type>& link_)
+{
+	return Move(Reference<Type>(link_));
+}
+
+template<class Type, class...Arguments>
+inline GreatVEngine::Reference<Type> GreatVEngine::MakeReference(Arguments&&...arguments_)
+{
+	return Move(std::make_shared<Type>(std::forward<Arguments>(arguments_)...));
+}
+
+
+template<class Type>
+inline GreatVEngine::Memory<Type> GreatVEngine::AllocateMemory()
+{
+	auto rawMemory = std::malloc(sizeof(Type));
+	auto memory = static_cast<Memory<Type>>(rawMemory);
+	return memory;
+}
+
+template<class Type>
+inline void GreatVEngine::ReleaseMemory(const Memory<Type>& memory_)
+{
+	std::free(memory_);
+}
+
+
+template<class Type, class...Arguments>
+inline GreatVEngine::Reference<Type> GreatVEngine::Make(Arguments&&...arguments_)
+{
+	auto holder = AllocateMemory<SmartDestructor<Type>>();
+	holder->isConstructed = false;
+
+	auto shared = Move(Reference<Type>(static_cast<Type*>(holder), [](Type* memory_){
+		auto holder = static_cast<SmartDestructor<Type>*>(memory_);
+		
+		if(holder->isConstructed)
+		{
+			holder->~SmartDestructor<Type>();
+		}
+
+		ReleaseMemory(holder);
+	}));
+
+	new(holder) Type(shared, Forward<Arguments>(arguments_)...);
+	holder->isConstructed = true;
+
+	return Move(shared);
+}
+
+#pragma endregion
+
 
 
 #pragma region
