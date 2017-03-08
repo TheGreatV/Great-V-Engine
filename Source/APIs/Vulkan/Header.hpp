@@ -16,7 +16,7 @@
 
 
 #pragma region Macro
-#define GVE_VULKAN_VERSION VK_MAKE_VERSION(1, 0, 37)
+#define GVE_VULKAN_VERSION VK_MAKE_VERSION(1, 0, 42)
 #pragma endregion
 
 

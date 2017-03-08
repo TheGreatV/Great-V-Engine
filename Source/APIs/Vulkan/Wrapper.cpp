@@ -2,11 +2,14 @@
 
 
 #if GVE_DEBUG
+
 #include <iostream>
+
 #endif
 
 
 #pragma region Instance
+
 #if GVE_DEBUG
 VkBool32 __stdcall GreatVEngine::Vulkan::Instance::DebugCallback(
 	VkDebugReportFlagsEXT                       flags,
@@ -44,6 +47,7 @@ VkBool32 __stdcall GreatVEngine::Vulkan::Instance::DebugCallback(
 	return false;
 }
 #endif
+
 #pragma endregion
 #pragma region Command
 void GreatVEngine::Vulkan::Command::Parse(CommandBuffer* commandBuffer_)

@@ -2397,6 +2397,7 @@ namespace GreatVEngine
 
 
 #pragma region Instance
+
 inline GreatVEngine::Vulkan::Instance::Instance(const Layer::CNames& layersCNames_, const Extension::CNames& extensionsCNames_):
 	handle([&]()
 	{
@@ -2459,6 +2460,7 @@ inline GreatVEngine::Vulkan::Instance::~Instance()
 
 	DestroyInstance(handle, nullptr);
 }
+
 #pragma endregion
 #pragma region PhysicalDevice
 inline GreatVEngine::Vector<GreatVEngine::Vulkan::PhysicalDevice*> GreatVEngine::Vulkan::PhysicalDevice::Enumerate(Instance* instance_)
