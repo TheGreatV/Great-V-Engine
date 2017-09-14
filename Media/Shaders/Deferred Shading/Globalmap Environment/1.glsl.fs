@@ -24,7 +24,7 @@ uniform float	environmentMipmapsCount;
 uniform vec4	environmentColor;
 
 
-in	vec4	pRec;
+in	vec4	pView;
 
 
 out	vec4	oSpecular;
@@ -50,7 +50,7 @@ void main()
 	float	occlusion = dataRoughnessMetalnessOcclusion.z;
 	float	depth = dataDepth.x; if(depth >= 1.0f) return; // TODO: check this shit
 	float	distance = camFarXNear / (camFar - depth * camFarMNear); 
-	vec3	position = pRec.xyz * distance;
+	vec3	position = (pView.xyz * gl_FragCoord.w) * distance;
 	vec3	view = -normalize(position); // from pixel to camera
 	vec3	reflection = reflect(-view, normal);
 	float	diffuseIntensity = dataDiffuse.w;
@@ -82,7 +82,7 @@ void main()
 	// float	diffuseIntensity = dataDiffuse.w;
 	// float	depth = dataDepth.x; if(depth >= 1.0f) return;
 	// float	distance = camFarXNear / (camFar - depth * camFarMNear); 
-	// vec3	position = (pRec.xyz*gl_FragCoord.w) * distance;
+	// vec3	position = (pView.xyz*gl_FragCoord.w) * distance;
 	// vec3	view = -normalize(position); // from pixel to camera
 	// vec3	reflection = reflect(-view, normal);
 	// vec3	light = reflection; // from pixel to light

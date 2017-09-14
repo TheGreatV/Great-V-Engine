@@ -74,6 +74,7 @@ namespace GreatVEngine
 				Depth						= Technique1,
 				Shadow						= Technique2,
 				Reflection					= Technique3,
+				Distortion					= Technique4,
 			};
 			enum class MapType: Size
 			{

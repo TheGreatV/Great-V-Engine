@@ -40,9 +40,9 @@ void func()
 	Log::Clear();
 
 	auto winInstance = GreatVEngine::WinAPI::Instance::Get();
-	auto windowClass = MakeReference(new GreatVEngine::WinAPI::WindowClass(winInstance, "class"));
-	auto window = MakeReference(new GreatVEngine::WinAPI::Window(windowClass, "window"));
-	auto winDeviceContext = MakeReference(new GreatVEngine::WinAPI::DeviceContext(window));
+	auto windowClass = MakeReference<GreatVEngine::WinAPI::WindowClass>(winInstance, "class");
+	auto window = MakeReference<GreatVEngine::WinAPI::Window>(windowClass, "window");
+	auto winDeviceContext = MakeReference<GreatVEngine::WinAPI::DeviceContext>(window);
 	{
 		winDeviceContext->SetPixelFormat();
 	}
@@ -175,18 +175,19 @@ void func()
 
 	auto pipelineLayout = new Vulkan::PipelineLayout(vkDevice, {});
 	auto pipelineCache = new Vulkan::PipelineCache(vkDevice);
-	auto pipeline = new Vulkan::GraphicPipeline(
+	auto pipeline = MakePointer<Vulkan::GraphicPipeline>(
 		vkDevice, pipelineCache, pipelineLayout, renderPass,
 		Vulkan::GraphicPipeline::Shaders(
 			shaderVertex,
 			nullptr, 
 			nullptr, 
 			nullptr, 
-			shaderFragment),
-		{Vulkan::GraphicPipeline::Binding(0, sizeof(Float32)*2, Vulkan::GraphicPipeline::Binding::Rate::VK_VERTEX_INPUT_RATE_VERTEX)},
-		{Vulkan::GraphicPipeline::Attribute(0, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32_SFLOAT, 0)},
-		{VkViewport{0, 0, (Float32)surface->GetCapabilities().currentExtent.width, (Float32)surface->GetCapabilities().currentExtent.height, 0.0f, 1.0f}},
-		{VkRect2D{{0, 0}, surface->GetCapabilities().currentExtent}},
+			shaderFragment
+		),
+		Vector<Vulkan::GraphicPipeline::Binding>({Vulkan::GraphicPipeline::Binding(0, sizeof(Float32)*2, Vulkan::GraphicPipeline::Binding::Rate::VK_VERTEX_INPUT_RATE_VERTEX)}),
+		Vector<Vulkan::GraphicPipeline::Attribute>({Vulkan::GraphicPipeline::Attribute(0, 0, Vulkan::GraphicPipeline::Attribute::Format::VK_FORMAT_R32G32_SFLOAT, 0)}),
+		Vector<VkViewport>({VkViewport{0, 0, (Float32)surface->GetCapabilities().currentExtent.width, (Float32)surface->GetCapabilities().currentExtent.height, 0.0f, 1.0f}}),
+		Vector<VkRect2D>({VkRect2D{{0, 0}, surface->GetCapabilities().currentExtent}}),
 		Vulkan::GraphicPipeline::Topology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 		Vulkan::GraphicPipeline::Fill::VK_POLYGON_MODE_FILL,
 		Vulkan::GraphicPipeline::Culls::VK_CULL_MODE_NONE,
@@ -203,40 +204,43 @@ void func()
 					Vulkan::GraphicPipeline::BlendState::Operation::VK_BLEND_OP_ADD,
 					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 					Vulkan::GraphicPipeline::BlendState::Factor::VK_BLEND_FACTOR_ONE,
-					Vulkan::GraphicPipeline::BlendState::Operation::VK_BLEND_OP_ADD)
+					Vulkan::GraphicPipeline::BlendState::Operation::VK_BLEND_OP_ADD
+				)
 			}
-	));
+		)
+	);
 
 	auto queue = new Vulkan::Queue(vkDevice, 0, 0);
-	auto commandPool = new Vulkan::CommandPool(vkDevice, 0);
+	auto commandPool = MakePointer<Vulkan::CommandPool>(vkDevice, 0);
 	auto commandBuffers = [&]()
 	{
-		Vector<Vulkan::CommandBuffer*> commandBuffers(2);
+		Vector<Pointer<Vulkan::CommandBuffer>> commandBuffers(2);
 		
 		for(Size i = 0; i < commandBuffers.size(); ++i)
 		{
 			auto &commandBuffer = commandBuffers[i];
 			auto &framebuffer = framebuffers[i];
 
-			commandBuffer = new Vulkan::CommandBuffer(commandPool, Vulkan::CommandBuffer::Level::Primary);
+			commandBuffer = MakePointer<Vulkan::CommandBuffer>(commandPool.get(), Vulkan::CommandBuffer::Level::Primary);
 			commandBuffer->Record(
 				renderPass, 0, framebuffer, {
-				new Vulkan::Commands::RenderPass(
-					renderPass, framebuffer, Vulkan::Commands::RenderPass::Content::VK_SUBPASS_CONTENTS_INLINE,
-					{{0, 0}, surface->GetCapabilities().currentExtent}, {
-						{1.0f, 0.0f, 0.0f, 1.0f}
-					}, {
-						new Vulkan::Commands::BindGraphicPipeline(pipeline),
-						new Vulkan::Commands::BindVertexBuffers({vertexBuffer}, {0}),
-						new Vulkan::Commands::Draw(0, 3, 0, 1)
-					})
+					new Vulkan::Commands::RenderPass(
+						renderPass, framebuffer, Vulkan::Commands::RenderPass::Content::VK_SUBPASS_CONTENTS_INLINE,
+						{{0, 0}, surface->GetCapabilities().currentExtent}, {
+							{1.0f, 0.0f, 0.0f, 1.0f}
+						}, {
+							new Vulkan::Commands::BindGraphicPipeline(pipeline.get()),
+							new Vulkan::Commands::BindVertexBuffers({vertexBuffer}, {0}),
+							new Vulkan::Commands::Draw(0, 3, 0, 1)
+						}
+					)
 				});
 		}
 
 		return commandBuffers;
 	}();
 
-	auto fence = new Vulkan::Fence(vkDevice);
+	auto fence = MakePointer<Vulkan::Fence>(vkDevice);
 
 	while(!GetAsyncKeyState(VK_ESCAPE))
 	{
@@ -244,23 +248,19 @@ void func()
 
 		window->Loop();
 
-		auto swapchainImage = swapchain->AccuireNextImage(fence);
+		auto swapchainImage = swapchain->AccuireNextImage(fence.get());
 
 		fence->Wait();
 		fence->Reset();
 
-		queue->Submit(commandBuffers[swapchainImage]);
+		queue->Submit(commandBuffers[swapchainImage].get());
 		queue->Wait();
 
 		swapchain->Preset(queue, swapchainImage);
 	}
 
-	delete fence;
-	for(auto &commandBuffer : commandBuffers) delete commandBuffer;
-	delete commandPool;
 	delete pipelineLayout;
 	delete pipelineCache;
-	delete pipeline;
 	delete queue;
 	for(auto &framebuffer : framebuffers) delete framebuffer;
 	for(auto &swapchainImageView : swapchainImageViews) delete swapchainImageView;

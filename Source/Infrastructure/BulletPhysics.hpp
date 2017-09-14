@@ -201,6 +201,12 @@ namespace GreatVEngine
 						return handle->GetMass();
 					}
 				public:
+					inline void SetVelocity(const Velocity::Value& value_)
+					{
+						handle->SetVelocity(value_);
+						velocity = value_; // TODO: check this
+					}
+				public:
 					inline void SetPositionFactor(const Vec3& factor_)
 					{
 						handle->SetPositionFactor(factor_);
@@ -280,11 +286,13 @@ namespace GreatVEngine
 
 
 #pragma region World
+
 inline GreatVEngine::Physics::BulletPhysics::World::World(Reference<Engine> engine_):
 	engine(engine_),
 	handle(new Handle())
 {
-	handle->SetGravity(Vec3(0.0f, -98.0f, 0.0f));
+	// handle->SetGravity(Vec3(0.0f, -98.0f, 0.0f));
+	handle->SetGravity(Vec3(0.0f, 0.0f, 0.0f));
 }
 inline GreatVEngine::Physics::BulletPhysics::World::~World()
 {
@@ -371,10 +379,11 @@ inline void GreatVEngine::Physics::BulletPhysics::World::Render(const Float32& t
 		body->Update(
 			body->handle->GetPosition(),
 			body->handle->GetAngle(),
-			Vec3(0.0f),
+			body->handle->GetVelocity(),
 			Vec3(0.0f));
 	}
 }
+
 #pragma endregion
 #pragma region Shape
 inline GreatVEngine::Reference<GreatVEngine::Physics::BulletPhysics::Shape> GreatVEngine::Physics::BulletPhysics::Shape::CreateBox(const Vec3& size_, const Mass& mass_)
@@ -396,7 +405,9 @@ inline GreatVEngine::Physics::BulletPhysics::Shape::Shape(Reference<Handle> hand
 }
 #pragma endregion
 #pragma region Bodies
+
 #pragma region Rigid
+
 inline GreatVEngine::Physics::BulletPhysics::Bodies::Rigid::Rigid(Reference<Shape> shape_):
 	Rigid(shape_, Position::Value(0.0f))
 {
@@ -420,7 +431,9 @@ inline GreatVEngine::Physics::BulletPhysics::Bodies::Rigid::Rigid(Reference<Shap
 	handle(new Handle(shape_->handle, position_, angle_, shape->GetMass()))
 {
 }
+
 #pragma endregion
+
 #pragma endregion
 
 

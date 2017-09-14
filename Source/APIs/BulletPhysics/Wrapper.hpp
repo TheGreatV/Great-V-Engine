@@ -159,6 +159,9 @@ namespace GreatVEngine
 				inline Vec3 GetPosition() const;
 				inline Vec3 GetAngle() const;
 			public:
+				inline Vec3 GetVelocity() const;
+				inline void SetVelocity(const Vec3& value_);
+			public:
 				inline void SetPositionFactor(const Vec3& factor_);
 				inline void SetAngleFactor(const Vec3& factor_);
 			public:
@@ -185,11 +188,14 @@ namespace GreatVEngine
 		inline btMatrix3x3 ToBtMatrix3x3(const Mat3& source_);
 		inline btTransform ToBtTransform(const Vec3& position_);
 		inline btTransform ToBtTransform(const Vec3& position_, const Vec3& angle_);
+
+		inline Vec3 FromBtVector3(const btVector3& source_);
 	}
 }
 
 
 #pragma region
+
 inline btVector3 GreatVEngine::BulletPhysics::ToBtVector3(const Vec3& source_)
 {
 	return btVector3(source_.x, source_.y, source_.z);
@@ -215,6 +221,12 @@ inline btTransform GreatVEngine::BulletPhysics::ToBtTransform(const Vec3& positi
 
 	return transform;
 }
+
+inline GreatVEngine::Vec3 GreatVEngine::BulletPhysics::FromBtVector3(const btVector3& source_)
+{
+	return Vec3(source_.x(), source_.y(), source_.z());
+}
+
 #pragma endregion
 #pragma region World
 inline GreatVEngine::BulletPhysics::World::World():
@@ -293,7 +305,7 @@ inline GreatVEngine::Reference<GreatVEngine::BulletPhysics::Shape> GreatVEngine:
 	// World::data.dynamicsWorld->addRigidBody(body, (uint16)group_, (uint16)group_);
 
 	return WrapReference(new Shape(
-		std::move(WrapPointer(handle)),
+		WrapPointer(handle),
 		mass_,
 		std::move(*vertices.get()),
 		std::move(*indices.get())));
@@ -322,7 +334,9 @@ inline GreatVEngine::BulletPhysics::Shape::Shape(Pointer<Handle>&& handle_, cons
 }
 #pragma endregion
 #pragma region Bodies
+
 #pragma region Rigid
+
 inline GreatVEngine::BulletPhysics::Bodies::Rigid::Rigid(Reference<Shape> shape_) :
 	Rigid(shape_, Vec3(0.0f), shape_->GetMass())
 {
@@ -405,6 +419,16 @@ inline GreatVEngine::Vec3 GreatVEngine::BulletPhysics::Bodies::Rigid::GetAngle()
 		basis[0].getY(), basis[1].getY(), basis[2].getY(),
 		basis[0].getZ(), basis[1].getZ(), basis[2].getZ()));
 }
+
+inline GreatVEngine::Vec3 GreatVEngine::BulletPhysics::Bodies::Rigid::GetVelocity() const
+{
+	return FromBtVector3(handle->getLinearVelocity());
+}
+inline void GreatVEngine::BulletPhysics::Bodies::Rigid::SetVelocity(const Vec3& value_)
+{
+	handle->setLinearVelocity(ToBtVector3(value_));
+}
+
 inline void GreatVEngine::BulletPhysics::Bodies::Rigid::SetPositionFactor(const Vec3& factor_)
 {
 	handle->setLinearFactor(ToBtVector3(factor_));
@@ -413,6 +437,7 @@ inline void GreatVEngine::BulletPhysics::Bodies::Rigid::SetAngleFactor(const Vec
 {
 	handle->setAngularFactor(ToBtVector3(factor_));
 }
+
 inline void GreatVEngine::BulletPhysics::Bodies::Rigid::AddForce(const Vec3& position_, const Vec3& value_)
 {
 	handle->applyForce(ToBtVector3(value_), ToBtVector3(position_));
@@ -442,7 +467,9 @@ inline void GreatVEngine::BulletPhysics::Bodies::Rigid::AddTorqueImpulse(const V
 
 	handle->applyTorqueImpulse(ToBtVector3(Vec3(value_.x, value_.y, -value_.z)));
 }
+
 #pragma endregion
+
 #pragma endregion
 
 

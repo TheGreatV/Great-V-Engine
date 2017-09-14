@@ -252,10 +252,26 @@ namespace GreatVEngine
 				key[(Size)KeyCode::NUM_DIGIT8].state = GetAsyncKeyState(VK_NUMPAD8) != 0;
 				key[(Size)KeyCode::NUM_DIGIT9].state = GetAsyncKeyState(VK_NUMPAD9) != 0;
 				key[(Size)KeyCode::NUM_DIGIT0].state = GetAsyncKeyState(VK_NUMPAD0) != 0;
+
+				for (auto &k : key)
+				{
+					if (!k.state)
+					{
+						k.press = false;
+					}
+				}
 			}
 			inline static bool GetKeyState(const KeyCode& keyCode_)
 			{
-				return key[(Size)keyCode_].state;
+				return key[static_cast<Size>(keyCode_)].state;
+			}
+			inline static bool GetKeyPress(const KeyCode& keyCode_)
+			{
+				return key[static_cast<Size>(keyCode_)].press;
+			}
+			inline static void PressKey(const KeyCode& keyCode_)
+			{
+				key[static_cast<Size>(keyCode_)].press = true;
 			}
 		};
 		class Mouse
@@ -273,6 +289,8 @@ namespace GreatVEngine
 				Count = 3
 			};
 		protected:
+			static Float32 wheel;
+			static Float32 wheelDelta;
 			static Position position;
 			static PositionDelta positionDelta;
 			static Keyboard::Key button[(Size)Button::Count];
@@ -326,6 +344,14 @@ namespace GreatVEngine
 			{
 				return positionDelta;
 			}
+			inline static Float32 GetWheel()
+			{
+				return wheel;
+			}
+			inline static Float32 GetWheelDelta()
+			{
+				return wheelDelta;
+			}
 		};
 
 		inline void Loop()
@@ -345,6 +371,14 @@ namespace GreatVEngine
 	inline bool KeyState(const Keys& key_)
 	{
 		return Input::Keyboard::GetKeyState(key_);
+	}
+	inline bool KeyPress(const Keys& key_)
+	{
+		return Input::Keyboard::GetKeyPress(key_);
+	}
+	inline void PressKey(const Keys& key_)
+	{
+		Input::Keyboard::PressKey(key_);
 	}
 }
 

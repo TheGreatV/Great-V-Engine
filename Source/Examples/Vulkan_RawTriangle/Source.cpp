@@ -12,9 +12,9 @@ using namespace GVE;
 void func()
 {
 	auto instance = GreatVEngine::WinAPI::Instance::Get();
-	auto windowClass = MakeReference(new GreatVEngine::WinAPI::WindowClass(instance, "class"));
-	auto window = MakeReference(new GreatVEngine::WinAPI::Window(windowClass, "window"));
-	auto deviceContext = MakeReference(new GreatVEngine::WinAPI::DeviceContext(window));
+	auto windowClass = MakeReference<GreatVEngine::WinAPI::WindowClass>(instance, "class");
+	auto window = MakeReference<GreatVEngine::WinAPI::Window>(windowClass, "window");
+	auto deviceContext = MakeReference<GreatVEngine::WinAPI::DeviceContext>(window);
 	{
 		deviceContext->SetPixelFormat();
 	}
@@ -22,21 +22,25 @@ void func()
 
 	VkInstance vk_instance;
 	{
+		Size count;
+		vkEnumerateInstanceLayerProperties(&count, nullptr);
+		Vector<VkLayerProperties> properties(count);
+		vkEnumerateInstanceLayerProperties(&count, properties.data());
+
 		Vector<const char*> layerNames = {
 			"VK_LAYER_LUNARG_api_dump",
 			"VK_LAYER_LUNARG_core_validation",
-			"VK_LAYER_LUNARG_image",
+			"VK_LAYER_LUNARG_monitor",
 			"VK_LAYER_LUNARG_object_tracker",
 			"VK_LAYER_LUNARG_parameter_validation",
 			"VK_LAYER_LUNARG_screenshot",
-			"VK_LAYER_LUNARG_swapchain",
+			"VK_LAYER_LUNARG_standard_validation",
 			"VK_LAYER_GOOGLE_threading",
 			"VK_LAYER_GOOGLE_unique_objects",
 			// "VK_LAYER_LUNARG_vktrace",
 			"VK_LAYER_RENDERDOC_Capture",
 			"VK_LAYER_NV_optimus",
 			"VK_LAYER_VALVE_steam_overlay",
-			"VK_LAYER_LUNARG_standard_validation",
 		};
 
 		Vector<const char*> extensionNames = {
@@ -53,7 +57,7 @@ void func()
 			vk_applicationInfo.applicationVersion = 1;
 			vk_applicationInfo.pEngineName = "Engine name";
 			vk_applicationInfo.engineVersion = 1;
-			vk_applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 21);
+			vk_applicationInfo.apiVersion = GVE_VULKAN_VERSION; //  VK_MAKE_VERSION(1, 0, 21);
 		}
 		VkInstanceCreateInfo vk_instanceCreateInfo;
 		{
@@ -68,7 +72,7 @@ void func()
 		}
 
 		auto result = vkCreateInstance(&vk_instanceCreateInfo, nullptr, &vk_instance);
-		if(vkCreateInstance(&vk_instanceCreateInfo, nullptr, &vk_instance) != VkResult::VK_SUCCESS)
+		if(result != VkResult::VK_SUCCESS)
 		{
 			throw std::exception("failed to create vk instance");
 		}

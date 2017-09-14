@@ -1981,7 +1981,8 @@ namespace GreatVEngine
 				};
 			}
 
-			using HMat3 = Dimension3::HierarchyMatrix;
+			using Pos3	= Dimension3::Position;
+			using HMat3	= Dimension3::HierarchyMatrix;
 		}
 	}
 }

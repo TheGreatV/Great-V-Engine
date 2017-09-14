@@ -6,10 +6,9 @@
 layout(pixel_center_integer) in vec4 gl_FragCoord;
 
 
-uniform sampler2D	textureColor;
-uniform sampler2D	textureSpecular;
+uniform sampler2D	textureAlbedo;
 uniform sampler2D	textureNormal;
-uniform sampler2D	textureMaterial;
+uniform sampler2D	textureRoughnessMetalnessOcclusion;
 uniform sampler2D	textureDepth;
 
 
@@ -43,31 +42,39 @@ float Specular(vec3 normal, vec3 light, vec3 view, float roughness);
 void main() {
 	vec2	screenTex = gl_FragCoord.xy/screen;
 
-	vec4	dataColor = texture(textureColor, screenTex);
-	vec4	dataSpecular = texture(textureSpecular, screenTex);
+	vec4	dataAlbedo = texture(textureAlbedo, screenTex);
 	vec4	dataNormal = texture(textureNormal, screenTex);
-	vec4	dataMaterial = texture(textureMaterial, screenTex);
+	vec4	dataRoughnessMetalnessOcclusion = texture(textureRoughnessMetalnessOcclusion, screenTex);
 	vec4	dataDepth = texture(textureDepth, screenTex);
 
-	vec3	color = dataColor.xyz;
-	vec3	specular = dataSpecular.xyz;
+	vec3	albedo = dataAlbedo.xyz;
 	vec3	normal = normalize(dataNormal.xyz);
-	float	roughness = dataMaterial.x;
-	float	depth = dataDepth.x; if(depth >= 1.0f) return;
+	float	roughness = dataRoughnessMetalnessOcclusion.x;
+	float	metalness = dataRoughnessMetalnessOcclusion.y;
+	float	occlusion = dataRoughnessMetalnessOcclusion.z;
+	float	depth = dataDepth.x; if(depth >= 1.0f) return; // TODO: check this shit
 	float	distance = camFarXNear / (camFar - depth * camFarMNear); 
-	vec3	position = (pView.xyz*gl_FragCoord.w) * distance; // *gl_FragCoord.w - perspective correction
-	vec3	view = -normalize(position); // from pixel to camera
+	vec3	position = (pView.xyz * gl_FragCoord.w) * distance;
+	vec3	view = - normalize(position); // from pixel to camera
+	vec3	reflection = reflect(-view, normal);
 
 	vec3	lightOffset = position - lightPosition;
 	vec3	lightDirection = normalize(lightOffset);
 	vec3	light = -lightDirection; // from pixel to light
 	
 	float	rangeIntensity = 1.0f - clamp( (length(lightOffset) - lightRange.x) / (lightRange.y - lightRange.x), 0.0f, 1.0f);
-	float	diffuseIntensity = Diffuse(normal, light, view, roughness, lightAmbient);
-	float	specularIntensity = Specular(normal, light, view, roughness);
 
-	oDiffuse = vec4(diffuseIntensity*rangeIntensity * color*lightColor, diffuseIntensity*rangeIntensity);
-	oSpecular = vec4(specularIntensity*rangeIntensity * specular*lightColor, 1.0f);
+	float	gloss = 1.0f - roughness;
+	
+	float	diffuseIntensity = Diffuse(normal, light, view, roughness, lightAmbient * occlusion);
+	float	specularIntensity = Specular(normal, light, view, roughness);
+	// float	diffuseIntensity = Diffuse(normal, light, view, roughness, lightAmbient);
+	// float	specularIntensity = Specular(normal, light, view, roughness);
+
+	oDiffuse = vec4((1.0f - gloss) * diffuseIntensity*rangeIntensity * albedo * lightColor, diffuseIntensity*rangeIntensity);
+	oSpecular = vec4(gloss * specularIntensity*rangeIntensity * mix(vec3(1.0f), albedo, metalness) * lightColor, 1.0f);
+	// oDiffuse = vec4(diffuseIntensity*rangeIntensity * color*lightColor, diffuseIntensity*rangeIntensity);
+	// oSpecular = vec4(specularIntensity*rangeIntensity * specular*lightColor, 1.0f);
 }
 
 float Fresnel(vec3 normal, vec3 view, float roughness) {

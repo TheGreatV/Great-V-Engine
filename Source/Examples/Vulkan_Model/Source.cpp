@@ -12,6 +12,9 @@ namespace GVE = GreatVEngine;
 using namespace GVE;
 
 
+GreatVEngine::OpenIL::Initer GreatVEngine::OpenIL::Initer::initer;
+
+
 namespace Log
 {
 	const String filename = "log.log";
@@ -42,12 +45,16 @@ void func()
 	Log::Clear();
 
 	auto winInstance = GreatVEngine::WinAPI::Instance::Get();
-	auto windowClass = MakeReference(new GreatVEngine::WinAPI::WindowClass(winInstance, "class"));
-	auto window = MakeReference(new GreatVEngine::WinAPI::Window(windowClass, "window"));
-	auto winDeviceContext = MakeReference(new GreatVEngine::WinAPI::DeviceContext(window));
+	WinAPI::ErrorTest();
+	auto windowClass = WrapReference(new GreatVEngine::WinAPI::WindowClass(winInstance, "class"));
+	WinAPI::ErrorTest();
+	auto window = WrapReference(new GreatVEngine::WinAPI::Window(windowClass, "window"));
+	WinAPI::ErrorTest();
+	auto winDeviceContext = WrapReference(new GreatVEngine::WinAPI::DeviceContext(window));
 	{
 		winDeviceContext->SetPixelFormat();
 	}
+	WinAPI::ErrorTest();
 
 
 	Helper::Transformation::Dimension3::ViewProjectionMatrix camera(
@@ -463,6 +470,8 @@ void func()
 
 	auto fence = new Vulkan::Fence(vkDevice);
 
+	WinAPI::ErrorTest();
+
 	while(!GetAsyncKeyState(VK_ESCAPE))
 	{
 		cout << "------------------------------------------ LOOP ------------------------------------------" << endl;
@@ -484,13 +493,21 @@ void func()
 
 		auto swapchainImage = swapchain->AccuireNextImage(fence);
 
+		WinAPI::ErrorTest();
+
 		fence->Wait();
 		fence->Reset();
 
-		queue->Submit(commandBuffers[swapchainImage]);
-		queue->Wait();
+		WinAPI::ErrorTest();
 
-		swapchain->Preset(queue, swapchainImage);
+		// queue->Submit(commandBuffers[swapchainImage]);
+		// queue->Wait();
+
+		WinAPI::ErrorTest();
+
+		// swapchain->Preset(queue, swapchainImage);
+
+		WinAPI::ErrorTest();
 	}
 
 	delete fence;
@@ -526,16 +543,16 @@ void main()
 	}
 	catch(GVE::Vulkan::Exception e)
 	{
-		cout << e.GetCode() << ": " << e.GetText() << endl;
+		cout << "Vulkan exception(" << e.GetCode() << "): " << e.GetText() << endl;
 	}
-	catch(GVE::WinAPI::Exception e)
-	{
-		cout << e.GetCode() << ": " << e.GetText() << endl;
-	}
-	catch(GVE::Exception e)
-	{
-		cout << e.GetText() << endl;
-	}
+	// catch(GVE::WinAPI::Exception e)
+	// {
+	// 	cout << "WinAPI exception(" << e.GetCode() << "): " << e.GetText() << endl;
+	// }
+	// catch(GVE::Exception e)
+	// {
+	// 	cout << e.GetText() << endl;
+	// }
 
 	system("pause");
 }

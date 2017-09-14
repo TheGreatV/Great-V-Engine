@@ -47,15 +47,17 @@ void main() {
 	float	occlusion = dataRoughnessMetalnessOcclusion.z;
 	float	depth = dataDepth.x; if(depth >= 1.0f) return; // TODO: check this shit
 	float	distance = camFarXNear / (camFar - depth * camFarMNear); 
-	vec3	position = pView.xyz * distance;
-	vec3	view = -normalize(position); // from pixel to camera
+	vec3	position = (pView.xyz * gl_FragCoord.w) * distance;
+	vec3	view = - normalize(position); // from pixel to camera
 	vec3	reflection = reflect(-view, normal);
 	vec3	light = -lightDirection; // from pixel to light
 	
 	float	gloss = 1.0f - roughness;
 	
-	float	diffuseIntensity = Diffuse(normal, light, view, roughness, lightAmbient * occlusion);
-	float	specularIntensity = Specular(normal, light, view, roughness);
+	// float	diffuseIntensity = Diffuse(normal, light, view, roughness, lightAmbient * occlusion);
+	// float	specularIntensity = Specular(normal, light, view, roughness);
+	float	diffuseIntensity = Diffuse(normal, light, view, roughness, lightAmbient) * occlusion;
+	float	specularIntensity = Specular(normal, light, view, roughness) * occlusion;
 	
 	oDiffuse = vec4((1.0f - gloss) * diffuseIntensity * albedo * lightColor, diffuseIntensity);
 	oSpecular = vec4(gloss * specularIntensity * mix(vec3(1.0f), albedo, metalness) * lightColor, 1.0f);

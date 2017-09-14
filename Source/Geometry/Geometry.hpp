@@ -32,6 +32,19 @@ namespace GreatVEngine
 			UInt8,
 			Default = UInt32
 		};
+		enum class Topology
+		{
+			Points,
+			Lines,
+			LineStrip,
+			LineLoop,
+			Triangles,
+			TriangleStrip,
+			TriangleFan,
+			Patches2,
+			Patches3,
+			Patches4,
+		};
 	public:
 		using Index = UInt32;
 		using Bytes = Vector<UInt8>;
@@ -59,6 +72,7 @@ namespace GreatVEngine
 		inline static Reference<Geometry> CreateCapsule(const Float32& radius_, const Float32& height_, const Vec2& tex_, const UVec2& seg_);
 		inline static Reference<Geometry> CreateTorus(const Float32 radius_, const Float32 width_, const Vec2& tex_, const UVec2& seg_);
 	public:
+		Topology topology = Topology::Triangles;
 		Vector<Vertex> vertices;
 		Vector<Index> indices;
 	public:
@@ -88,6 +102,14 @@ namespace GreatVEngine
 			return *this;
 		}
 	public:
+		inline Topology GetTopology() const
+		{
+			return topology;
+		}
+		inline void SetTopology(const Topology& topology_)
+		{
+			topology = topology_;
+		}
 		inline static Size GetVertexSize(const VertexPackMode& vertexPackMode_ = VertexPackMode::Default)
 		{
 			switch(vertexPackMode_)

@@ -1,6 +1,6 @@
 #version 330
 
-#define PARALLAX_MAPPING 1
+#define PARALLAX_MAPPING 0
 
 uniform mat4	viewProjectionMatrix;
 uniform	vec3	cameraPosition;

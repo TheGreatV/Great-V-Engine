@@ -1131,7 +1131,7 @@ namespace GreatVEngine
 						vk_samplerCreateInfo.addressModeW = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT; // vk_addressModeW_;
 						vk_samplerCreateInfo.mipLodBias = 0.0f;
 						vk_samplerCreateInfo.anisotropyEnable = VK_FALSE;
-						vk_samplerCreateInfo.maxAnisotropy = 0.0f;
+						vk_samplerCreateInfo.maxAnisotropy = 1.0f;
 						vk_samplerCreateInfo.compareEnable = VK_FALSE;
 						vk_samplerCreateInfo.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
 						vk_samplerCreateInfo.minLod = 0.0f;

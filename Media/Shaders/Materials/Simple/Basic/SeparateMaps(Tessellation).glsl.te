@@ -1,0 +1,64 @@
+#version 420 core
+
+// layout (quads, equal_spacing, ccw) in;
+layout (triangles, equal_spacing, ccw) in;
+
+uniform mat4	modelMatrix;
+uniform mat3	rotateMatrix;
+uniform mat4	viewProjectionMatrix;
+uniform mat4	localViewProjectionMatrix;
+uniform mat4	modelViewProjectionMatrix;
+
+uniform sampler2D	textureHeight;
+// uniform float		modelEmboss;
+
+// uniform sampler2D	TextureNormals;
+// uniform float height = 1.0f;
+
+in	mat3		teTBN[];
+in	vec2		teTex[];
+// in vec3			teNor[];
+// in vec2			teTex[];
+
+out	vec3		fPos;
+out	mat3		fTBN;
+out	vec2		fTex;
+// out vec3		gNor;
+// out vec2		gTex;
+
+void main()
+{
+	fTBN[0] =
+		teTBN[0][0] * gl_TessCoord[0] +
+		teTBN[1][0] * gl_TessCoord[1] +
+		teTBN[2][0] * gl_TessCoord[2];
+
+	fTBN[1] =
+		teTBN[0][1] * gl_TessCoord[0] +
+		teTBN[1][1] * gl_TessCoord[1] +
+		teTBN[2][1] * gl_TessCoord[2];
+
+	fTBN[2] =
+		teTBN[0][2] * gl_TessCoord[0] +
+		teTBN[1][2] * gl_TessCoord[1] +
+		teTBN[2][2] * gl_TessCoord[2];
+
+	fTex =
+		teTex[0] * gl_TessCoord[0] +
+		teTex[1] * gl_TessCoord[1] +
+		teTex[2] * gl_TessCoord[2];
+	
+	fPos =
+		gl_in[0].gl_Position.xyz * gl_TessCoord[0] +
+		gl_in[1].gl_Position.xyz * gl_TessCoord[1] +
+		gl_in[2].gl_Position.xyz * gl_TessCoord[2];
+
+	vec3	normal = normalize(fTBN[2]);
+	float	height = texture(textureHeight, fTex).x;
+	float	emboss = 2.0f;
+	
+	fPos += normal * height * emboss;
+	
+	gl_Position = localViewProjectionMatrix * vec4(fPos, 1.0f);
+}
+

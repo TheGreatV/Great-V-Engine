@@ -120,6 +120,7 @@ PFNGLCOPYBUFFERSUBDATAPROC					GreatVEngine::OpenGL::glCopyBufferSubData = nullp
 // GL 4.0
 #if GVE_OPENGL_VERSION >= 400
 PFNGLPATCHPARAMETERIPROC					GreatVEngine::OpenGL::glPatchParameteri = nullptr;
+PFNGLPATCHPARAMETERFVPROC					GreatVEngine::OpenGL::glPatchParameterfv = nullptr;
 #endif
 // GL 4.3
 #if GVE_OPENGL_VERSION >= 430

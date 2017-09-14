@@ -109,7 +109,7 @@ namespace GreatVEngine
 	template<class Type> class This
 	{
 	protected:
-		Link<Type> self;
+		const Link<Type> self;
 	public:
 		inline This(const Reference<Type>& this_);
 	public:
@@ -277,7 +277,7 @@ inline GreatVEngine::Reference<Type> GreatVEngine::Make(Arguments&&...arguments_
 		ReleaseMemory(holder);
 	}));
 
-	new(holder) Type(shared, Forward<Arguments>(arguments_)...);
+	new(holder)Type(shared, Forward<Arguments&&>(arguments_)...);
 	holder->isConstructed = true;
 
 	return Move(shared);

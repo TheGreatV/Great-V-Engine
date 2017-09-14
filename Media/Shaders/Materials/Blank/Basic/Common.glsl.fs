@@ -4,6 +4,7 @@ uniform	vec3	materialAlbedo;
 uniform	float	materialRoughness;
 uniform	float	materialMetalness;
 
+uniform	vec3	objectColor;
 
 in vec3		fPos;
 in mat3		fTBN;
@@ -24,7 +25,7 @@ void main()
 	float	metalness	= materialMetalness;
 	float	occlusion	= 1.0f;
 	
-	oAlbedo = vec4(albedo, 1.0f);
+	oAlbedo = vec4(albedo * objectColor, 1.0f);
 	oNormal = vec4(normal, 1.0f);
 	oRoughnessMetalnessOcclusion = vec4(roughness, metalness, occlusion, 1.0f);
 }

@@ -214,13 +214,13 @@ public:
 public:
 	inline Slot(Reference<Graphics::OpenGL::Scene> scene_, Reference<Graphics::OpenGL::Material> material_, const Vec3& pos_)
 	{
-		graphicsObject = MakeReference(new Graphics::OpenGL::Object(scene_->GetEngine()));
+		graphicsObject = WrapReference(new Graphics::OpenGL::Object(scene_->GetEngine()));
 		{
 			graphicsObject->SetLocalPosition(pos_);
 
 			auto geometry = Geometry::CreateBox(Vec3(9.0f, 1.0f, 9.0f), Vec3(1.0f), UVec3(1));
-			auto shape = MakeReference(new Graphics::OpenGL::Shape(scene_->GetEngine(), geometry));
-			auto model = MakeReference(new Graphics::OpenGL::Model(scene_->GetEngine(), shape, material_));
+			auto shape = WrapReference(new Graphics::OpenGL::Shape(scene_->GetEngine(), geometry));
+			auto model = WrapReference(new Graphics::OpenGL::Model(scene_->GetEngine(), shape, material_));
 			graphicsObject->SetModel(model);
 			scene_->Add(graphicsObject);
 		}
@@ -278,11 +278,11 @@ class Item1:
 public:
 	inline Item1(Reference<Graphics::OpenGL::Scene> scene_, Reference<Graphics::OpenGL::Material> material_)
 	{
-		graphicsObject = MakeReference(new Graphics::OpenGL::Object(scene_->GetEngine()));
+		graphicsObject = WrapReference(new Graphics::OpenGL::Object(scene_->GetEngine()));
 		{
 			auto geometry = Geometry::CreateBox(Vec3(18.0f, 8.0f, 8.0f), Vec3(1.0f), UVec3(1));
-			auto shape = MakeReference(new Graphics::OpenGL::Shape(scene_->GetEngine(), geometry));
-			auto model = MakeReference(new Graphics::OpenGL::Model(scene_->GetEngine(), shape, material_));
+			auto shape = WrapReference(new Graphics::OpenGL::Shape(scene_->GetEngine(), geometry));
+			auto model = WrapReference(new Graphics::OpenGL::Model(scene_->GetEngine(), shape, material_));
 			graphicsObject->SetModel(model);
 			scene_->Add(graphicsObject);
 
@@ -290,7 +290,7 @@ public:
 			graphicsObject->SetLocalPosition(Vec3(5.0f, 0.0f, 0.0f));
 		}
 
-		auto mainDock = MakeReference(new Dock());
+		auto mainDock = WrapReference(new Dock());
 		{
 			mainDock->SetParent(this);
 			mainDock->SetLocalPosition(Vec3(0.0f, 0.0f, 0.0f));
@@ -299,7 +299,7 @@ public:
 			docks.push_back(mainDock);
 		}
 
-		auto dock1 = MakeReference(new Dock());
+		auto dock1 = WrapReference(new Dock());
 		{
 			dock1->SetParent(this);
 			dock1->SetLocalPosition(Vec3(10.0f, 0.0f, 0.0f));
@@ -362,25 +362,25 @@ void func()
 	// WinAPI::Window::Size resolution(1920, 1080);
 
 	auto instance = GreatVEngine::WinAPI::Instance::Get();
-	auto windowClass = MakeReference(new GreatVEngine::WinAPI::WindowClass(instance, "class"));
-	auto window = MakeReference(new GreatVEngine::WinAPI::Window(windowClass, "window", resolution));
-	auto deviceContext = MakeReference(new GreatVEngine::WinAPI::DeviceContext(window));
+	auto windowClass = MakeReference<GreatVEngine::WinAPI::WindowClass>(instance, "class");
+	auto window = MakeReference<GreatVEngine::WinAPI::Window>(windowClass, "window", resolution);
+	auto deviceContext = MakeReference<GreatVEngine::WinAPI::DeviceContext>(window);
 	{
 		deviceContext->SetPixelFormat();
 	}
 
-	auto graphicsCamera = MakeReference(new Graphics::Camera());
+	auto graphicsCamera = WrapReference(new Graphics::Camera());
 	{
 		graphicsCamera->SetPosition(Vec3(0.0f, 50.0f, -100.0f));
 		graphicsCamera->SetAngle(Vec3(20.0f, 0.0f, 0.0f));
 		graphicsCamera->SetProjection(Helper::Transformation::Dimension3::Projection::Params::Perspective(60.0f, window->GetAspect(), 0.1f, 10000.0f));
 	}
 
-	auto graphicsEngine = MakeReference(new Graphics::OpenGL::Engine(deviceContext));
+	auto graphicsEngine = WrapReference(new Graphics::OpenGL::Engine(deviceContext));
 
-	auto graphicsScene = MakeReference(new Graphics::OpenGL::Scene(graphicsEngine, window->GetSize()));
+	auto graphicsScene = WrapReference(new Graphics::OpenGL::Scene(graphicsEngine, window->GetSize()));
 
-	auto graphicsLightDirection1 = MakeReference(new Graphics::OpenGL::Lights::Direction());
+	auto graphicsLightDirection1 = WrapReference(new Graphics::OpenGL::Lights::Direction());
 	{
 		graphicsLightDirection1->SetLocalAngle(Vec3(80.0f, 0.0f, 0.0f));
 		graphicsLightDirection1->SetColor(Vec4(Vec3(1.0f), 0.8f));
@@ -388,7 +388,7 @@ void func()
 		graphicsScene->Add(graphicsLightDirection1);
 	}
 
-	auto graphicsMaterialFlat = MakeReference(new Graphics::OpenGL::Material(graphicsEngine));
+	auto graphicsMaterialFlat = WrapReference(new Graphics::OpenGL::Material(graphicsEngine));
 	{
 		graphicsMaterialFlat->Technique(Graphics::Material::TechniqueType::Basic) = Graphics::OpenGL::Technique::Load(graphicsEngine, Filepath("Media/Shaders/Materials/Blank/Basic/Common.glsl."), "vs", "", "", "", "fs");
 		graphicsMaterialFlat->SetValue("materialColor", Vec3(1.0f));
@@ -396,58 +396,58 @@ void func()
 		graphicsMaterialFlat->SetValue("materialGloss", 0.1f);
 		graphicsMaterialFlat->SetValue("materialRoughness", 0.8f);
 	}
-	auto graphicsObject = MakeReference(new Graphics::OpenGL::Object(graphicsEngine));
+	auto graphicsObject = WrapReference(new Graphics::OpenGL::Object(graphicsEngine));
 	{
 		auto geometry = Geometry::CreateBox(Vec3(400.0f, 1.0f, 400.0f), Vec3(1.0f), UVec3(1));
-		auto shape = MakeReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
-		auto model = MakeReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
+		auto shape = WrapReference(new Graphics::OpenGL::Shape(graphicsEngine, geometry));
+		auto model = WrapReference(new Graphics::OpenGL::Model(graphicsEngine, shape, graphicsMaterialFlat));
 		graphicsObject->SetModel(model);
 		graphicsScene->Add(graphicsObject);
 	}
 
 
-	auto selector = MakeReference(new Selectable::Selector());
+	auto selector = WrapReference(new Selectable::Selector());
 
-	auto slot1 = MakeReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(0.0f, 10.0f, 0.0f)));
+	auto slot1 = WrapReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(0.0f, 10.0f, 0.0f)));
 	{
 		selector->Add(slot1);
 	}
-	auto slot2 = MakeReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(10.0f, 10.0f, 0.0f)));
+	auto slot2 = WrapReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(10.0f, 10.0f, 0.0f)));
 	{
 		selector->Add(slot2);
 
 		slot1->links[static_cast<Size>(Inventory::Rotation::Right)] = slot2;
 		slot2->links[static_cast<Size>(Inventory::Rotation::Left)] = slot1;
 	}
-	auto slot3 = MakeReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(0.0f, 10.0f, 10.0f)));
+	auto slot3 = WrapReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(0.0f, 10.0f, 10.0f)));
 	{
 		selector->Add(slot3);
 
 		slot1->links[static_cast<Size>(Inventory::Rotation::Front)] = slot3;
 		slot3->links[static_cast<Size>(Inventory::Rotation::Back)] = slot1;
 	}
-	auto slot4 = MakeReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(0.0f, 10.0f, 20.0f)));
+	auto slot4 = WrapReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(0.0f, 10.0f, 20.0f)));
 	{
 		selector->Add(slot4);
 
 		slot3->links[static_cast<Size>(Inventory::Rotation::Front)] = slot4;
 		slot4->links[static_cast<Size>(Inventory::Rotation::Back)] = slot3;
 	}
-	auto slot5 = MakeReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(0.0f, 10.0f, -10.0f)));
+	auto slot5 = WrapReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(0.0f, 10.0f, -10.0f)));
 	{
 		selector->Add(slot5);
 
 		slot1->links[static_cast<Size>(Inventory::Rotation::Back)] = slot5;
 		slot5->links[static_cast<Size>(Inventory::Rotation::Front)] = slot1;
 	}
-	auto slot6 = MakeReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(-10.0f, 10.0f, 10.0f)));
+	auto slot6 = WrapReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(-10.0f, 10.0f, 10.0f)));
 	{
 		selector->Add(slot6);
 
 		slot3->links[static_cast<Size>(Inventory::Rotation::Left)] = slot6;
 		slot6->links[static_cast<Size>(Inventory::Rotation::Right)] = slot3;
 	}
-	auto slot7 = MakeReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(-10.0f, 10.0f, 20.0f)));
+	auto slot7 = WrapReference(new Slot(graphicsScene, graphicsMaterialFlat, Vec3(-10.0f, 10.0f, 20.0f)));
 	{
 		selector->Add(slot7);
 
@@ -458,26 +458,26 @@ void func()
 		slot6->links[static_cast<Size>(Inventory::Rotation::Front)] = slot7;
 	}
 
-	auto dock1 = MakeReference(new Dock());
-	auto dock2 = MakeReference(new Dock());
+	auto dock1 = WrapReference(new Dock());
+	auto dock2 = WrapReference(new Dock());
 	{
 		dock1->links[static_cast<Size>(Inventory::Rotation::Front)] = dock2;
 		dock2->links[static_cast<Size>(Inventory::Rotation::Back)] = dock1;
 	}
-	auto dock3 = MakeReference(new Dock());
+	auto dock3 = WrapReference(new Dock());
 	{
 		dock1->links[static_cast<Size>(Inventory::Rotation::Right)] = dock3;
 		dock3->links[static_cast<Size>(Inventory::Rotation::Left)] = dock1;
 	}
 
-	auto item1 = MakeReference(new Item1(graphicsScene, graphicsMaterialFlat));
+	auto item1 = WrapReference(new Item1(graphicsScene, graphicsMaterialFlat));
 	{
 		for(auto &dock : item1->docks)
 		{
 			selector->Add(dock);
 		}
 	}
-	auto item2 = MakeReference(new Item1(graphicsScene, graphicsMaterialFlat));
+	auto item2 = WrapReference(new Item1(graphicsScene, graphicsMaterialFlat));
 	{
 		item2->SetLocalPosition(Vec3(0.0f, 0.0f, 20.0f));
 

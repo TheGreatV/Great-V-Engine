@@ -185,6 +185,7 @@ GreatVEngine::OpenGL::WinAPI::ExtendedContext::Initer::Initer()
 	// GL 4.0
 #if GVE_OPENGL_VERSION >= 400
 	GVE_OPENGL_GET_PROC(glPatchParameteri);
+	GVE_OPENGL_GET_PROC(glPatchParameterfv);
 #endif
 	// GL 4.3
 #if GVE_OPENGL_VERSION >= 430

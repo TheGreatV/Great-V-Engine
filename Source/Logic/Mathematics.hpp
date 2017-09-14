@@ -248,6 +248,79 @@ namespace GreatVEngine
 		return Vec4(Rnd(min_, max_), Rnd(min_, max_), Rnd(min_, max_), Rnd(min_, max_));
 	}
 
+	template <typename Type>
+	inline Type Clamp(Type value_, Type minValue_, Type maxValue_)
+	{
+		return glm::clamp(value_, minValue_, maxValue_);
+	}
+
+	inline Float32 Wrap(const Float32& val, const Float32& minVal, const Float32& maxVal)
+	{
+		return val - floor((val - minVal) / (maxVal - minVal))*(maxVal - minVal);
+	}
+	inline Float32 Wrap360(const Float32& val)
+	{
+		return Wrap(val, 0.0f, 360.0f);
+	}
+	inline Vec2 Wrap360(const Vec2& val)
+	{
+		return Vec2
+			(
+			Wrap360(val.x),
+			Wrap360(val.y)
+			);
+	}
+	inline Vec3 Wrap360(const Vec3& val)
+	{
+		return Vec3
+			(
+			Wrap360(val.x),
+			Wrap360(val.y),
+			Wrap360(val.z)
+			);
+	}
+	inline Vec4 Wrap360(const Vec4& val)
+	{
+		return Vec4
+			(
+			Wrap360(val.x),
+			Wrap360(val.y),
+			Wrap360(val.z),
+			Wrap360(val.w)
+			);
+	}
+	inline Float32 Wrap180(const Float32& val)
+	{
+		return Wrap(val, -180.0f, +180.0f);
+	}
+	inline Vec2 Wrap180(const Vec2& val)
+	{
+		return Vec2
+			(
+			Wrap180(val.x),
+			Wrap180(val.y)
+			);
+	}
+	inline Vec3 Wrap180(const Vec3& val)
+	{
+		return Vec3
+			(
+			Wrap180(val.x),
+			Wrap180(val.y),
+			Wrap180(val.z)
+			);
+	}
+	inline Vec4 Wrap180(const Vec4& val)
+	{
+		return Vec4
+			(
+			Wrap180(val.x),
+			Wrap180(val.y),
+			Wrap180(val.z),
+			Wrap180(val.w)
+			);
+	}
+
 	template<typename T>
 	inline Float32 ProjectT(const T& a, const T& b)
 	{
@@ -260,6 +333,11 @@ namespace GreatVEngine
 		return b * projT(a, b);
 	};
 
+	template <typename T>
+	inline Float32 Length(const T& t)
+	{
+		return glm::length(t);
+	}
 	template <typename genTypeT, typename genTypeU>
 	inline genTypeT Mix(const genTypeT& a, const genTypeT& b, const genTypeU& t)
 	{
@@ -276,6 +354,16 @@ namespace GreatVEngine
 		return glm::dot(a, a);
 	}
 
+	inline Mat2 Rotate2(const Float32& angle_)
+	{
+		auto a = glm::radians(angle_);
+		auto s = glm::sin(a);
+		auto c = glm::cos(a);
+
+		return glm::transpose(Mat2(
+			c, s,
+			-s, c));
+	}
 	inline Mat3 Rotate3(const Float32& angle_)
 	{
 		auto a = glm::radians(angle_);

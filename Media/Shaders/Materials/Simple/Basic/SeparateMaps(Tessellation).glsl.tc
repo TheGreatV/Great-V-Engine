@@ -1,0 +1,34 @@
+#version 420 core
+
+// layout (vertices = 4) out;
+layout (vertices = 3) out;
+
+// uniform int		level = 1;
+
+in	mat3		tcTBN[];
+in	vec2		tcTex[];
+// in vec3			tcNor[];
+// in vec2			tcTex[];
+
+out	mat3		teTBN[];
+out	vec2		teTex[];
+// out vec3		teNor[];
+// out vec2		teTex[];
+
+void main()
+{
+	int level = 8;
+
+	gl_TessLevelInner[0] = level;
+	// gl_TessLevelInner[1] = level;
+	gl_TessLevelOuter[0] = level;
+	gl_TessLevelOuter[1] = level;
+	gl_TessLevelOuter[2] = level;
+	// gl_TessLevelOuter[3] = level;
+
+	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+	
+	teTBN[gl_InvocationID] = tcTBN[gl_InvocationID];
+	teTex[gl_InvocationID] = tcTex[gl_InvocationID];
+}
+

@@ -33,20 +33,20 @@ namespace GreatVEngine
 		extern PFNGLGENERATEMIPMAPPROC							glGenerateMipmap;
 		extern PFNGLTEXIMAGE3DPROC								glTexImage3D;
 		// Samplers
-		extern PFNGLGENSAMPLERSPROC glGenSamplers;
-		extern PFNGLDELETESAMPLERSPROC glDeleteSamplers;
-		extern PFNGLISSAMPLERPROC glIsSampler;
-		extern PFNGLBINDSAMPLERPROC glBindSampler;
-		extern PFNGLSAMPLERPARAMETERIPROC glSamplerParameteri;
-		extern PFNGLSAMPLERPARAMETERIVPROC glSamplerParameteriv;
-		extern PFNGLSAMPLERPARAMETERFPROC glSamplerParameterf;
-		extern PFNGLSAMPLERPARAMETERFVPROC glSamplerParameterfv;
-		extern PFNGLSAMPLERPARAMETERIIVPROC glSamplerParameterIiv;
-		extern PFNGLSAMPLERPARAMETERIUIVPROC glSamplerParameterIuiv;
-		extern PFNGLGETSAMPLERPARAMETERIVPROC glGetSamplerParameteriv;
-		extern PFNGLGETSAMPLERPARAMETERIIVPROC glGetSamplerParameterIiv;
-		extern PFNGLGETSAMPLERPARAMETERFVPROC glGetSamplerParameterfv;
-		extern PFNGLGETSAMPLERPARAMETERIUIVPROC glGetSamplerParameterIuiv;
+		extern PFNGLGENSAMPLERSPROC								glGenSamplers;
+		extern PFNGLDELETESAMPLERSPROC							glDeleteSamplers;
+		extern PFNGLISSAMPLERPROC								glIsSampler;
+		extern PFNGLBINDSAMPLERPROC								glBindSampler;
+		extern PFNGLSAMPLERPARAMETERIPROC						glSamplerParameteri;
+		extern PFNGLSAMPLERPARAMETERIVPROC						glSamplerParameteriv;
+		extern PFNGLSAMPLERPARAMETERFPROC						glSamplerParameterf;
+		extern PFNGLSAMPLERPARAMETERFVPROC						glSamplerParameterfv;
+		extern PFNGLSAMPLERPARAMETERIIVPROC						glSamplerParameterIiv;
+		extern PFNGLSAMPLERPARAMETERIUIVPROC					glSamplerParameterIuiv;
+		extern PFNGLGETSAMPLERPARAMETERIVPROC					glGetSamplerParameteriv;
+		extern PFNGLGETSAMPLERPARAMETERIIVPROC					glGetSamplerParameterIiv;
+		extern PFNGLGETSAMPLERPARAMETERFVPROC					glGetSamplerParameterfv;
+		extern PFNGLGETSAMPLERPARAMETERIUIVPROC					glGetSamplerParameterIuiv;
 		// Shader func
 		extern PFNGLCREATEPROGRAMPROC							glCreateProgram;
 		extern PFNGLDELETEPROGRAMPROC							glDeleteProgram;
@@ -132,6 +132,7 @@ namespace GreatVEngine
 		// GL 4.0
 #if GVE_OPENGL_VERSION >= 400
 		extern PFNGLPATCHPARAMETERIPROC							glPatchParameteri;
+		extern PFNGLPATCHPARAMETERFVPROC						glPatchParameterfv;
 #endif
 		// GL 4.3
 #if GVE_OPENGL_VERSION >= 430
